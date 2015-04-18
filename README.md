@@ -161,9 +161,10 @@ sudo docker run --privileged -i -t -d --name onlyoffice-mail-server -p 25:25 -p 
 **STEP 3**: Install ONLYOFFICE Community Server
 
 ```bash
-sudo docker run -i -t -d -p 80:80  -p 443:443 onlyoffice/communityserver \
+sudo docker run -i -t -d -p 80:80  -p 443:443 \
 --link onlyoffice-mail-server:mail_server \
---link onlyoffice-document-server:document_server
+--link onlyoffice-document-server:document_server \
+onlyoffice/communityserver
 ```
 
 Alternatively, you can use [docker-compose](https://docs.docker.com/compose/install "docker-compose") to install the whole ONLYOFFICE Free Edition at once. For the mail server correct work you need to specify its hostname 'yourdomain.com'. Assuming you have docker-compose installed, execute the following command:
