@@ -1,0 +1,18 @@
+ONLYOFFICE NON-COMMERCIAL LICENSE AGREEMENT
+
+IMPORTANT - READ CAREFULLY: BY CLICKING THE “I ACCEPT” BUTTON OR INSTALLING, DOWNLOADING OR OTHERWISE USING ONLYOFFICE AND ANY RELATED DOCUMENTATION, YOU, ON BEHALF OF YOURSELF OR AS AN AUTHORIZED REPRESENTATIVE ON BEHALF OF AN ENTITY (“LICENSEE”) AGREE TO ALL THE TERMS OF THIS ONLYOFFICE NON-COMMERCIAL LICENSE AGREEMENT (THE “AGREEMENT”) REGARDING YOUR USE OF ONLYOFFICE. YOU REPRESENT AND WARRANT THAT YOU HAVE FULL LEGAL AUTHORITY TO BIND THE LICENSEE TO THIS AGREEMENT. IF YOU DO NOT AGREE WITH ALL OF THESE TERMS, DO NOT PRESS THE “I ACCEPT” BUTTON AND DO NOT INSTALL, DOWNLOAD OR OTHERWISE USE ONLYOFFICE. THE EFFECTIVE DATE OF THIS AGREEMENT IS THE DATE ON WHICH YOU CLICK “I ACCEPT” OR OTHERWISE INSTALL, DOWNLOAD OR USE ONLYOFFICE.
+
+
+1. License Grant. As used in this Agreement, ONLYOFFICE means the object code, the compiled object code of the office server software provided by Ascensio System SIA as well as any related documentation. Ascensio System SIA hereby grants Licensee, free of charge, the non-exclusive right to use, copy, merge, publish, distribute, sublicense, and/or sell copies of ONLYOFFICE and to permit persons to whom ONLYOFFICE is furnished to do so, subject to Licensee including the following copyright notice in all copies or substantial portions of ONLYOFFICE:
+
+Ascensio System SIA
+http://www.onlyoffice.com
+© Ascensio System SIA, [year]
+ 
+
+2. Restrictions. Licensee cannot modify the source code, binary codes, object codes and/or resource files comprising ONLYOFFICE in any way including alteration, removing or obscuring copyright, patent, trademark, and attribution notices contained therein.
+
+Licensee is not permitted to use trade names, trademarks, service marks, or product names of Ascensio System SIA, except as required for reasonable and customary use of ONLYOFFICE.
+
+
+3. Warranty Disclaimer and Limitation of Liability. ONLYOFFICE IS PROVIDED “AS IS,” WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL ASCENSIO SYSTEM SIA OR THE AUTHORS OR COPYRIGHT HOLDERS IN ONLYOFFICE BE LIABLE FOR ANY CLAIM, DAMAGES (INCLUDING, WITHOUT LIMITATION, DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES) OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH ONLYOFFICE OR THE USE OR OTHER DEALINGS IN ONLYOFFICE.
