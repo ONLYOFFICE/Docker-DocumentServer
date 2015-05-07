@@ -10,7 +10,7 @@ RUN apt-get update && apt-get -y -q install libreoffice
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     echo "deb http://static.teamlab.com.s3.amazonaws.com/repo/debian/ squeeze main" >>  /etc/apt/sources.list && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys D9D0BF019CC8AC0D && \
-    echo "deb http://download.mono-project.com/repo/debian wheezy/snapshots/3.12.0 main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list && \
+    echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo tee /etc/apt/sources.list.d/mono-xamarin.list && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF && \
     echo "deb http://archive.ubuntu.com/ubuntu precise main universe multiverse" >> /etc/apt/sources.list && \
     DEBIAN_FRONTEND=noninteractive  && \
