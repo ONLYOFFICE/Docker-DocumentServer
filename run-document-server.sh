@@ -26,6 +26,14 @@ SYSCONF_TEMPLATES_DIR="/app/onlyoffice/setup/config"
 
 NGINX_ONLYOFFICE_PATH="/etc/nginx/sites-enabled/onlyoffice-documentserver";
 
+# create base folders
+mkdir -p /var/log/onlyoffice/documentserver/FileConverterService/
+mkdir -p /var/log/onlyoffice/documentserver/CoAuthoringService/
+mkdir -p /var/log/onlyoffice/documentserver/DocService/
+mkdir -p /var/log/onlyoffice/documentserver/SpellCheckerService/
+mkdir -p /var/log/onlyoffice/documentserver/LibreOfficeService/
+
+
 # setup HTTPS
 if [ -f "${SSL_CERTIFICATE_PATH}" -a -f "${SSL_KEY_PATH}" ]; then
         cp ${SYSCONF_TEMPLATES_DIR}/nginx/onlyoffice-ssl ${NGINX_ONLYOFFICE_PATH}
