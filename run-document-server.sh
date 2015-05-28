@@ -9,6 +9,7 @@ sed "/user=/s/onlyoffice/root/" -i /etc/supervisor/conf.d/SpellCheckerService.co
 chown root /var/www/onlyoffice
 chown root /var/lib/onlyoffice
 
+adduser --quiet www-data root
 
 DATA_DIR="/var/www/onlyoffice/Data"
 LOG_DIR="/var/log/onlyoffice"
@@ -32,7 +33,6 @@ mkdir -p /var/log/onlyoffice/documentserver/CoAuthoringService/
 mkdir -p /var/log/onlyoffice/documentserver/DocService/
 mkdir -p /var/log/onlyoffice/documentserver/SpellCheckerService/
 mkdir -p /var/log/onlyoffice/documentserver/LibreOfficeService/
-
 
 # setup HTTPS
 if [ -f "${SSL_CERTIFICATE_PATH}" -a -f "${SSL_KEY_PATH}" ]; then
