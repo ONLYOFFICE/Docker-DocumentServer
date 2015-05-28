@@ -198,7 +198,7 @@ docker-compose up -d
 
 As a relatively new project Docker is being worked on and actively developed by its community. So it's recommended to use the latest version of Docker, because the issues that you encounter might have already been fixed with a newer Docker release.
 
-Fedora and RHEL/CentOS users should try disabling selinux with setenforce 0. If it does not fix the issue, you can either stick with selinux disabled (not recommended by RedHat) or switch to using Ubuntu.
+The known Docker issue with ONLYOFFICE Document Server with rpm-based distributives is that sometimes the processes fail to start inside Docker container. Fedora and RHEL/CentOS users should try disabling selinux with setenforce 0. If it does not fix the issue, you can either stick with selinux disabled (not recommended by RedHat) or switch to using Ubuntu.
 
 ### Mono Issues
 
