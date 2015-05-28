@@ -3,6 +3,7 @@
 * [Recommended System Requirements](#recommended-system-requirements)
 * [Running Docker Image](#running-docker-image)
 * [Configuring Docker Image](#configuring-docker-image)
+    - [Storing Data](#storing-data)
     - [Running ONLYOFFICE Document Server on Different Port](#running-onlyoffice-document-server-on-different-port)
     - [Running ONLYOFFICE Document Server using HTTPS](#running-onlyoffice-document-server-using-https)
         + [Generation of Self Signed Certificates](#generation-of-self-signed-certificates)
@@ -10,6 +11,9 @@
         + [Installation of the SSL Certificates](#installation-of-the-ssl-certificates)
         + [Available Configuration Parameters](#available-configuration-parameters)
 * [Installing ONLYOFFICE Document Server integrated with Community and Mail Servers](#installing-onlyoffice-document-server-integrated-with-community-and-mail-servers)
+* [Issues](#issues)
+    - [Docker Issues](#docker-issues)
+    - [Mono Issues](#mono-issues)
 * [Project Information](#project-information)
 * [User Feedback and Support](#user-feedback-and-support)
 
@@ -48,6 +52,20 @@ Integrating it with ONLYOFFICE Community Server you will be able to:
 Use this command if you wish to install ONLYOFFICE Document Server separately. To install ONLYOFFICE Document Server integrated with Community and Mail Servers, refer to the corresponding instructions below.
 
 ## Configuring Docker Image
+
+### Storing Data
+
+All the data are stored in the specially-designated directories, **data volumes**, at the following location:
+* **/var/log/onlyoffice** for ONLYOFFICE Document Server logs
+* **/var/www/onlyoffice/Data** for certificates
+
+To get access to your data from outside the container, you need to mount the volumes. It can be done by specifying the '-v' option in the docker run command.
+
+    sudo docker run -i -t -d -p 80:80 \
+        -v /opt/onlyoffice/Logs:/var/log/onlyoffice  \
+        -v /opt/onlyoffice/Data:/var/www/onlyoffice/Data  onlyoffice/documentserver
+
+Storing the data on the host machine allows you to easily update ONLYOFFICE once the new version is released without losing your data.
 
 ### Running ONLYOFFICE Document Server on Different Port
 
@@ -161,7 +179,7 @@ sudo docker run --privileged -i -t -d --name onlyoffice-mail-server -p 25:25 -p 
 **STEP 3**: Install ONLYOFFICE Community Server
 
 ```bash
-sudo docker run -i -t -d -p 80:80  -p 443:443 \
+sudo docker run -i -t -d -p 80:80 -p 5222:5222 -p 443:443 \
 --link onlyoffice-mail-server:mail_server \
 --link onlyoffice-document-server:document_server \
 onlyoffice/communityserver
@@ -174,6 +192,19 @@ wget https://raw.githubusercontent.com/ONLYOFFICE/Docker-CommunityServer/master/
 docker-compose up -d
 ```
 
+## Issues
+
+### Docker Issues
+
+As a relatively new project Docker is being worked on and actively developed by its community. So it's recommended to use the latest version of Docker, because the issues that you encounter might have already been fixed with a newer Docker release.
+
+Fedora and RHEL/CentOS users should try disabling selinux with setenforce 0. If it does not fix the issue, you can either stick with selinux disabled (not recommended by RedHat) or switch to using Ubuntu.
+
+### Mono Issues
+
+ONLYOFFICE installation requires the presence of mono (tested for version 3.12.1 or [older](http://www.mono-project.com/docs/getting-started/install/linux/#accessing-older-releases "older")) that may cause problems for some Linux kernel versions. The full list of supported kernel versions is available [here](http://onlyo.co/1PABPEI "here").
+
+
 ## Project Information
 
 Official website: [http://www.onlyoffice.org](http://onlyoffice.org "http://www.onlyoffice.org")
@@ -185,7 +216,6 @@ Docker Image: [https://github.com/ONLYOFFICE/Docker-DocumentServer](https://gith
 License: [GNU AGPL v3.0](https://help.onlyoffice.com/products/files/doceditor.aspx?fileid=4358397&doc=K0ZUdlVuQzQ0RFhhMzhZRVN4ZFIvaHlhUjN2eS9XMXpKR1M5WEppUk1Gcz0_IjQzNTgzOTci0 "GNU AGPL v3.0")
 
 SaaS version: [http://www.onlyoffice.com](http://www.onlyoffice.com "http://www.onlyoffice.com")
-
 
 ## User Feedback and Support
 
