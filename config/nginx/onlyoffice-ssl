@@ -11,7 +11,7 @@ server {
 }
 
 upstream fastcgi_backend {
-    server 127.0.0.1:9001;
+    server unix:/tmp/fastcgi.socket;
     keepalive 32;
 }
 
@@ -91,6 +91,10 @@ server {
                 fastcgi_keep_conn on;
                 fastcgi_pass fastcgi_backend;
                 include /var/www/onlyoffice/documentserver/fastcgi_params;
+        }
+
+        location ~ \/OfficeWeb\/(?!sdk\/Fonts\/) {
+                root /var/www/onlyoffice/documentserver/DocService;
         }
 
         location /coauthoring/ {
