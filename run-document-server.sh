@@ -6,6 +6,9 @@ sed "/user=/s/onlyoffice/root/" -i /etc/supervisor/conf.d/FileConverterService.c
 sed "/user=/s/onlyoffice/root/" -i /etc/supervisor/conf.d/LibreOfficeService.conf
 sed "/user=/s/onlyoffice/root/" -i /etc/supervisor/conf.d/SpellCheckerService.conf
 
+sed "/sudo /s/-u onlyoffice//" -i /var/www/onlyoffice/documentserver/Tools/CheckDocService.sh
+sed "/sudo /s/-u onlyoffice//" -i /var/www/onlyoffice/documentserver/Tools/GenerateAllFonts.sh
+
 chown root /var/www/onlyoffice
 chown root /var/lib/onlyoffice
 
