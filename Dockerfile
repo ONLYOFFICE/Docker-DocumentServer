@@ -20,7 +20,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get install --force-yes -yq software-properties-common && \
     add-apt-repository ppa:ubuntu-toolchain-r/test && \
     apt-get -y update && \
-    apt-get --force-yes -yq install gcc-4.9 onlyoffice-documentserver && \
+    apt-get --force-yes -yq install gcc-4.9 onlyoffice-documentserver nano htop && \
     rm -rf /var/lib/apt/lists/*
 
 ADD config /app/onlyoffice/setup/config/
