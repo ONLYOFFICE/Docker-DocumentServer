@@ -1,0 +1,99 @@
+-version: '2'
+ -services:
+ -  onlyoffice-document:
+ -    image: onlyoffice/4testing-documentserver:latest
+ -    depends_on:
+ -      - onlyoffice-mysql
+ -      - onlyoffice-redis
+ -      - onlyoffice-rabbitmq
+ -    environment:
+ -      - MYSQL_SERVER_HOST=onlyoffice-mysql
+ -      - MYSQL_SERVER_PORT=3306
+ -      - MYSQL_SERVER_DB_NAME=onlyoffice
+ -      - MYSQL_SERVER_USER=root
+ -      - RABBITMQ_SERVER_HOST=onlyoffice-rabbitmq
+ -      - RABBITMQ_SERVER_USER=guest
+ -      - RABBITMQ_SERVER_PASS=guest
+ -      - REDIS_SERVER_HOST=onlyoffice-redis
+ -      - REDIS_SERVER_PORT=6379
+ -      - HTTP_CHECK=HEAD /healthcheck
+ -      - EXTRA_SETTINGS=http-check expect status 200
+ -    stdin_open: true
+ -    tty: true
+ -    restart: always
+ -    networks:
+ -      - onlyoffice
+ -    expose:
+ -      - '80'
+ -      - '443'
+ -    volumes:
+ -       - document_data:/var/www/onlyoffice/Data
+ -       - document_log:/var/log/onlyoffice
+ -       - document_files:/var/lib/onlyoffice/documentserver/App_Data/cache/files
+ -       - document_example_files:/var/www/onlyoffice/documentserver-example/public/files
+ -
+ -  onlyoffice-haproxy:
+ -    container_name: onlyoffice-haproxy
+ -    image: dockercloud/haproxy:1.2.1
+ -    depends_on:
+ -      - onlyoffice-document
+ -    environment:
+ -      - MODE=tcp
+ -      - TCP_PORTS="80, 443"
+ -    stdin_open: true
+ -    tty: true
+ -    links:
+ -     - onlyoffice-document
+ -    volumes:
+ -      - /var/run/docker.sock:/var/run/docker.sock
+ -    restart: always
+ -    networks:
+ -     - onlyoffice
+ -    ports:
+ -      - '80:80'
+ -      - '443:443'
+ -      - '1936:1936'
+ -       
+ -  onlyoffice-redis:
+ -    container_name: onlyoffice-redis
+ -    image: redis
+ -    restart: always
+ -    networks:
+ -     - onlyoffice
+ -    expose:
+ -      - '6379'
+ -
+ -  onlyoffice-rabbitmq:
+ -    container_name: onlyoffice-rabbitmq
+ -    image: rabbitmq
+ -    restart: always
+ -    networks:
+ -     - onlyoffice
+ -    expose:
+ -      - '5672'
+ -
+ -  onlyoffice-mysql:
+ -    container_name: onlyoffice-mysql
+ -    image: mysql:5.5
+ -    environment:
+ -      - MYSQL_DATABASE=onlyoffice
+ -      - MYSQL_USER=root
+ -      - MYSQL_ALLOW_EMPTY_PASSWORD='true'
+ -    networks:
+ -      - onlyoffice
+ -    restart: always
+ -    expose:
+ -      - '3306'
+ -    volumes:
+ -      - mysql_data:/var/lib/mysql
+ -
+ -networks:
+ -  onlyoffice:
+ -    driver: 'bridge'
+ -
+ -volumes:
+ -  mysql_data:
+ -  document_data:
+ -  document_log:
+ -  document_files:
+ -  document_example_files:
