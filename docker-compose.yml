@@ -4,6 +4,7 @@ services:
     container_name: onlyoffice-documentserver-data
     image: onlyoffice/4testing-documentserver:latest
     environment:
+      - ONLYOFFICE_DATA_CONTAINER=true
       - MYSQL_SERVER_HOST=onlyoffice-mysql
       - MYSQL_SERVER_PORT=3306
       - MYSQL_SERVER_DB_NAME=onlyoffice
