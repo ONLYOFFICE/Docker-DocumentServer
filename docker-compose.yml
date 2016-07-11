@@ -44,7 +44,7 @@ services:
       - '80'
       - '443'
     volumes_from:
-     - onlyoffice-documentserver-data:
+     - onlyoffice-documentserver-data
 
   onlyoffice-haproxy:
     container_name: onlyoffice-haproxy
