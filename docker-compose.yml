@@ -34,6 +34,7 @@ services:
       - onlyoffice-redis
       - onlyoffice-rabbitmq
     environment:
+      - VIRTUAL_HOST="ws://\*/doc/*"
       - HTTP_CHECK=HEAD /healthcheck
       - EXTRA_SETTINGS=http-check expect status 200
     stdin_open: true
@@ -53,8 +54,7 @@ services:
     depends_on:
       - onlyoffice-documentserver
     environment:
-      - MODE=tcp
-      - TCP_PORTS="80, 443"
+      - MODE=http
     stdin_open: true
     tty: true
     links:
