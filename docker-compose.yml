@@ -35,6 +35,7 @@ services:
       - onlyoffice-rabbitmq
     environment:
       - VIRTUAL_HOST="ws://\*/doc/*"
+      - BALANCE=uri depth 3
       - HTTP_CHECK=HEAD /healthcheck
       - EXTRA_SETTINGS=http-check expect status 200
     stdin_open: true
