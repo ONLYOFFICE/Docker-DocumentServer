@@ -1,12 +1,10 @@
 version: '2'
 services:
-  onlyoffice-document:
+  onlyoffice-documentserver-data:
+    container_name: onlyoffice-documentserver-data
     image: onlyoffice/4testing-documentserver:latest
-    depends_on:
-      - onlyoffice-mysql
-      - onlyoffice-redis
-      - onlyoffice-rabbitmq
     environment:
+      - ONLYOFFICE_DATA_CONTAINER=true
       - MYSQL_SERVER_HOST=onlyoffice-mysql
       - MYSQL_SERVER_PORT=3306
       - MYSQL_SERVER_DB_NAME=onlyoffice
@@ -16,6 +14,26 @@ services:
       - RABBITMQ_SERVER_PASS=guest
       - REDIS_SERVER_HOST=onlyoffice-redis
       - REDIS_SERVER_PORT=6379
+    stdin_open: true
+    tty: true
+    restart: always
+    networks:
+      - onlyoffice
+    volumes:
+       - /var/www/onlyoffice/Data
+       - /var/log/onlyoffice
+       - /var/lib/onlyoffice/documentserver/App_Data/cache/files
+       - /var/www/onlyoffice/documentserver-example/public/files
+       - /usr/share/fonts
+       
+  onlyoffice-documentserver:
+    image: onlyoffice/4testing-documentserver:latest
+    depends_on:
+      - onlyoffice-documentserver-data
+      - onlyoffice-mysql
+      - onlyoffice-redis
+      - onlyoffice-rabbitmq
+    environment:
       - HTTP_CHECK=HEAD /healthcheck
       - EXTRA_SETTINGS=http-check expect status 200
     stdin_open: true
@@ -26,24 +44,21 @@ services:
     expose:
       - '80'
       - '443'
-    volumes:
-       - document_data:/var/www/onlyoffice/Data
-       - document_log:/var/log/onlyoffice
-       - document_files:/var/lib/onlyoffice/documentserver/App_Data/cache/files
-       - document_example_files:/var/www/onlyoffice/documentserver-example/public/files
+    volumes_from:
+     - onlyoffice-documentserver-data
 
   onlyoffice-haproxy:
     container_name: onlyoffice-haproxy
     image: dockercloud/haproxy:1.2.1
     depends_on:
-      - onlyoffice-document
+      - onlyoffice-documentserver
     environment:
       - MODE=tcp
       - TCP_PORTS="80, 443"
     stdin_open: true
     tty: true
     links:
-     - onlyoffice-document
+     - onlyoffice-documentserver
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
@@ -93,7 +108,3 @@ networks:
 
 volumes:
   mysql_data:
-  document_data:
-  document_log:
-  document_files:
-  document_example_files:
