@@ -34,8 +34,11 @@ services:
       - onlyoffice-redis
       - onlyoffice-rabbitmq
     environment:
-      - HTTP_CHECK=HEAD /healthcheck
-      - EXTRA_SETTINGS=http-check expect status 200
+      - BALANCE=uri depth 3
+      - HTTP_CHECK=GET /healthcheck
+      - EXTRA_SETTINGS=http-check expect string true
+      # Uncomment the string below to redirect HTTP request to HTTPS request.
+      #- FORCE_SSL=true
     stdin_open: true
     tty: true
     restart: always
@@ -43,24 +46,27 @@ services:
       - onlyoffice
     expose:
       - '80'
-      - '443'
     volumes_from:
      - onlyoffice-documentserver-data
 
   onlyoffice-haproxy:
     container_name: onlyoffice-haproxy
-    image: dockercloud/haproxy:1.2.1
+    image: dockercloud/haproxy:1.5.1
     depends_on:
       - onlyoffice-documentserver
     environment:
-      - MODE=tcp
-      - TCP_PORTS="80, 443"
+      - MODE=http
+      # Uncomment the string below to specify the path of ssl certificates
+      #- CERT_FOLDER=/certs/
     stdin_open: true
     tty: true
     links:
      - onlyoffice-documentserver
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      # Uncomment the string below to map a ssl certificate from host
+      # to the proxy container
+      #- /app/onlyoffice/DocumentServer/data/certs/onlyoffice.pem:/certs/cert1.pem
     restart: always
     networks:
      - onlyoffice
