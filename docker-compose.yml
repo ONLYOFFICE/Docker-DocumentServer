@@ -35,8 +35,8 @@ services:
       - onlyoffice-rabbitmq
     environment:
       - BALANCE=uri depth 3
-      - HTTP_CHECK=HEAD /healthcheck
-      - EXTRA_SETTINGS=http-check expect status 200
+      - HTTP_CHECK=GET /healthcheck
+      - EXTRA_SETTINGS=http-check expect string true
       # Uncomment the string below to redirect HTTP request to HTTPS request.
       #- FORCE_SSL=true
     stdin_open: true
