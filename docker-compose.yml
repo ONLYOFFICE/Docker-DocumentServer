@@ -15,7 +15,6 @@ services:
       - REDIS_SERVER_HOST=onlyoffice-redis
       - REDIS_SERVER_PORT=6379
     stdin_open: true
-    tty: true
     restart: always
     networks:
       - onlyoffice
@@ -41,7 +40,6 @@ services:
       # Uncomment the string below to redirect HTTP request to HTTPS request.
       #- FORCE_SSL=true
     stdin_open: true
-    tty: true
     restart: always
     networks:
       - onlyoffice
@@ -60,7 +58,6 @@ services:
       # Uncomment the string below to specify the path of ssl certificates
       #- CERT_FOLDER=/certs/
     stdin_open: true
-    tty: true
     links:
      - onlyoffice-documentserver
     volumes:
