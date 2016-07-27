@@ -179,7 +179,7 @@ sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-doc
 **STEP 2**: Install ONLYOFFICE Mail Server. 
 
 For the mail server correct work you need to specify its hostname 'yourdomain.com'.
-To learn more, refer to the [ONLYOFFICE Mail Server documentation](https://github.com/ONLYOFFICE/MailServer "ONLYOFFICE Mail Server documentation").
+To learn more, refer to the [ONLYOFFICE Mail Server documentation](https://github.com/ONLYOFFICE/Docker-MailServer "ONLYOFFICE Mail Server documentation").
 
 ```bash
 sudo docker run --net onlyoffice --privileged -i -t -d --restart=always --name onlyoffice-mail-server \
@@ -195,7 +195,7 @@ sudo docker run --net onlyoffice --privileged -i -t -d --restart=always --name o
 **STEP 3**: Install ONLYOFFICE Community Server
 
 ```bash
-sudo docker run --net onlyoffice -i -t -d -p 80:80 --restart=always --name onlyoffice-community-server \
+sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-community-server \
 	-p 80:80 -p 5222:5222 -p 443:443 \
 	-v /app/onlyoffice/CommunityServer/data:/var/www/onlyoffice/Data \
 	-v /app/onlyoffice/CommunityServer/mysql:/var/lib/mysql \
