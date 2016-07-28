@@ -34,7 +34,9 @@ RUN echo "deb http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/only
     service mysql start && \
     apt-get --force-yes -yq install onlyoffice-documentserver && \
     service mysql stop && \
+    service supervisor stop && \
     chmod 755 /app/onlyoffice/*.sh && \
+    rm -rf /var/log/onlyoffice && \
     rm -rf /var/lib/apt/lists/*
 
 VOLUME /etc/onlyoffice /var/log/onlyoffice /var/lib/onlyoffice /var/www/onlyoffice/Data
