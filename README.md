@@ -155,16 +155,16 @@ Below is the complete list of parameters that can be set using environment varia
 - **SSL_KEY_PATH**: The path to the SSL certificate's private key. Defaults to `/var/www/onlyoffice/Data/certs/onlyoffice.key`.
 - **SSL_DHPARAM_PATH**: The path to the Diffie-Hellman parameter. Defaults to `/var/www/onlyoffice/Data/certs/dhparam.pem`.
 - **SSL_VERIFY_CLIENT**: Enable verification of client certificates using the `CA_CERTIFICATES_PATH` file. Defaults to `false`
-- **MYSQL_SERVER_HOST**: The IP address or the name of the host where the msql server is running.
-- **MYSQL_SERVER_PORT**: The mysql server port number.
-- **MYSQL_SERVER_DB_NAME**: The name of a MySQL database to be created on image startup.
+- **MYSQL_SERVER_HOST**: The IP address or the name of the host where the MySQL server is running.
+- **MYSQL_SERVER_PORT**: The MySQL server port number.
+- **MYSQL_SERVER_DB_NAME**: The name of a MySQL database to be created on the image startup.
 - **MYSQL_SERVER_USER**: The new user name with superuser permissions for the MySQL account.
 - **MYSQL_SERVER_PASS**: The password set for the MySQL account.
-- **RABBITMQ_SERVER_HOST**: The IP address or the name of the host where the rabbitmq server is running.
-- **RABBITMQ_SERVER_USER**: The rabbitmq server user name.
-- **RABBITMQ_SERVER_PASS**: The password set for the rabbitmq account.
-- **REDIS_SERVER_HOST**: The IP address or the name of the host where the redis server is running.
-- **REDIS_SERVER_PORT**:  The redis server port number.
+- **RABBITMQ_SERVER_HOST**: The IP address or the name of the host where the RabbitMQ server is running.
+- **RABBITMQ_SERVER_USER**: The RabbitMQ server user name.
+- **RABBITMQ_SERVER_PASS**: The password set for the RabbitMQ account.
+- **REDIS_SERVER_HOST**: The IP address or the name of the host where the Redis server is running.
+- **REDIS_SERVER_PORT**:  The Redis server port number.
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
