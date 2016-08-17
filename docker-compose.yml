@@ -35,6 +35,7 @@ services:
     environment:
       - ONLYOFFICE_DATA_CONTAINER_HOST=onlyoffice-documentserver-data
       - BALANCE=uri depth 3
+      - EXCLUDE_PORTS=443
       - HTTP_CHECK=GET /healthcheck
       - EXTRA_SETTINGS=http-check expect string true
       # Uncomment the string below to redirect HTTP request to HTTPS request.
