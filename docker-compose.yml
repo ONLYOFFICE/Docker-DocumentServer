@@ -56,7 +56,6 @@ services:
       - onlyoffice-documentserver
     environment:
       - MODE=http
-      - MAXCONN=65536
       # Uncomment the string below to specify the path of ssl certificates
       #- CERT_FOLDER=/certs/
     stdin_open: true
