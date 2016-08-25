@@ -5,10 +5,10 @@ services:
     image: onlyoffice/4testing-documentserver:latest
     environment:
       - ONLYOFFICE_DATA_CONTAINER=true
-      - MYSQL_SERVER_HOST=onlyoffice-mysql
-      - MYSQL_SERVER_PORT=3306
-      - MYSQL_SERVER_DB_NAME=onlyoffice
-      - MYSQL_SERVER_USER=root
+      - POSTGRESQL_SERVER_HOST=onlyoffice-postgers
+      - POSTGRESQL_SERVER_PORT=5432
+      - POSTGRESQL_SERVER_DB_NAME=onlyoffice
+      - POSTGRESQL_SERVER_USER=root
       - RABBITMQ_SERVER_HOST=onlyoffice-rabbitmq
       - RABBITMQ_SERVER_USER=guest
       - RABBITMQ_SERVER_PASS=guest
@@ -29,7 +29,7 @@ services:
     image: onlyoffice/4testing-documentserver:latest
     depends_on:
       - onlyoffice-documentserver-data
-      - onlyoffice-mysql
+      - onlyoffice-postgresql
       - onlyoffice-redis
       - onlyoffice-rabbitmq
     environment:
@@ -92,24 +92,23 @@ services:
     expose:
       - '5672'
 
-  onlyoffice-mysql:
-    container_name: onlyoffice-mysql
-    image: mysql:5.5
+  onlyoffice-postgresql:
+    container_name: onlyoffice-postgresql
+    image: postgres:9.5
     environment:
-      - MYSQL_DATABASE=onlyoffice
-      - MYSQL_USER=root
-      - MYSQL_ALLOW_EMPTY_PASSWORD='true'
+      - POSTGRES_DB=onlyoffice
+      - POSTGRES_USER=onlyoffice
     networks:
       - onlyoffice
     restart: always
     expose:
-      - '3306'
+      - '5432'
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgresql_data:/var/lib/postgresql
 
 networks:
   onlyoffice:
     driver: 'bridge'
 
 volumes:
-  mysql_data:
+  postgresql_data:
