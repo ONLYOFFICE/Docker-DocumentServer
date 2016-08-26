@@ -20,6 +20,9 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     add-apt-repository ppa:ubuntu-toolchain-r/test && \
     apt-get -y update && \
     apt-get --force-yes -yq install software-properties-common adduser postgresql redis-server rabbitmq-server nginx-extras nodejs libstdc++6 libcurl3 libxml2 libboost-regex-dev zlib1g supervisor fonts-dejavu fonts-liberation ttf-mscorefonts-installer fonts-crosextra-carlito fonts-takao-gothic fonts-opensymbol libxss1 libgtkglext1 libcairo2 xvfb libxtst6 libgconf2-4 libasound2 bomstrip libnspr4 libnss3 libnss3-nssdb nano htop && \
+    sudo -u postgres psql -c "CREATE DATABASE onlyoffice;" && \
+    sudo -u postgres psql -c "CREATE USER onlyoffice WITH password 'onlyoffice';" && \
+    sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;" && \ 
     service postgresql stop && \
     service redis-server stop && \
     service rabbitmq-server stop && \
