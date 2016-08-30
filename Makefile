@@ -1,5 +1,7 @@
 PACKAGE_VERSION := $(PRODUCT_VERSION)-$(BUILD_NUMBER)
 
+REPO_URL := "deb http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/onlyoffice-documentserver/$(GIT_BRANCH)/$(PACKAGE_VERSION)/ repo/"
+
 ifeq ($(GIT_BRANCH), origin/develop)
 DOCKER_TAGS += $(subst -,.,$(PACKAGE_VERSION))
 DOCKER_TAGS += latest
@@ -15,10 +17,8 @@ DOCKER_TARGETS := $(foreach TAG,$(DOCKER_TAGS),$(DOCKER_REPO)$(COLON)$(TAG))
 .PHONY: all clean clean-docker deploy docker
 
 $(DOCKER_TARGETS): $(DEB_REPO_DATA)
-	sed "s|{{GIT_BRANCH}}|$(GIT_BRANCH)|"  -i Dockerfile
-	sed 's/{{PACKAGE_VERSION}}/'$(PACKAGE_VERSION)'/'  -i Dockerfile
 
-	sudo docker build -t $(subst $(COLON),:,$@) . &&\
+	sudo docker build --build-arg REPO_URL=$(REPO_URL) -t $(subst $(COLON),:,$@) . &&\
 	mkdir -p $$(dirname $@) &&\
 	echo "Done" > $@
 

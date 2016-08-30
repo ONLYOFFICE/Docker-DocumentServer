@@ -1,6 +1,8 @@
 FROM ubuntu:14.04
 MAINTAINER Ascensio System SIA <support@onlyoffice.com>
 
+ARG REPO_URL="deb http://static.teamlab.com/repo/debian/ squeeze main"
+
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive
 
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
@@ -34,7 +36,7 @@ ADD run-document-server.sh /app/onlyoffice/run-document-server.sh
 
 EXPOSE 80 443
 
-RUN echo "deb http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/onlyoffice-documentserver/{{GIT_BRANCH}}/{{PACKAGE_VERSION}}/ repo/" | tee /etc/apt/sources.list.d/onlyoffice.list && \
+RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/onlyoffice.list && \
     apt-get -y update && \
     service postgresql start && \
     apt-get --force-yes -yq install onlyoffice-documentserver && \
