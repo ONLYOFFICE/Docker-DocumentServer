@@ -257,6 +257,7 @@ SaaS version: [http://www.onlyoffice.com](http://www.onlyoffice.com "http://www.
 
 ## User Feedback and Support
 
-If you have any problems with or questions about this image, please contact us through [dev.onlyoffice.org][1].
+If you have any problems with or questions about this image, please visit our official forum to find answers to your questions: [dev.onlyoffice.org][1] or you can ask and answer ONLYOFFICE development questions on [Stack Overflow][2].
 
   [1]: http://dev.onlyoffice.org
+  [2]: http://stackoverflow.com/questions/tagged/onlyoffice
