@@ -1,6 +1,6 @@
 PACKAGE_VERSION := $(PRODUCT_VERSION)-$(BUILD_NUMBER)
 
-REPO_URL := "deb http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/onlyoffice-documentserver/$(GIT_BRANCH)/$(PACKAGE_VERSION)/ repo/"
+REPO_URL := "deb http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/$(PRODUCT_NAME)/$(GIT_BRANCH)/$(PACKAGE_VERSION)/ repo/"
 
 ifeq ($(GIT_BRANCH), origin/develop)
 DOCKER_TAGS += $(subst -,.,$(PACKAGE_VERSION))
@@ -18,7 +18,7 @@ DOCKER_TARGETS := $(foreach TAG,$(DOCKER_TAGS),$(DOCKER_REPO)$(COLON)$(TAG))
 
 $(DOCKER_TARGETS): $(DEB_REPO_DATA)
 
-	sudo docker build --build-arg REPO_URL=$(REPO_URL) -t $(subst $(COLON),:,$@) . &&\
+	sudo docker build --build-arg REPO_URL=$(REPO_URL) --build-arg PRODUCT_NAME=$(PRODUCT_NAME) -t $(subst $(COLON),:,$@) . &&\
 	mkdir -p $$(dirname $@) &&\
 	echo "Done" > $@
 

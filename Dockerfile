@@ -35,11 +35,12 @@ ADD run-document-server.sh /app/onlyoffice/run-document-server.sh
 EXPOSE 80 443
 
 ARG REPO_URL="deb http://static.teamlab.com/repo/debian/ squeeze main"
+ARG PRODUCT_NAME=onlyoffice-documentserver
 
 RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/onlyoffice.list && \
     apt-get -y update && \
     service postgresql start && \
-    apt-get --force-yes -yq install onlyoffice-documentserver && \
+    apt-get --force-yes -yq install $PRODUCT_NAME && \
     service postgresql stop && \
     service supervisor stop && \
     chmod 755 /app/onlyoffice/*.sh && \
