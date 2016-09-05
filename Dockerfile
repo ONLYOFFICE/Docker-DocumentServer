@@ -5,7 +5,7 @@ ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=nonint
 
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get -y update && \
-    apt-get --force-yes -yq install apt-transport-https && \
+    apt-get --force-yes -yq install wget apt-transport-https && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys D9D0BF019CC8AC0D && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1655A0AB68576280 && \
     echo "deb http://archive.ubuntu.com/ubuntu precise main universe multiverse" >> /etc/apt/sources.list && \
@@ -16,8 +16,11 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get install --force-yes -yq software-properties-common && \
     add-apt-repository ppa:ubuntu-toolchain-r/test && \
     apt-get -y update && \
-    apt-get --force-yes -yq install software-properties-common adduser mysql-server redis-server rabbitmq-server nginx-extras nodejs libstdc++6 libcurl3 libxml2 libboost-regex-dev zlib1g supervisor fonts-dejavu fonts-liberation ttf-mscorefonts-installer fonts-crosextra-carlito fonts-takao-gothic fonts-opensymbol libxss1 libgtkglext1 libcairo2 xvfb libxtst6 libgconf2-4 libasound2 bomstrip libnspr4 libnss3 libnss3-nssdb nano htop && \
-    service mysql stop && \
+    apt-get --force-yes -yq install software-properties-common adduser postgresql redis-server rabbitmq-server nginx-extras nodejs libstdc++6 libcurl3 libxml2 libboost-regex-dev zlib1g supervisor fonts-dejavu fonts-liberation ttf-mscorefonts-installer fonts-crosextra-carlito fonts-takao-gothic fonts-opensymbol libxss1 libgtkglext1 libcairo2 xvfb libxtst6 libgconf2-4 libasound2 bomstrip libnspr4 libnss3 libnss3-nssdb nano htop && \
+    sudo -u postgres psql -c "CREATE DATABASE onlyoffice;" && \
+    sudo -u postgres psql -c "CREATE USER onlyoffice WITH password 'onlyoffice';" && \
+    sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;" && \ 
+    service postgresql stop && \
     service redis-server stop && \
     service rabbitmq-server stop && \
     service supervisor stop && \
@@ -29,12 +32,17 @@ ADD run-document-server.sh /app/onlyoffice/run-document-server.sh
 
 EXPOSE 80 443
 
-RUN echo "deb http://static.teamlab.com/repo/debian/ squeeze main" | tee /etc/apt/sources.list.d/onlyoffice.list && \
+ARG REPO_URL="deb http://static.teamlab.com/repo/debian/ squeeze main"
+ARG PRODUCT_NAME=onlyoffice-documentserver
+
+RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/onlyoffice.list && \
     apt-get -y update && \
-    service mysql start && \
-    apt-get --force-yes -yq install onlyoffice-documentserver && \
-    service mysql stop && \
+    service postgresql start && \
+    apt-get --force-yes -yq install $PRODUCT_NAME && \
+    service postgresql stop && \
+    service supervisor stop && \
     chmod 755 /app/onlyoffice/*.sh && \
+    rm -rf /var/log/onlyoffice && \
     rm -rf /var/lib/apt/lists/*
 
 VOLUME /etc/onlyoffice /var/log/onlyoffice /var/lib/onlyoffice /var/www/onlyoffice/Data
