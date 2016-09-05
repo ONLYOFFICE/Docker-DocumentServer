@@ -31,11 +31,11 @@ JSON="json -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
 LOCAL_SERVICES=()
 
 read_setting(){
-  MYSQL_SERVER_HOST=${MYSQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}
-  MYSQL_SERVER_PORT=${MYSQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}
-  MYSQL_SERVER_DB_NAME=${MYSQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}
-  MYSQL_SERVER_USER=${MYSQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}
-  MYSQL_SERVER_PASS=${MYSQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
+  POSTGRESQL_SERVER_HOST=${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}
+  POSTGRESQL_SERVER_PORT=${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}
+  POSTGRESQL_SERVER_DB_NAME=${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}
+  POSTGRESQL_SERVER_USER=${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}
+  POSTGRESQL_SERVER_PASS=${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
 
   RABBITMQ_SERVER_URL=$(${JSON} rabbitmq.url)
   RABBITMQ_SERVER_HOST=${RABBITMQ_SERVER_HOST:-${RABBITMQ_SERVER_URL#'amqp://'}}
@@ -54,8 +54,8 @@ waiting_for_connection(){
   done
 }
 
-waiting_for_mysql(){
-  waiting_for_connection ${MYSQL_SERVER_HOST} ${MYSQL_SERVER_PORT}
+waiting_for_postgresql(){
+  waiting_for_connection ${POSTGRESQL_SERVER_HOST} ${POSTGRESQL_SERVER_PORT}
 }
 
 waiting_for_rabbitmq(){
@@ -68,12 +68,12 @@ waiting_for_redis(){
 waiting_for_datacontainer(){
   waiting_for_connection ${ONLYOFFICE_DATA_CONTAINER_HOST} ${ONLYOFFICE_DATA_CONTAINER_PORT}
 }
-update_mysql_settings(){
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbHost = '${MYSQL_SERVER_HOST}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPort = '${MYSQL_SERVER_PORT}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbName = '${MYSQL_SERVER_DB_NAME}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${MYSQL_SERVER_USER}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${MYSQL_SERVER_PASS}'"
+update_postgresql_settings(){
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbHost = '${POSTGRESQL_SERVER_HOST}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPort = '${POSTGRESQL_SERVER_PORT}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbName = '${POSTGRESQL_SERVER_DB_NAME}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${POSTGRESQL_SERVER_USER}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${POSTGRESQL_SERVER_PASS}'"
 }
 
 update_rabbitmq_setting(){
@@ -87,16 +87,22 @@ update_redis_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.redis.port = '${REDIS_SERVER_PORT}'"
 }
 
-create_mysql_db(){
-  MYSQL="mysql -s -h${MYSQL_SERVER_HOST} -u${MYSQL_SERVER_USER}"
-  if [ -n "${MYSQL_SERVER_PASS}" ]; then
-    MYSQL="$MYSQL -p${MYSQL_SERVER_PASS}"
+create_postgresql_db(){
+  CONNECTION_PARAMS="-h${POSTGRESQL_SERVER_HOST} -U${POSTGRESQL_SERVER_USER} -w"
+  if [ -n "${POSTGRESQL_SERVER_PASS}" ]; then
+    export PGPASSWORD=${POSTGRESQL_SERVER_PASS}
   fi
 
-  # Create  db on remote server
-  ${MYSQL} -e "CREATE DATABASE IF NOT EXISTS ${MYSQL_SERVER_DB_NAME} CHARACTER SET utf8 COLLATE 'utf8_general_ci';"
-  ${MYSQL} "${MYSQL_SERVER_DB_NAME}" < "${APP_DIR}/server/schema/createdb.sql"
-}  
+  PSQL="psql -q $CONNECTION_PARAMS"
+  CREATEDB="createdb $CONNECTION_PARAMS"
+
+  # Create db on remote server
+  if $PSQL -lt | cut -d\| -f 1 | grep -qw | grep 0; then
+    $CREATEDB $DB_NAME
+  fi
+
+  $PSQL -d "${POSTGRESQL_SERVER_DB_NAME}" -f "${APP_DIR}/server/schema/postgresql/createdb.sql"
+}
 
 update_nginx_settings(){
   # Set up nginx
@@ -156,12 +162,12 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   read_setting
 
   # update settings by env variables
-  if [ ${MYSQL_SERVER_HOST} != "localhost" ]; then
-    update_mysql_settings
-    waiting_for_mysql
-    create_mysql_db
+  if [ ${POSTGRESQL_SERVER_HOST} != "localhost" ]; then
+    update_postgresql_settings
+    waiting_for_postgresql
+    create_postgresql_db
   else
-    LOCAL_SERVICES+=("mysql")
+    LOCAL_SERVICES+=("postgresql")
   fi
 
   if [ ${RABBITMQ_SERVER_HOST} != "localhost" ]; then
@@ -190,7 +196,7 @@ for i in ${LOCAL_SERVICES[@]}; do
 done
 
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
-  waiting_for_mysql
+  waiting_for_postgresql
   waiting_for_rabbitmq
   waiting_for_redis
 

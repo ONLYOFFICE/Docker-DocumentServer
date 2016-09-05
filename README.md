@@ -4,7 +4,6 @@
 * [Running Docker Image](#running-docker-image)
 * [Configuring Docker Image](#configuring-docker-image)
     - [Storing Data](#storing-data)
-    - [Running ONLYOFFICE Document Server on Different Port](#running-onlyoffice-document-server-on-different-port)
     - [Running ONLYOFFICE Document Server using HTTPS](#running-onlyoffice-document-server-using-https)
         + [Generation of Self Signed Certificates](#generation-of-self-signed-certificates)
         + [Strengthening the Server Security](#strengthening-the-server-security)
@@ -66,12 +65,6 @@ To get access to your data from outside the container, you need to mount the vol
         -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  onlyoffice/documentserver
 
 Storing the data on the host machine allows you to easily update ONLYOFFICE once the new version is released without losing your data.
-
-### Running ONLYOFFICE Document Server on Different Port
-
-To change the port, use the -p command. E.g.: to make your portal accessible via port 8080 execute the following command:
-
-    sudo docker run -i -t -d -p 8080:80 onlyoffice/documentserver
 
 ### Running ONLYOFFICE Document Server using HTTPS
 
@@ -155,11 +148,11 @@ Below is the complete list of parameters that can be set using environment varia
 - **SSL_KEY_PATH**: The path to the SSL certificate's private key. Defaults to `/var/www/onlyoffice/Data/certs/onlyoffice.key`.
 - **SSL_DHPARAM_PATH**: The path to the Diffie-Hellman parameter. Defaults to `/var/www/onlyoffice/Data/certs/dhparam.pem`.
 - **SSL_VERIFY_CLIENT**: Enable verification of client certificates using the `CA_CERTIFICATES_PATH` file. Defaults to `false`
-- **MYSQL_SERVER_HOST**: The IP address or the name of the host where the MySQL server is running.
-- **MYSQL_SERVER_PORT**: The MySQL server port number.
-- **MYSQL_SERVER_DB_NAME**: The name of a MySQL database to be created on the image startup.
-- **MYSQL_SERVER_USER**: The new user name with superuser permissions for the MySQL account.
-- **MYSQL_SERVER_PASS**: The password set for the MySQL account.
+- **POSTGRESQL_SERVER_HOST**: The IP address or the name of the host where the PostgreSQL server is running.
+- **POSTGRESQL_SERVER_PORT**: The PostgreSQL server port number.
+- **POSTGRESQL_SERVER_DB_NAME**: The name of a PostgreSQL database to be created on the image startup.
+- **POSTGRESQL_SERVER_USER**: The new user name with superuser permissions for the PostgreSQL account.
+- **POSTGRESQL_SERVER_PASS**: The password set for the PostgreSQL account.
 - **RABBITMQ_SERVER_HOST**: The IP address or the name of the host where the RabbitMQ server is running.
 - **RABBITMQ_SERVER_USER**: The RabbitMQ server user name.
 - **RABBITMQ_SERVER_PASS**: The password set for the RabbitMQ account.
@@ -264,6 +257,7 @@ SaaS version: [http://www.onlyoffice.com](http://www.onlyoffice.com "http://www.
 
 ## User Feedback and Support
 
-If you have any problems with or questions about this image, please contact us through [dev.onlyoffice.org][1].
+If you have any problems with or questions about this image, please visit our official forum to find answers to your questions: [dev.onlyoffice.org][1] or you can ask and answer ONLYOFFICE development questions on [Stack Overflow][2].
 
   [1]: http://dev.onlyoffice.org
+  [2]: http://stackoverflow.com/questions/tagged/onlyoffice
