@@ -2,7 +2,7 @@ version: '2'
 services:
   onlyoffice-documentserver-data:
     container_name: onlyoffice-documentserver-data
-    image: onlyoffice/4testing-documentserver:latest
+    image: onlyoffice/documentserver:latest
     environment:
       - ONLYOFFICE_DATA_CONTAINER=true
       - POSTGRESQL_SERVER_HOST=onlyoffice-postgresql
