@@ -4,15 +4,15 @@ REPO_URL := "deb http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/$
 
 UPDATE_LATEST := false
 
-ifneq(,$(findstring develop,$(GIT_BRANCH)))
+ifneq (,$(findstring develop,$(GIT_BRANCH)))
 UPDATE_LATEST := true
 endif
 
-ifneq(,$(findstring release,$(GIT_BRANCH)))
+ifneq (,$(findstring release,$(GIT_BRANCH)))
 UPDATE_LATEST := true
 endif
 
-ifneq(,$(findstring hotfix,$(GIT_BRANCH)))
+ifneq (,$(findstring hotfix,$(GIT_BRANCH)))
 UPDATE_LATEST := true
 endif
 
