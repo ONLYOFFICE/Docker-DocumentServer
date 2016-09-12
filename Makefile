@@ -2,7 +2,21 @@ PACKAGE_VERSION := $(PRODUCT_VERSION)-$(BUILD_NUMBER)
 
 REPO_URL := "deb http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/$(COMPANY_NAME)-$(PRODUCT_NAME)/$(GIT_BRANCH)/$(PACKAGE_VERSION)/ repo/"
 
-ifeq ($(GIT_BRANCH), origin/develop)
+UPDATE_LATEST := false
+
+ifneq(,$(findstring develop,$(GIT_BRANCH)))
+UPDATE_LATEST := true
+endif
+
+ifneq(,$(findstring release,$(GIT_BRANCH)))
+UPDATE_LATEST := true
+endif
+
+ifneq(,$(findstring hotfix,$(GIT_BRANCH)))
+UPDATE_LATEST := true
+endif
+
+ifeq ($(UPDATE_LATEST), true)
 DOCKER_TAGS += $(subst -,.,$(PACKAGE_VERSION))
 DOCKER_TAGS += latest
 else
