@@ -32,7 +32,7 @@ ADD run-document-server.sh /app/onlyoffice/run-document-server.sh
 
 EXPOSE 80 443
 
-ARG REPO_URL="deb http://static.teamlab.com/repo/debian/ squeeze main"
+ARG REPO_URL="deb http://download.onlyoffice.com/repo/debian squeeze main"
 ARG PRODUCT_NAME=onlyoffice-documentserver
 
 RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/onlyoffice.list && \
