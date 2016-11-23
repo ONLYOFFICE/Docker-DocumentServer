@@ -5,11 +5,11 @@ ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=nonint
 
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get -y update && \
-    apt-get --force-yes -yq install wget apt-transport-https && \
+    apt-get --force-yes -yq install wget apt-transport-https curl && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys D9D0BF019CC8AC0D && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1655A0AB68576280 && \
     echo "deb http://archive.ubuntu.com/ubuntu precise main universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb https://deb.nodesource.com/setup_6.x trusty main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
     locale-gen en_US.UTF-8 && \
     apt-get -y update && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
