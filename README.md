@@ -4,6 +4,7 @@
 * [Running Docker Image](#running-docker-image)
 * [Configuring Docker Image](#configuring-docker-image)
     - [Storing Data](#storing-data)
+    - [Running ONLYOFFICE Document Server on Different Port](#running-onlyoffice-document-server-on-different-port)
     - [Running ONLYOFFICE Document Server using HTTPS](#running-onlyoffice-document-server-using-https)
         + [Generation of Self Signed Certificates](#generation-of-self-signed-certificates)
         + [Strengthening the Server Security](#strengthening-the-server-security)
@@ -65,6 +66,12 @@ To get access to your data from outside the container, you need to mount the vol
         -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  onlyoffice/documentserver
 
 Storing the data on the host machine allows you to easily update ONLYOFFICE once the new version is released without losing your data.
+
+### Running ONLYOFFICE Document Server on Different Port
+
+To change the port, use the -p command. E.g.: to make your portal accessible via port 8080 execute the following command:
+
+    sudo docker run -i -t -d -p 8080:80 onlyoffice/documentserver
 
 ### Running ONLYOFFICE Document Server using HTTPS
 
