@@ -19,6 +19,8 @@ ONLYOFFICE_HTTPS_HSTS_MAXAGE=${ONLYOFFICE_HTTPS_HSTS_MAXAG:-31536000}
 SYSCONF_TEMPLATES_DIR="/app/onlyoffice/setup/config"
 
 NGINX_ONLYOFFICE_PATH="/etc/nginx/conf.d/onlyoffice-documentserver.conf";
+NGINX_ONLYOFFICE_INCLUDES_PATH="/etc/nginx/includes";
+NGINX_ONLYOFFICE_EXAMPLE_PATH=${NGINX_ONLYOFFICE_INCLUDES_PATH}/onlyoffice-documentserver-example.conf
 
 NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-$(grep processor /proc/cpuinfo | wc -l)}
@@ -177,6 +179,10 @@ update_nginx_settings(){
     fi
   else
     cp ${SYSCONF_TEMPLATES_DIR}/nginx/onlyoffice-documentserver.conf ${NGINX_ONLYOFFICE_PATH}
+  fi
+  
+  if [ -f "${NGINX_ONLYOFFICE_EXAMPLE_PATH}" ]; then
+    sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_PATH}
   fi
 }
 
