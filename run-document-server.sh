@@ -18,7 +18,8 @@ ONLYOFFICE_HTTPS_HSTS_ENABLED=${ONLYOFFICE_HTTPS_HSTS_ENABLED:-true}
 ONLYOFFICE_HTTPS_HSTS_MAXAGE=${ONLYOFFICE_HTTPS_HSTS_MAXAG:-31536000}
 SYSCONF_TEMPLATES_DIR="/app/onlyoffice/setup/config"
 
-NGINX_ONLYOFFICE_PATH="/etc/nginx/conf.d/onlyoffice-documentserver.conf";
+NGINX_CONFD_PATH="/etc/nginx/conf.d";
+NGINX_ONLYOFFICE_PATH="${NGINX_CONFD_PATH}/onlyoffice-documentserver.conf";
 NGINX_ONLYOFFICE_INCLUDES_PATH="/etc/nginx/includes";
 NGINX_ONLYOFFICE_EXAMPLE_PATH=${NGINX_ONLYOFFICE_INCLUDES_PATH}/onlyoffice-documentserver-example.conf
 
@@ -151,7 +152,7 @@ update_nginx_settings(){
 
   # setup HTTPS
   if [ -f "${SSL_CERTIFICATE_PATH}" -a -f "${SSL_KEY_PATH}" ]; then
-    cp ${SYSCONF_TEMPLATES_DIR}/nginx/onlyoffice-documentserver-ssl.conf ${NGINX_ONLYOFFICE_PATH}
+    cp ${NGINX_CONFD_PATH}/onlyoffice-documentserver-ssl.conf.template ${NGINX_ONLYOFFICE_PATH}
 
     # configure nginx
     sed 's,{{SSL_CERTIFICATE_PATH}},'"${SSL_CERTIFICATE_PATH}"',' -i ${NGINX_ONLYOFFICE_PATH}
@@ -178,7 +179,7 @@ update_nginx_settings(){
       sed '/{{ONLYOFFICE_HTTPS_HSTS_MAXAGE}}/d' -i ${NGINX_ONLYOFFICE_PATH}
     fi
   else
-    cp ${SYSCONF_TEMPLATES_DIR}/nginx/onlyoffice-documentserver.conf ${NGINX_ONLYOFFICE_PATH}
+    cp ${NGINX_CONFD_PATH}/onlyoffice-documentserver.conf.template ${NGINX_ONLYOFFICE_PATH}
   fi
   
   if [ -f "${NGINX_ONLYOFFICE_EXAMPLE_PATH}" ]; then
