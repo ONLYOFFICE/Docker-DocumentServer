@@ -163,6 +163,8 @@ Below is the complete list of parameters that can be set using environment varia
 - **RABBITMQ_SERVER_URL**: The [AMQP URL](http://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to RabbitMQ server.
 - **REDIS_SERVER_HOST**: The IP address or the name of the host where the Redis server is running.
 - **REDIS_SERVER_PORT**:  The Redis server port number.
+- **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
+- **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process.
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
