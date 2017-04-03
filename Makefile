@@ -9,11 +9,11 @@ UPDATE_LATEST := true
 endif
 
 ifneq (,$(findstring release,$(GIT_BRANCH)))
-UPDATE_LATEST := true
+UPDATE_LATEST := false
 endif
 
 ifneq (,$(findstring hotfix,$(GIT_BRANCH)))
-UPDATE_LATEST := true
+UPDATE_LATEST := false
 endif
 
 ifeq ($(UPDATE_LATEST), true)
