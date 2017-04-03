@@ -18,7 +18,10 @@ ONLYOFFICE_HTTPS_HSTS_ENABLED=${ONLYOFFICE_HTTPS_HSTS_ENABLED:-true}
 ONLYOFFICE_HTTPS_HSTS_MAXAGE=${ONLYOFFICE_HTTPS_HSTS_MAXAG:-31536000}
 SYSCONF_TEMPLATES_DIR="/app/onlyoffice/setup/config"
 
-NGINX_ONLYOFFICE_PATH="/etc/nginx/conf.d/onlyoffice-documentserver.conf";
+NGINX_CONFD_PATH="/etc/nginx/conf.d";
+NGINX_ONLYOFFICE_PATH="${NGINX_CONFD_PATH}/onlyoffice-documentserver.conf";
+NGINX_ONLYOFFICE_INCLUDES_PATH="/etc/nginx/includes";
+NGINX_ONLYOFFICE_EXAMPLE_PATH=${NGINX_ONLYOFFICE_INCLUDES_PATH}/onlyoffice-documentserver-example.conf
 
 NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-$(grep processor /proc/cpuinfo | wc -l)}
@@ -37,14 +40,53 @@ read_setting(){
   POSTGRESQL_SERVER_USER=${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}
   POSTGRESQL_SERVER_PASS=${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
 
-  RABBITMQ_SERVER_URL=$(${JSON} rabbitmq.url)
-  RABBITMQ_SERVER_HOST=${RABBITMQ_SERVER_HOST:-${RABBITMQ_SERVER_URL#'amqp://'}}
-  RABBITMQ_SERVER_USER=${RABBITMQ_SERVER_USER:-$(${JSON} rabbitmq.login)}
-  RABBITMQ_SERVER_PASS=${RABBITMQ_SERVER_PASS:-$(${JSON} rabbitmq.password)}
-  RABBITMQ_SERVER_PORT=${RABBITMQ_SERVER_PORT:-"5672"}
+  RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
+  parse_rabbitmq_url
 
   REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}
   REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-$(${JSON} services.CoAuthoring.redis.port)}
+}
+
+parse_rabbitmq_url(){
+  local amqp=${RABBITMQ_SERVER_URL}
+
+  # extract the protocol
+  local proto="$(echo $amqp | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+  # remove the protocol
+  local url="$(echo ${amqp/$proto/})"
+
+  # extract the user and password (if any)
+  local userpass="`echo $url | grep @ | cut -d@ -f1`"
+  local pass=`echo $userpass | grep : | cut -d: -f2`
+
+  local user
+  if [ -n "$pass" ]; then
+    user=`echo $userpass | grep : | cut -d: -f1`
+  else
+    user=$userpass
+  fi
+  echo $user
+
+  # extract the host
+  local hostport="$(echo ${url/$userpass@/} | cut -d/ -f1)"
+  # by request - try to extract the port
+  local port="$(echo $hostport | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
+
+  local host
+  if [ -n "$port" ]; then
+    host=`echo $hostport | grep : | cut -d: -f1`
+  else
+    host=$hostport
+    port="5672"
+  fi
+
+  # extract the path (if any)
+  local path="$(echo $url | grep / | cut -d/ -f2-)"
+
+  RABBITMQ_SERVER_HOST=$host
+  RABBITMQ_SERVER_USER=$user
+  RABBITMQ_SERVER_PASS=$pass
+  RABBITMQ_SERVER_PORT=$port
 }
 
 waiting_for_connection(){
@@ -77,9 +119,7 @@ update_postgresql_settings(){
 }
 
 update_rabbitmq_setting(){
-  ${JSON} -I -e "this.rabbitmq.url = 'amqp://${RABBITMQ_SERVER_HOST}'"
-  ${JSON} -I -e "this.rabbitmq.login = '${RABBITMQ_SERVER_USER}'"
-  ${JSON} -I -e "this.rabbitmq.password = '${RABBITMQ_SERVER_PASS}'"
+  ${JSON} -I -e "this.rabbitmq.url = '${RABBITMQ_SERVER_URL}'"
 }
 
 update_redis_settings(){
@@ -112,7 +152,7 @@ update_nginx_settings(){
 
   # setup HTTPS
   if [ -f "${SSL_CERTIFICATE_PATH}" -a -f "${SSL_KEY_PATH}" ]; then
-    cp ${SYSCONF_TEMPLATES_DIR}/nginx/onlyoffice-documentserver-ssl.conf ${NGINX_ONLYOFFICE_PATH}
+    cp ${NGINX_CONFD_PATH}/onlyoffice-documentserver-ssl.conf.template ${NGINX_ONLYOFFICE_PATH}
 
     # configure nginx
     sed 's,{{SSL_CERTIFICATE_PATH}},'"${SSL_CERTIFICATE_PATH}"',' -i ${NGINX_ONLYOFFICE_PATH}
@@ -139,7 +179,11 @@ update_nginx_settings(){
       sed '/{{ONLYOFFICE_HTTPS_HSTS_MAXAGE}}/d' -i ${NGINX_ONLYOFFICE_PATH}
     fi
   else
-    cp ${SYSCONF_TEMPLATES_DIR}/nginx/onlyoffice-documentserver.conf ${NGINX_ONLYOFFICE_PATH}
+    cp ${NGINX_CONFD_PATH}/onlyoffice-documentserver.conf.template ${NGINX_ONLYOFFICE_PATH}
+  fi
+  
+  if [ -f "${NGINX_ONLYOFFICE_EXAMPLE_PATH}" ]; then
+    sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_PATH}
   fi
 }
 
