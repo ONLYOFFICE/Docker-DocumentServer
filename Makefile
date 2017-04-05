@@ -5,20 +5,12 @@ REPO_URL := "deb http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/$
 UPDATE_LATEST := false
 
 ifneq (,$(findstring develop,$(GIT_BRANCH)))
-UPDATE_LATEST := true
-endif
-
-ifneq (,$(findstring release,$(GIT_BRANCH)))
-UPDATE_LATEST := true
-endif
-
-ifneq (,$(findstring hotfix,$(GIT_BRANCH)))
-UPDATE_LATEST := true
-endif
-
-ifeq ($(UPDATE_LATEST), true)
 DOCKER_TAGS += $(subst -,.,$(PACKAGE_VERSION))
 DOCKER_TAGS += latest
+else ifneq (,$(findstring release,$(GIT_BRANCH)))
+DOCKER_TAGS += $(subst -,.,$(PACKAGE_VERSION))
+else ifneq (,$(findstring hotfix,$(GIT_BRANCH)))
+DOCKER_TAGS += $(subst -,.,$(PACKAGE_VERSION))
 else
 DOCKER_TAGS += $(subst -,.,$(PACKAGE_VERSION))-$(subst /,-,$(GIT_BRANCH))
 endif
