@@ -64,7 +64,7 @@ To get access to your data from outside the container, you need to mount the vol
     sudo docker run -i -t -d -p 80:80 \
         -v /app/onlyoffice/DocumentServer/logs:/var/log/onlyoffice  \
         -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  \
-	-v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice onlyoffice/documentserver
+        -v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice onlyoffice/documentserver
 
 Storing the data on the host machine allows you to easily update ONLYOFFICE once the new version is released without losing your data.
 
