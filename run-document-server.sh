@@ -217,13 +217,13 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   if [ ${RABBITMQ_SERVER_HOST} != "localhost" ]; then
     update_rabbitmq_setting
   else
-    LOCAL_SERVICES+=("redis-server")
+    LOCAL_SERVICES+=("rabbitmq-server")
   fi
 
   if [ ${REDIS_SERVER_HOST} != "localhost" ]; then
     update_redis_settings
   else
-    LOCAL_SERVICES+=("rabbitmq-server")
+    LOCAL_SERVICES+=("redis-server")
   fi
 else
   # no need to update settings just wait for remote data
