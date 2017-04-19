@@ -40,9 +40,9 @@ Integrating it with ONLYOFFICE Community Server you will be able to:
 
 * **RAM**: 4 GB or more
 * **CPU**: dual-core 2 GHz or higher
-* **Swap file**: at least 2 GB
+* **Swap**: at least 2 GB
 * **HDD**: at least 2 GB of free space
-* **Distributive**: 64-bit Red Hat, CentOS or other compatible distributive with kernel version 3.8 or later, 64-bit Debian, Ubuntu or other compatible distributive with kernel version 3.8 or later
+* **Distribution**: 64-bit Red Hat, CentOS or other compatible distributive with kernel version 3.8 or later, 64-bit Debian, Ubuntu or other compatible distributive with kernel version 3.8 or later
 * **Docker**: version 1.9.0 or later
 
 ## Running Docker Image
