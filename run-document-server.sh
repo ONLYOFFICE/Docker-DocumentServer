@@ -266,6 +266,7 @@ for i in ${LOCAL_SERVICES[@]}; do
 done
 
 if [ ${PG_NEW_CLUSTER} = "true" ]; then
+  create_postgresql_db
   create_postgresql_tbl
 fi
 
