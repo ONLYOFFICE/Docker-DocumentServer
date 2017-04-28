@@ -33,6 +33,11 @@ JSON="json -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
 
 LOCAL_SERVICES=()
 
+PG_VERSION=9.3
+PG_NAME=main
+PGDATA=/var/lib/postgresql/${PG_VERSION}/${PG_NAME}
+PG_NEW_CLUSTER=false
+
 read_setting(){
   POSTGRESQL_SERVER_HOST=${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}
   POSTGRESQL_SERVER_PORT=${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}
@@ -127,7 +132,24 @@ update_redis_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.redis.port = '${REDIS_SERVER_PORT}'"
 }
 
+create_postgresql_cluster(){
+  local pg_conf_dir=/etc/postgresql/${PG_VERSION}/${PG_NAME}
+  local postgresql_conf=$pg_conf_dir/postgresql.conf
+  local hba_conf=$pg_conf_dir/pg_hba.conf
+
+  mv $postgresql_conf $postgresql_conf.backup
+  mv $hba_conf $hba_conf.backup
+  
+  pg_createcluster ${PG_VERSION} ${PG_NAME}
+}
+
 create_postgresql_db(){
+  sudo -u postgres psql -c "CREATE DATABASE onlyoffice;"
+  sudo -u postgres psql -c "CREATE USER onlyoffice WITH password 'onlyoffice';"
+  sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;"
+}
+
+create_postgresql_tbl(){
   CONNECTION_PARAMS="-h${POSTGRESQL_SERVER_HOST} -U${POSTGRESQL_SERVER_USER} -w"
   if [ -n "${POSTGRESQL_SERVER_PASS}" ]; then
     export PGPASSWORD=${POSTGRESQL_SERVER_PASS}
@@ -209,8 +231,12 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   if [ ${POSTGRESQL_SERVER_HOST} != "localhost" ]; then
     update_postgresql_settings
     waiting_for_postgresql
-    create_postgresql_db
+    create_postgresql_tbl
   else
+    if [ ! -d ${PGDATA} ]; then
+      create_postgresql_cluster
+      PG_NEW_CLUSTER=true
+    fi
     LOCAL_SERVICES+=("postgresql")
   fi
 
@@ -238,6 +264,11 @@ fi
 for i in ${LOCAL_SERVICES[@]}; do
   service $i start
 done
+
+if [ ${PG_NEW_CLUSTER} = "true" ]; then
+  create_postgresql_db
+  create_postgresql_tbl
+fi
 
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_postgresql
