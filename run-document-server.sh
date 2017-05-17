@@ -3,6 +3,7 @@
 APP_DIR="/var/www/onlyoffice/documentserver"
 DATA_DIR="/var/www/onlyoffice/Data"
 LOG_DIR="/var/log/onlyoffice/documentserver"
+CONF_DIR="/etc/onlyoffice/documentserver"
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
 ONLYOFFICE_DATA_CONTAINER_HOST=${ONLYOFFICE_DATA_CONTAINER_HOST:-localhost}
@@ -27,9 +28,11 @@ NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-$(grep processor /proc/cpuinfo | wc -l)}
 NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
 
-ONLYOFFICE_DEFAULT_CONFIG=/etc/onlyoffice/documentserver/default.json
+ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/default.json
+ONLYOFFICE_LOG4JS_CONFIG=${CONF_DIR}/log4js/production.json
 
 JSON="json -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
+JSON_LOG="json -q -f ${ONLYOFFICE_LOG4JS_CONFIG}"
 
 LOCAL_SERVICES=()
 
@@ -50,6 +53,8 @@ read_setting(){
 
   REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}
   REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-$(${JSON} services.CoAuthoring.redis.port)}
+
+  DS_LOG_LEVEL=${DS_LOG_LEVEL:-$(${JSON_LOG} levels.nodeJS)}
 }
 
 parse_rabbitmq_url(){
@@ -216,6 +221,10 @@ update_supervisor_settings(){
   cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
 }
 
+update_log_settings(){
+   ${JSON_LOG} -I -e "this.levels.nodeJS = '${DS_LOG_LEVEL}'"
+}
+
 # create base folders
 for i in converter docservice spellchecker metrics gc; do
   mkdir -p "${LOG_DIR}/$i"
@@ -226,6 +235,8 @@ mkdir -p ${LOG_DIR}-example
 if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
   read_setting
+
+  update_log_settings
 
   # update settings by env variables
   if [ ${POSTGRESQL_SERVER_HOST} != "localhost" ]; then
