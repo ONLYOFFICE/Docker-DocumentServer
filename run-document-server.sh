@@ -139,7 +139,7 @@ create_postgresql_cluster(){
 
   mv $postgresql_conf $postgresql_conf.backup
   mv $hba_conf $hba_conf.backup
-  
+
   pg_createcluster ${PG_VERSION} ${PG_NAME}
 }
 
@@ -203,7 +203,7 @@ update_nginx_settings(){
   else
     cp ${NGINX_CONFD_PATH}/onlyoffice-documentserver.conf.template ${NGINX_ONLYOFFICE_PATH}
   fi
-  
+
   if [ -f "${NGINX_ONLYOFFICE_EXAMPLE_PATH}" ]; then
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_PATH}
   fi
