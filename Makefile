@@ -1,3 +1,9 @@
+COMPANY_NAME ?= onlyoffice
+GIT_BRANCH ?= develop
+PRODUCT_NAME ?= documentserver-integration
+PRODUCT_VERSION ?= 0.0.0
+BUILD_NUMBER ?= 0
+
 PACKAGE_VERSION := $(PRODUCT_VERSION)-$(BUILD_NUMBER)
 
 REPO_URL := "deb http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/$(COMPANY_NAME)-$(PRODUCT_NAME)/$(GIT_BRANCH)/$(PACKAGE_VERSION)/ repo/"
