@@ -1,5 +1,5 @@
 FROM ubuntu:14.04
-MAINTAINER Ascensio System SIA <support@onlyoffice.com>
+LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive
 
