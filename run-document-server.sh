@@ -3,6 +3,7 @@
 APP_DIR="/var/www/onlyoffice/documentserver"
 DATA_DIR="/var/www/onlyoffice/Data"
 LOG_DIR="/var/log/onlyoffice/documentserver"
+CONF_DIR="/etc/onlyoffice/documentserver"
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
 ONLYOFFICE_DATA_CONTAINER_HOST=${ONLYOFFICE_DATA_CONTAINER_HOST:-localhost}
@@ -15,7 +16,7 @@ CA_CERTIFICATES_PATH=${CA_CERTIFICATES_PATH:-${SSL_CERTIFICATES_DIR}/ca-certific
 SSL_DHPARAM_PATH=${SSL_DHPARAM_PATH:-${SSL_CERTIFICATES_DIR}/dhparam.pem}
 SSL_VERIFY_CLIENT=${SSL_VERIFY_CLIENT:-off}
 ONLYOFFICE_HTTPS_HSTS_ENABLED=${ONLYOFFICE_HTTPS_HSTS_ENABLED:-true}
-ONLYOFFICE_HTTPS_HSTS_MAXAGE=${ONLYOFFICE_HTTPS_HSTS_MAXAG:-31536000}
+ONLYOFFICE_HTTPS_HSTS_MAXAGE=${ONLYOFFICE_HTTPS_HSTS_MAXAGE:-31536000}
 SYSCONF_TEMPLATES_DIR="/app/onlyoffice/setup/config"
 
 NGINX_CONFD_PATH="/etc/nginx/conf.d";
@@ -27,9 +28,11 @@ NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-$(grep processor /proc/cpuinfo | wc -l)}
 NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
 
-ONLYOFFICE_DEFAULT_CONFIG=/etc/onlyoffice/documentserver/default.json
+ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/default.json
+ONLYOFFICE_LOG4JS_CONFIG=${CONF_DIR}/log4js/production.json
 
 JSON="json -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
+JSON_LOG="json -q -f ${ONLYOFFICE_LOG4JS_CONFIG}"
 
 LOCAL_SERVICES=()
 
@@ -50,6 +53,8 @@ read_setting(){
 
   REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}
   REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-$(${JSON} services.CoAuthoring.redis.port)}
+
+  DS_LOG_LEVEL=${DS_LOG_LEVEL:-$(${JSON_LOG} levels.nodeJS)}
 }
 
 parse_rabbitmq_url(){
@@ -139,7 +144,7 @@ create_postgresql_cluster(){
 
   mv $postgresql_conf $postgresql_conf.backup
   mv $hba_conf $hba_conf.backup
-  
+
   pg_createcluster ${PG_VERSION} ${PG_NAME}
 }
 
@@ -182,28 +187,26 @@ update_nginx_settings(){
 
     # if dhparam path is valid, add to the config, otherwise remove the option
     if [ -r "${SSL_DHPARAM_PATH}" ]; then
-      sed 's,{{SSL_DHPARAM_PATH}},'"${SSL_DHPARAM_PATH}"',' -i ${NGINX_ONLYOFFICE_PATH}
+      sed 's,\(\#* *\)\?\(ssl_dhparam \).*\(;\)$,'"\2${SSL_DHPARAM_PATH}\3"',' -i ${NGINX_ONLYOFFICE_PATH}
     else
-      sed '/ssl_dhparam {{SSL_DHPARAM_PATH}};/d' -i ${NGINX_ONLYOFFICE_PATH}
+      sed '/ssl_dhparam/d' -i ${NGINX_ONLYOFFICE_PATH}
     fi
 
-    sed 's,{{SSL_VERIFY_CLIENT}},'"${SSL_VERIFY_CLIENT}"',' -i ${NGINX_ONLYOFFICE_PATH}
+    sed 's,\(ssl_verify_client \).*\(;\)$,'"\1${SSL_VERIFY_CLIENT}\2"',' -i ${NGINX_ONLYOFFICE_PATH}
 
     if [ -f "${CA_CERTIFICATES_PATH}" ]; then
-      sed 's,{{CA_CERTIFICATES_PATH}},'"${CA_CERTIFICATES_PATH}"',' -i ${NGINX_ONLYOFFICE_PATH}
-    else
-      sed '/{{CA_CERTIFICATES_PATH}}/d' -i ${NGINX_ONLYOFFICE_PATH}
+      sed '/ssl_verify_client/a '"ssl_client_certificate ${CA_CERTIFICATES_PATH}"';' -i ${NGINX_ONLYOFFICE_PATH}
     fi
 
     if [ "${ONLYOFFICE_HTTPS_HSTS_ENABLED}" == "true" ]; then
-      sed 's/{{ONLYOFFICE_HTTPS_HSTS_MAXAGE}}/'"${ONLYOFFICE_HTTPS_HSTS_MAXAGE}"'/' -i ${NGINX_ONLYOFFICE_PATH}
+      sed 's,\(max-age=\).*\(;\)$,'"\1${ONLYOFFICE_HTTPS_HSTS_MAXAGE}\2"',' -i ${NGINX_ONLYOFFICE_PATH}
     else
-      sed '/{{ONLYOFFICE_HTTPS_HSTS_MAXAGE}}/d' -i ${NGINX_ONLYOFFICE_PATH}
+      sed '/max-age=/d' -i ${NGINX_ONLYOFFICE_PATH}
     fi
   else
     cp ${NGINX_CONFD_PATH}/onlyoffice-documentserver.conf.template ${NGINX_ONLYOFFICE_PATH}
   fi
-  
+
   if [ -f "${NGINX_ONLYOFFICE_EXAMPLE_PATH}" ]; then
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_PATH}
   fi
@@ -216,6 +219,10 @@ update_supervisor_settings(){
   cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
 }
 
+update_log_settings(){
+   ${JSON_LOG} -I -e "this.levels.nodeJS = '${DS_LOG_LEVEL}'"
+}
+
 # create base folders
 for i in converter docservice spellchecker metrics gc; do
   mkdir -p "${LOG_DIR}/$i"
@@ -226,6 +233,8 @@ mkdir -p ${LOG_DIR}-example
 if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
   read_setting
+
+  update_log_settings
 
   # update settings by env variables
   if [ ${POSTGRESQL_SERVER_HOST} != "localhost" ]; then
