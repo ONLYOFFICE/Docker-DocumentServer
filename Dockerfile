@@ -23,8 +23,8 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service nginx stop && \
     rm -rf /var/lib/apt/lists/*
 
-ADD config /app/onlyoffice/setup/config/
-ADD run-document-server.sh /app/onlyoffice/run-document-server.sh
+COPY config /app/onlyoffice/setup/config/
+COPY run-document-server.sh /app/onlyoffice/run-document-server.sh
 
 EXPOSE 80 443
 
