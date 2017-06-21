@@ -12,7 +12,40 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
     apt-get -y update && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
-    apt-get --force-yes -yq install update-notifier-common=0.154.1 software-properties-common adduser postgresql postgresql-client redis-server rabbitmq-server nginx-extras nodejs libstdc++6 libcurl3 libxml2 libboost-regex-dev zlib1g supervisor pwgen fonts-dejavu fonts-liberation ttf-mscorefonts-installer fonts-crosextra-carlito fonts-takao-gothic fonts-opensymbol libxss1 libgtkglext1 libcairo2 xvfb libxtst6 libgconf2-4 libasound2 bomstrip libnspr4 libnss3 libnss3-nssdb nano htop && \
+    apt-get --force-yes -yq install adduser \
+                                    bomstrip \
+                                    fonts-crosextra-carlito \
+                                    fonts-dejavu \
+                                    fonts-liberation \
+                                    fonts-opensymbol \
+                                    fonts-takao-gothic \
+                                    htop \
+                                    libasound2 \
+                                    libboost-regex-dev \
+                                    libcairo2 \
+                                    libcurl3 \
+                                    libgconf2-4 \
+                                    libgtkglext1 \
+                                    libnspr4 \
+                                    libnss3 \
+                                    libnss3-nssdb \
+                                    libstdc++6 \
+                                    libxml2 \
+                                    libxss1 \
+                                    libxtst6 \
+                                    nano \
+                                    nginx-extras \
+                                    nodejs \
+                                    postgresql \
+                                    postgresql-client \
+                                    pwgen \
+                                    rabbitmq-server \
+                                    redis-server \
+                                    software-properties-common \
+                                    supervisor \
+                                    ttf-mscorefonts-installer \
+                                    xvfb \
+                                    zlib1g && \
     sudo -u postgres psql -c "CREATE DATABASE onlyoffice;" && \
     sudo -u postgres psql -c "CREATE USER onlyoffice WITH password 'onlyoffice';" && \
     sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;" && \ 
