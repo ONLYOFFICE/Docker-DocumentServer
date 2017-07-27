@@ -58,15 +58,21 @@ Use this command if you wish to install ONLYOFFICE Document Server separately. T
 All the data are stored in the specially-designated directories, **data volumes**, at the following location:
 * **/var/log/onlyoffice** for ONLYOFFICE Document Server logs
 * **/var/www/onlyoffice/Data** for certificates
+* **/var/lib/onlyoffice** for file cache
+* **/var/lib/postgresql** for database
 
 To get access to your data from outside the container, you need to mount the volumes. It can be done by specifying the '-v' option in the docker run command.
 
     sudo docker run -i -t -d -p 80:80 \
         -v /app/onlyoffice/DocumentServer/logs:/var/log/onlyoffice  \
         -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  \
-        -v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice onlyoffice/documentserver
+        -v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice \
+        -v /app/onlyoffice/DocumentServer/db:/var/lib/postgresql  onlyoffice/documentserver
 
-Storing the data on the host machine allows you to easily update ONLYOFFICE once the new version is released without losing your data.
+Normally, you do not need to store container data because the container's operation does not depend on its state. Saving data will be useful:
+* For easy access to container data, such as logs
+* To remove the limit on the size of the data inside the container
+* When using services launched outside the container such as PostgreSQL, Redis, RabbitMQ
 
 ### Running ONLYOFFICE Document Server on Different Port
 
