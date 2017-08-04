@@ -177,14 +177,18 @@ Below is the complete list of parameters that can be set using environment varia
 
 ONLYOFFICE Document Server is a part of ONLYOFFICE Community Edition that comprises also Community Server and Mail Server. To install them, follow these easy steps:
 
-**STEP 1**: Create the 'onlyoffice' network.
+**STEP 1**: Create the `onlyoffice` network.
 
 ```bash
 docker network create --driver bridge onlyoffice
 ```
-Than launch containers on it using the 'docker run --net onlyoffice' option:
+Then launch containers on it using the 'docker run --net onlyoffice' option:
 
-**STEP 1**: Install ONLYOFFICE Document Server.
+**STEP 2**: Install MySQL.
+
+Follow [these steps](#installing-mysql) to install MySQL server.
+
+**STEP 3**: Install ONLYOFFICE Document Server.
 
 ```bash
 sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-document-server \
@@ -194,34 +198,55 @@ sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-doc
 	onlyoffice/documentserver
 ```
 
-**STEP 2**: Install ONLYOFFICE Mail Server. 
+**STEP 4**: Install ONLYOFFICE Mail Server. 
 
 For the mail server correct work you need to specify its hostname 'yourdomain.com'.
-To learn more, refer to the [ONLYOFFICE Mail Server documentation](https://github.com/ONLYOFFICE/Docker-MailServer "ONLYOFFICE Mail Server documentation").
 
 ```bash
-sudo docker run --net onlyoffice --privileged -i -t -d --restart=always --name onlyoffice-mail-server \
-	-p 25:25 -p 143:143 -p 587:587 \
-	-v /app/onlyoffice/MailServer/data:/var/vmail \
-	-v /app/onlyoffice/MailServer/data/certs:/etc/pki/tls/mailserver \
-	-v /app/onlyoffice/MailServer/logs:/var/log \
-	-v /app/onlyoffice/MailServer/mysql:/var/lib/mysql \
-	-h yourdomain.com \
-	onlyoffice/mailserver
+sudo docker run --init --net onlyoffice --privileged -i -t -d --restart=always --name onlyoffice-mail-server -p 25:25 -p 143:143 -p 587:587 \
+ -e MYSQL_SERVER=onlyoffice-mysql-server \
+ -e MYSQL_SERVER_PORT=3306 \
+ -e MYSQL_ROOT_USER=root \
+ -e MYSQL_ROOT_PASSWD=my-secret-pw \
+ -e MYSQL_SERVER_DB_NAME=onlyoffice_mailserver \
+ -v /app/onlyoffice/MailServer/data:/var/vmail \
+ -v /app/onlyoffice/MailServer/data/certs:/etc/pki/tls/mailserver \
+ -v /app/onlyoffice/MailServer/logs:/var/log \
+ -h yourdomain.com \
+ onlyoffice/mailserver
 ```
 
-**STEP 3**: Install ONLYOFFICE Community Server
+The additional parameters for mail server are available [here](https://github.com/ONLYOFFICE/Docker-CommunityServer/blob/master/docker-compose.yml#L75).
+
+To learn more, refer to the [ONLYOFFICE Mail Server documentation](https://github.com/ONLYOFFICE/Docker-MailServer "ONLYOFFICE Mail Server documentation").
+
+**STEP 5**: Install ONLYOFFICE Community Server
 
 ```bash
-sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-community-server \
-	-p 80:80 -p 5222:5222 -p 443:443 \
-	-v /app/onlyoffice/CommunityServer/data:/var/www/onlyoffice/Data \
-	-v /app/onlyoffice/CommunityServer/mysql:/var/lib/mysql \
-	-v /app/onlyoffice/CommunityServer/logs:/var/log/onlyoffice \
-	-v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/DocumentServerData \
-	-e DOCUMENT_SERVER_PORT_80_TCP_ADDR=onlyoffice-document-server \
-	-e MAIL_SERVER_DB_HOST=onlyoffice-mail-server \
-	onlyoffice/communityserver
+sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-community-server -p 80:80 -p 443:443 -p 5222:5222 \
+ -e MYSQL_SERVER_ROOT_PASSWORD=my-secret-pw \
+ -e MYSQL_SERVER_DB_NAME=onlyoffice \
+ -e MYSQL_SERVER_HOST=onlyoffice-mysql-server \
+ -e MYSQL_SERVER_USER=onlyoffice_user \
+ -e MYSQL_SERVER_PASS=onlyoffice_pass \
+ 
+ -e DOCUMENT_SERVER_PORT_80_TCP_ADDR=onlyoffice-document-server \
+ 
+ -e MAIL_SERVER_API_HOST=${MAIL_SERVER_IP} \
+ -e MAIL_SERVER_DB_HOST=onlyoffice-mysql-server \
+ -e MAIL_SERVER_DB_NAME=onlyoffice_mailserver \
+ -e MAIL_SERVER_DB_PORT=3306 \
+ -e MAIL_SERVER_DB_USER=root \
+ -e MAIL_SERVER_DB_PASS=my-secret-pw \
+ 
+ -v /app/onlyoffice/CommunityServer/data:/var/www/onlyoffice/Data \
+ -v /app/onlyoffice/CommunityServer/logs:/var/log/onlyoffice \
+ onlyoffice/communityserver
+```
+
+Where `${MAIL_SERVER_IP}` is the IP address for **ONLYOFFICE Mail Server**. You can easily get it using the command:
+```
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' onlyoffice-mail-server
 ```
 
 Alternatively, you can use an automatic installation script to install the whole ONLYOFFICE Community Edition at once. For the mail server correct work you need to specify its hostname 'yourdomain.com'.
