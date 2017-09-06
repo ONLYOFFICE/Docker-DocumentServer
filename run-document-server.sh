@@ -34,9 +34,11 @@ JWT_HEADER=${JWT_HEADER:-Authorization}
 
 ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/default.json
 ONLYOFFICE_LOG4JS_CONFIG=${CONF_DIR}/log4js/production.json
+ONLYOFFICE_EXAMPLE_CONFIG=${CONF_DIR}-example/default.json
 
 JSON="json -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
 JSON_LOG="json -q -f ${ONLYOFFICE_LOG4JS_CONFIG}"
+JSON_EXAMPLE="json -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
 
 LOCAL_SERVICES=()
 
@@ -152,6 +154,12 @@ update_jwt_settings(){
 
     ${JSON} -I -e "this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'"
     ${JSON} -I -e "this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'"
+
+    if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ]; then
+      ${JSON_EXAMPLE} -I -e "this.server.token.enable = '${JWT_ENABLED}'"
+      ${JSON_EXAMPLE} -I -e "this.server.token.secret = '${JWT_SECRET}'"
+      ${JSON_EXAMPLE} -I -e "this.server.token.authorizationHeader = '${JWT_HEADER}'"
+    fi
   fi
 }
 
