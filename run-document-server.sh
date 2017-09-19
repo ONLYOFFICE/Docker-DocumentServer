@@ -28,11 +28,17 @@ NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-$(grep processor /proc/cpuinfo | wc -l)}
 NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
 
+JWT_ENABLED=${JWT_ENABLED:-false}
+JWT_SECRET=${JWT_SECRET:-secret}
+JWT_HEADER=${JWT_HEADER:-Authorization}
+
 ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/default.json
 ONLYOFFICE_LOG4JS_CONFIG=${CONF_DIR}/log4js/production.json
+ONLYOFFICE_EXAMPLE_CONFIG=${CONF_DIR}-example/default.json
 
 JSON="json -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
 JSON_LOG="json -q -f ${ONLYOFFICE_LOG4JS_CONFIG}"
+JSON_EXAMPLE="json -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
 
 LOCAL_SERVICES=()
 
@@ -136,6 +142,27 @@ update_redis_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.redis.port = '${REDIS_SERVER_PORT}'"
 }
 
+update_jwt_settings(){
+  if [ "${JWT_ENABLED}" == "true" ]; then
+    ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = '${JWT_ENABLED}'"
+    ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.inbox = '${JWT_ENABLED}'"
+    ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.outbox = '${JWT_ENABLED}'"
+
+    ${JSON} -I -e "this.services.CoAuthoring.secret.inbox.string = '${JWT_SECRET}'"
+    ${JSON} -I -e "this.services.CoAuthoring.secret.outbox.string = '${JWT_SECRET}'"
+    ${JSON} -I -e "this.services.CoAuthoring.secret.session.string = '${JWT_SECRET}'"
+
+    ${JSON} -I -e "this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'"
+    ${JSON} -I -e "this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'"
+
+    if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ]; then
+      ${JSON_EXAMPLE} -I -e "this.server.token.enable = '${JWT_ENABLED}'"
+      ${JSON_EXAMPLE} -I -e "this.server.token.secret = '${JWT_SECRET}'"
+      ${JSON_EXAMPLE} -I -e "this.server.token.authorizationHeader = '${JWT_HEADER}'"
+    fi
+  fi
+}
+
 create_postgresql_cluster(){
   local pg_conf_dir=/etc/postgresql/${PG_VERSION}/${PG_NAME}
   local postgresql_conf=$pg_conf_dir/postgresql.conf
@@ -234,6 +261,8 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   read_setting
 
   update_log_settings
+
+  update_jwt_settings
 
   # update settings by env variables
   if [ ${POSTGRESQL_SERVER_HOST} != "localhost" ]; then
