@@ -46,6 +46,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
                                     ttf-mscorefonts-installer \
                                     xvfb \
                                     zlib1g && \
+    [  $(ls -l /usr/share/fonts/truetype/msttcorefonts | wc -l) -eq 61 ] && \
     sudo -u postgres psql -c "CREATE DATABASE onlyoffice;" && \
     sudo -u postgres psql -c "CREATE USER onlyoffice WITH password 'onlyoffice';" && \
     sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;" && \ 
