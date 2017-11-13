@@ -2,7 +2,9 @@
 
 APP_DIR="/var/www/onlyoffice/documentserver"
 DATA_DIR="/var/www/onlyoffice/Data"
-LOG_DIR="/var/log/onlyoffice/documentserver"
+LOG_DIR="/var/log/onlyoffice"
+DS_LOG_DIR="${LOG_DIR}/documentserver"
+LIB_DIR="/var/lib/onlyoffice"
 CONF_DIR="/etc/onlyoffice/documentserver"
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
@@ -251,10 +253,16 @@ update_log_settings(){
 
 # create base folders
 for i in converter docservice spellchecker metrics gc; do
-  mkdir -p "${LOG_DIR}/$i"
+  mkdir -p "${DS_LOG_DIR}/$i"
 done
 
-mkdir -p ${LOG_DIR}-example
+mkdir -p ${DS_LOG_DIR}-example
+
+# change folder rights
+for i in ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
+  chown -R onlyoffice:onlyoffice "$i"
+  chmod -R 755 "$i"
+done
 
 if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 

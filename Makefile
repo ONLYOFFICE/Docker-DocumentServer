@@ -1,6 +1,6 @@
 COMPANY_NAME ?= onlyoffice
 GIT_BRANCH ?= origin/develop
-PRODUCT_NAME ?= documentserver-integration
+PRODUCT_NAME ?= documentserver-ie
 PRODUCT_VERSION ?= 0.0.0
 BUILD_NUMBER ?= 0
 
