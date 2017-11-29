@@ -24,7 +24,8 @@ SYSCONF_TEMPLATES_DIR="/app/onlyoffice/setup/config"
 NGINX_CONFD_PATH="/etc/nginx/conf.d";
 NGINX_ONLYOFFICE_CONF="${NGINX_CONFD_PATH}/onlyoffice-documentserver.conf"
 NGINX_ONLYOFFICE_PATH="${CONF_DIR}/nginx"
-NGINX_ONLYOFFICE_EXAMPLE_PATH="${NGINX_ONLYOFFICE_PATH}/includes/onlyoffice-documentserver-example.conf"
+NGINX_ONLYOFFICE_EXAMPLE_PATH="${CONF_DIR}-example/nginx"
+NGINX_ONLYOFFICE_EXAMPLE_CONF="${NGINX_ONLYOFFICE_EXAMPLE_PATH}/includes/onlyoffice-documentserver-example.conf"
 
 NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
@@ -235,8 +236,8 @@ update_nginx_settings(){
     ln -sf ${NGINX_ONLYOFFICE_PATH}/onlyoffice-documentserver.conf.template ${NGINX_ONLYOFFICE_CONF}
   fi
 
-  if [ -f "${NGINX_ONLYOFFICE_EXAMPLE_PATH}" ]; then
-    sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_PATH}
+  if [ -f "${NGINX_ONLYOFFICE_EXAMPLE_CONF}" ]; then
+    sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_CONF}
   fi
 }
 
