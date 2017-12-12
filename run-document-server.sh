@@ -45,7 +45,7 @@ JSON_EXAMPLE="json -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
 
 LOCAL_SERVICES=()
 
-PG_VERSION=9.3
+PG_VERSION=9.5
 PG_NAME=main
 PGDATA=/var/lib/postgresql/${PG_VERSION}/${PG_NAME}
 PG_NEW_CLUSTER=false
@@ -213,6 +213,9 @@ update_nginx_settings(){
     # configure nginx
     sed 's,{{SSL_CERTIFICATE_PATH}},'"${SSL_CERTIFICATE_PATH}"',' -i ${NGINX_ONLYOFFICE_CONF}
     sed 's,{{SSL_KEY_PATH}},'"${SSL_KEY_PATH}"',' -i ${NGINX_ONLYOFFICE_CONF}
+
+    # turn on http2
+    sed 's,\(443 ssl\),\1 http2,' -i ${NGINX_ONLYOFFICE_CONF}
 
     # if dhparam path is valid, add to the config, otherwise remove the option
     if [ -r "${SSL_DHPARAM_PATH}" ]; then
