@@ -73,6 +73,7 @@ RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/onlyoffice.list && \
     apt-get -y update && \
     service postgresql start && \
     apt-get --allow-unauthenticated -yq install $PRODUCT_NAME && \
+    documentserver-static-gzip.sh && \
     service postgresql stop && \
     service supervisor stop && \
     chmod 755 /app/onlyoffice/*.sh && \
