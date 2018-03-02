@@ -10,7 +10,6 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     locale-gen en_US.UTF-8 && \
     curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
     apt-get -y update && \
-    echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
     apt-get -yq install \
         adduser \
         bomstrip \
