@@ -6,7 +6,7 @@ ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=nonint
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get -y update && \
     apt-get -yq install wget apt-transport-https curl locales && \
-    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CB2DE8E5 && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 0x8320ca65cb2de8e5 && \
     locale-gen en_US.UTF-8 && \
     curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
     apt-get -y update && \
