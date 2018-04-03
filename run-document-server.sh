@@ -45,9 +45,10 @@ JSON_EXAMPLE="json -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
 
 LOCAL_SERVICES=()
 
+PG_ROOT=/var/lib/postgresql
 PG_VERSION=9.5
 PG_NAME=main
-PGDATA=/var/lib/postgresql/${PG_VERSION}/${PG_NAME}
+PGDATA=${PG_ROOT}/${PG_VERSION}/${PG_NAME}
 PG_NEW_CLUSTER=false
 
 read_setting(){
@@ -282,6 +283,11 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     waiting_for_postgresql
     create_postgresql_tbl
   else
+    # change rights for postgres directory
+    chown -R postgres:postgres ${PG_ROOT}
+    chmod -R 700 ${PG_ROOT}
+
+    # create new db if it isn't exist
     if [ ! -d ${PGDATA} ]; then
       create_postgresql_cluster
       PG_NEW_CLUSTER=true
