@@ -13,6 +13,7 @@
 * [Installing ONLYOFFICE Document Server integrated with Community and Mail Servers](#installing-onlyoffice-document-server-integrated-with-community-and-mail-servers)
 * [Issues](#issues)
     - [Docker Issues](#docker-issues)
+    - [Document Server usage Issues](#document-server-usage-issues)
 * [Project Information](#project-information)
 * [User Feedback and Support](#user-feedback-and-support)
 
@@ -280,6 +281,16 @@ docker-compose up -d
 As a relatively new project Docker is being worked on and actively developed by its community. So it's recommended to use the latest version of Docker, because the issues that you encounter might have already been fixed with a newer Docker release.
 
 The known Docker issue with ONLYOFFICE Document Server with rpm-based distributives is that sometimes the processes fail to start inside Docker container. Fedora and RHEL/CentOS users should try disabling selinux with setenforce 0. If it fixes the issue then you can either stick with SELinux disabled which is not recommended by RedHat, or switch to using Ubuntu.
+
+### Document Server usage issues
+
+Due to the operational characteristic, **Document Server** saves a document only after the document has been closed by all the users who edited it. To avoid data loss, you must forcefully disconnect the **Document Server** users when you need to stop **Document Server** in cases of the application update, server reboot etc. To do that, execute the following script on the server where **Document Server** is installed:
+
+```
+sudo docker exec <CONTAINER> documentserver-prepare4shutdown.sh
+```
+
+Please note, that both executing the script and disconnecting users may take a long time (up to 5 minutes).
 
 ## Project Information
 
