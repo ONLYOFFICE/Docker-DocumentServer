@@ -72,4 +72,4 @@ RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/onlyoffice.list && \
 
 VOLUME /etc/onlyoffice /var/log/onlyoffice /var/lib/onlyoffice /var/www/onlyoffice/Data /var/lib/postgresql /usr/share/fonts/truetype/custom
 
-CMD bash -C '/app/onlyoffice/run-document-server.sh';'bash'
+ENTRYPOINT /app/onlyoffice/run-document-server.sh

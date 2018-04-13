@@ -343,3 +343,5 @@ service nginx start
 # Regenerate the fonts list and the fonts thumbnails
 documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
+
+tail -f /var/log/onlyoffice/**/*
