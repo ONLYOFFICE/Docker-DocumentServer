@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Define '**' behavior explicitly
+shopt -s globstar
+
 APP_DIR="/var/www/onlyoffice/documentserver"
 DATA_DIR="/var/www/onlyoffice/Data"
 LOG_DIR="/var/log/onlyoffice"
