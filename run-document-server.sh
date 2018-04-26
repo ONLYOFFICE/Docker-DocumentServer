@@ -25,8 +25,8 @@ ONLYOFFICE_HTTPS_HSTS_MAXAGE=${ONLYOFFICE_HTTPS_HSTS_MAXAGE:-31536000}
 SYSCONF_TEMPLATES_DIR="/app/onlyoffice/setup/config"
 
 NGINX_CONFD_PATH="/etc/nginx/conf.d";
-NGINX_ONLYOFFICE_CONF="${NGINX_CONFD_PATH}/onlyoffice-documentserver.conf"
 NGINX_ONLYOFFICE_PATH="${CONF_DIR}/nginx"
+NGINX_ONLYOFFICE_CONF="${NGINX_ONLYOFFICE_PATH}/onlyoffice-documentserver.conf"
 NGINX_ONLYOFFICE_EXAMPLE_PATH="${CONF_DIR}-example/nginx"
 NGINX_ONLYOFFICE_EXAMPLE_CONF="${NGINX_ONLYOFFICE_EXAMPLE_PATH}/includes/onlyoffice-documentserver-example.conf"
 
@@ -212,7 +212,7 @@ update_nginx_settings(){
 
   # setup HTTPS
   if [ -f "${SSL_CERTIFICATE_PATH}" -a -f "${SSL_KEY_PATH}" ]; then
-    ln -sf ${NGINX_ONLYOFFICE_PATH}/onlyoffice-documentserver-ssl.conf.template ${NGINX_ONLYOFFICE_CONF}
+    cp -f ${NGINX_ONLYOFFICE_PATH}/onlyoffice-documentserver-ssl.conf.template ${NGINX_ONLYOFFICE_CONF}
 
     # configure nginx
     sed 's,{{SSL_CERTIFICATE_PATH}},'"${SSL_CERTIFICATE_PATH}"',' -i ${NGINX_ONLYOFFICE_CONF}
