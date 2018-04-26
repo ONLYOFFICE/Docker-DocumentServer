@@ -272,6 +272,12 @@ for i in ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
   chmod -R 755 "$i"
 done
 
+# enable config modifications
+chmod ug+w \
+  ${ONLYOFFICE_DEFAULT_CONFIG} \
+  ${ONLYOFFICE_LOG4JS_CONFIG} \
+  ${ONLYOFFICE_EXAMPLE_CONFIG}
+
 if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
   read_setting
