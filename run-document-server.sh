@@ -347,4 +347,4 @@ service nginx start
 documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
-tail -f /var/log/onlyoffice/**/*
+tail -f /var/log/onlyoffice/**/*.log
