@@ -38,9 +38,9 @@ JWT_ENABLED=${JWT_ENABLED:-false}
 JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 
-ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/default.json
+ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/local.json
 ONLYOFFICE_LOG4JS_CONFIG=${CONF_DIR}/log4js/production.json
-ONLYOFFICE_EXAMPLE_CONFIG=${CONF_DIR}-example/default.json
+ONLYOFFICE_EXAMPLE_CONFIG=${CONF_DIR}-example/local.json
 
 JSON="json -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
 JSON_LOG="json -q -f ${ONLYOFFICE_LOG4JS_CONFIG}"
@@ -56,7 +56,7 @@ PG_NEW_CLUSTER=false
 
 read_setting(){
   POSTGRESQL_SERVER_HOST=${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}
-  POSTGRESQL_SERVER_PORT=${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}
+  POSTGRESQL_SERVER_PORT=${POSTGRESQL_SERVER_PORT:-5432}
   POSTGRESQL_SERVER_DB_NAME=${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}
   POSTGRESQL_SERVER_USER=${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}
   POSTGRESQL_SERVER_PASS=${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
@@ -65,7 +65,7 @@ read_setting(){
   parse_rabbitmq_url
 
   REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}
-  REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-$(${JSON} services.CoAuthoring.redis.port)}
+  REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
 
   DS_LOG_LEVEL=${DS_LOG_LEVEL:-$(${JSON_LOG} levels.nodeJS)}
 }
