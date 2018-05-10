@@ -13,4 +13,4 @@ jobs:
         - docker restart onlyoffice-documentserver
         - sleep 1m # for init of services
         - curl localhost/healthcheck # temp
-        - if [[ $(curl -s localhost/healthcheck) == "true" ]]; then exit 1; fi
+        - if [[ $(curl -s localhost/healthcheck) != "true" ]]; then exit 1; fi
