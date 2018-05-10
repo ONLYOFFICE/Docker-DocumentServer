@@ -1,0 +1,15 @@
+sudo: required
+
+language: generic
+services:
+  - docker
+jobs:
+  include:
+    - stage: Check restart of docker container
+      script:
+        - docker build -f onlyoffice-documentserver .
+        - docker run -itd --name onlyoffice
+        - sleep 1m # for init of services
+        - docker restart onlyoffice
+        - sleep 1m # for init of services
+        - docker exec onlyoffice cat /var/log/rabbitmq/startup_err | grep .
