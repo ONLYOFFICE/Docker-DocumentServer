@@ -8,8 +8,9 @@ jobs:
     - stage: Check restart of docker container
       script:
         - docker build -t onlyoffice-documentserver .
-        - docker run -itd --name onlyoffice-documentserver onlyoffice-documentserver
+        - docker run -itd --name onlyoffice-documentserver -p 80:80 onlyoffice-documentserver
         - sleep 1m # for init of services
         - docker restart onlyoffice-documentserver
         - sleep 1m # for init of services
-        - if [[ $(docker exec onlyoffice-documentserver cat /var/log/rabbitmq/startup_err | wc -c) -ne 0 ]]; then exit 1; fi
+        - curl localhost/healthcheck # temp
+        - if [[ $(curl -s localhost/healthcheck) == "true" ]]; then exit 1; fi
