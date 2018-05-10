@@ -10,10 +10,11 @@ jobs:
   include:
     - stage: Check restart of docker container
       script:
-        - docker build -t onlyoffice-documentserver .
-        - docker run -itd --name onlyoffice-documentserver -p 80:80 onlyoffice-documentserver
+        - docker run -itd --name onlyoffice-documentserver -p 80:80 onlyoffice/documentserver:latest
         - sleep 1m # for init of services
         - docker restart onlyoffice-documentserver
         - sleep 1m # for init of services
         - curl localhost/healthcheck # temp
         - if [[ $(curl -s localhost/healthcheck) != "true" ]]; then exit 1; fi
+
+
