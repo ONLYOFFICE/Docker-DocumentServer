@@ -12,4 +12,4 @@ jobs:
         - sleep 1m # for init of services
         - docker restart onlyoffice-documentserver
         - sleep 1m # for init of services
-        - docker exec onlyoffice-documentserver cat /var/log/rabbitmq/startup_err | grep .
+        - if [[ $(docker exec onlyoffice-documentserver cat /var/log/rabbitmq/startup_err | wc -c) -ne 0 ]]; then exit 1; fi
