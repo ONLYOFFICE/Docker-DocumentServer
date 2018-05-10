@@ -8,7 +8,7 @@ jobs:
     - stage: Check restart of docker container
       script:
         - docker build -t onlyoffice-documentserver .
-        - docker run -itd --name onlyoffice-documentserver onlyoffice/documentserver:5.0.7.38
+        - docker run -itd --name onlyoffice-documentserver onlyoffice-documentserver
         - sleep 1m # for init of services
         - docker restart onlyoffice-documentserver
         - sleep 1m # for init of services
