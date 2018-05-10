@@ -3,6 +3,10 @@ sudo: required
 language: generic
 services:
   - docker
+addons:
+  apt:
+    packages:
+      - docker-ce
 jobs:
   include:
     - stage: Check restart of docker container
