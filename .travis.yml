@@ -3,10 +3,9 @@ sudo: required
 language: generic
 services:
   - docker
-addons:
-  apt:
-    packages:
-      - docker-ce
+before_install:
+  - sudo apt-get update
+  - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
 jobs:
   include:
     - stage: Check restart of docker container
