@@ -63,7 +63,7 @@ ARG PRODUCT_NAME=onlyoffice-documentserver
 RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/onlyoffice.list && \
     apt-get -y update && \
     service postgresql start && \
-    apt-get --allow-unauthenticated -yq install $PRODUCT_NAME && \
+    apt-get -yq install $PRODUCT_NAME && \
     service postgresql stop && \
     service supervisor stop && \
     chmod 755 /app/onlyoffice/*.sh && \

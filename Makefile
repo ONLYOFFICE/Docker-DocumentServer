@@ -6,7 +6,7 @@ BUILD_NUMBER ?= 0
 
 PACKAGE_VERSION := $(PRODUCT_VERSION)-$(BUILD_NUMBER)
 
-REPO_URL := "deb http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/$(COMPANY_NAME)-$(PRODUCT_NAME)/$(GIT_BRANCH)/$(PACKAGE_VERSION)/ repo/"
+REPO_URL := "deb [trusted=yes] http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/$(COMPANY_NAME)-$(PRODUCT_NAME)/$(GIT_BRANCH)/$(PACKAGE_VERSION)/ repo/"
 
 UPDATE_LATEST := false
 
