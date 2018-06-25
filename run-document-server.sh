@@ -337,6 +337,9 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
 
   update_supervisor_settings
   service supervisor start
+  
+  # start cron to enable log rotating
+  service cron start
 fi
 
 # nginx used as a proxy, and as data container status service.
