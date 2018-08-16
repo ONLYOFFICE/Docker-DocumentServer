@@ -72,4 +72,4 @@ RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/onlyoffice.list && \
 
 VOLUME /var/log/onlyoffice /var/lib/onlyoffice /var/www/onlyoffice/Data /var/lib/postgresql /usr/share/fonts/truetype/custom
 
-CMD bash -C '/app/onlyoffice/run-document-server.sh';'ping 127.0.0.1'
+CMD bash -C '/app/onlyoffice/run-document-server.sh';bash -c 'while true; do echo "DocumentServer Running"; sleep 30; done'
