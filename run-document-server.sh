@@ -267,14 +267,10 @@ done
 mkdir -p ${DS_LOG_DIR}-example
 
 # change folder rights
-for i in ${CONF_DIR} ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
+for i in ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
   chown -R onlyoffice:onlyoffice "$i"
   chmod -R 755 "$i"
 done
-
-#setup logrotate config rights
-chmod 644 ${CONF_DIR}/logrotate/*
-chown root:root ${CONF_DIR}/logrotate/*
 
 if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
