@@ -70,6 +70,6 @@ RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/onlyoffice.list && \
     rm -rf /var/log/onlyoffice && \
     rm -rf /var/lib/apt/lists/*
 
-VOLUME /etc/onlyoffice /var/log/onlyoffice /var/lib/onlyoffice /var/www/onlyoffice/Data /var/lib/postgresql /usr/share/fonts/truetype/custom
+VOLUME /var/log/onlyoffice /var/lib/onlyoffice /var/www/onlyoffice/Data /var/lib/postgresql /usr/share/fonts/truetype/custom
 
 ENTRYPOINT /app/onlyoffice/run-document-server.sh

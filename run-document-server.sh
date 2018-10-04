@@ -267,7 +267,7 @@ done
 mkdir -p ${DS_LOG_DIR}-example
 
 # change folder rights
-for i in ${CONF_DIR} ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
+for i in ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
   chown -R onlyoffice:onlyoffice "$i"
   chmod -R 755 "$i"
 done
