@@ -302,6 +302,8 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     update_rabbitmq_setting
   else
     LOCAL_SERVICES+=("rabbitmq-server")
+    # allow Rabbitmq startup after container kill
+    rm -rf /var/run/rabbitmq
   fi
 
   if [ ${REDIS_SERVER_HOST} != "localhost" ]; then
