@@ -267,7 +267,7 @@ done
 mkdir -p ${DS_LOG_DIR}-example
 
 # change folder rights
-for i in ${CONF_DIR} ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
+for i in ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
   chown -R onlyoffice:onlyoffice "$i"
   chmod -R 755 "$i"
 done
@@ -302,6 +302,8 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     update_rabbitmq_setting
   else
     LOCAL_SERVICES+=("rabbitmq-server")
+    # allow Rabbitmq startup after container kill
+    rm -rf /var/run/rabbitmq
   fi
 
   if [ ${REDIS_SERVER_HOST} != "localhost" ]; then
