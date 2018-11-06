@@ -198,7 +198,7 @@ create_postgresql_tbl(){
 
   # Create db on remote server
   if $PSQL -lt | cut -d\| -f 1 | grep -qw | grep 0; then
-    $CREATEDB $DB_NAME
+    $CREATEDB $POSTGRESQL_SERVER_DB_NAME
   fi
 
   $PSQL -d "${POSTGRESQL_SERVER_DB_NAME}" -f "${APP_DIR}/server/schema/postgresql/createdb.sql"
