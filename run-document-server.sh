@@ -67,7 +67,7 @@ read_setting(){
   REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}
   REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
 
-  DS_LOG_LEVEL=${DS_LOG_LEVEL:-$(${JSON_LOG} levels.nodeJS)}
+  DS_LOG_LEVEL=${DS_LOG_LEVEL:-$(${JSON_LOG} categories.default.level)}
 }
 
 parse_rabbitmq_url(){
@@ -256,7 +256,7 @@ update_supervisor_settings(){
 }
 
 update_log_settings(){
-   ${JSON_LOG} -I -e "this.levels.nodeJS = '${DS_LOG_LEVEL}'"
+   ${JSON_LOG} -I -e "this.categories.default.level = '${DS_LOG_LEVEL}'"
 }
 
 # create base folders
