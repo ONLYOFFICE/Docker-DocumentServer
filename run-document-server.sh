@@ -259,6 +259,10 @@ update_log_settings(){
    ${JSON_LOG} -I -e "this.categories.default.level = '${DS_LOG_LEVEL}'"
 }
 
+update_logrotate_settings(){
+  sed 's|\(^su\b\).*|\1 root root|' -i /etc/logrotate.conf
+}
+
 # create base folders
 for i in converter docservice spellchecker metrics gc; do
   mkdir -p "${DS_LOG_DIR}/$i"
@@ -341,6 +345,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   service supervisor start
   
   # start cron to enable log rotating
+  update_logrotate_settings
   service cron start
 fi
 
