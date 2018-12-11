@@ -17,6 +17,7 @@ services:
     networks:
       - onlyoffice
     volumes:
+       - /etc/onlyoffice
        - /var/www/onlyoffice/Data
        - /var/log/onlyoffice
        - /var/lib/onlyoffice/documentserver/App_Data/cache/files

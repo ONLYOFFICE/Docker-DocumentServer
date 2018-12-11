@@ -67,7 +67,7 @@ read_setting(){
   REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}
   REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
 
-  DS_LOG_LEVEL=${DS_LOG_LEVEL:-$(${JSON_LOG} levels.nodeJS)}
+  DS_LOG_LEVEL=${DS_LOG_LEVEL:-$(${JSON_LOG} categories.default.level)}
 }
 
 parse_rabbitmq_url(){
@@ -198,7 +198,7 @@ create_postgresql_tbl(){
 
   # Create db on remote server
   if $PSQL -lt | cut -d\| -f 1 | grep -qw | grep 0; then
-    $CREATEDB $DB_NAME
+    $CREATEDB $POSTGRESQL_SERVER_DB_NAME
   fi
 
   $PSQL -d "${POSTGRESQL_SERVER_DB_NAME}" -f "${APP_DIR}/server/schema/postgresql/createdb.sql"
@@ -256,7 +256,11 @@ update_supervisor_settings(){
 }
 
 update_log_settings(){
-   ${JSON_LOG} -I -e "this.levels.nodeJS = '${DS_LOG_LEVEL}'"
+   ${JSON_LOG} -I -e "this.categories.default.level = '${DS_LOG_LEVEL}'"
+}
+
+update_logrotate_settings(){
+  sed 's|\(^su\b\).*|\1 root root|' -i /etc/logrotate.conf
 }
 
 # create base folders
@@ -341,6 +345,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   service supervisor start
   
   # start cron to enable log rotating
+  update_logrotate_settings
   service cron start
 fi
 
