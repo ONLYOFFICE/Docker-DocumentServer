@@ -62,7 +62,9 @@ read_setting(){
   POSTGRESQL_SERVER_PASS=${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
 
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
-  parse_rabbitmq_url
+  AMQP_SERVER_URL=${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}
+  AMQP_SERVER_ENGINE=${AMQP_SERVER_ENGINE:-rabbitmq}
+  parse_rabbitmq_url ${AMQP_SERVER_URL}
 
   REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}
   REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
@@ -71,7 +73,7 @@ read_setting(){
 }
 
 parse_rabbitmq_url(){
-  local amqp=${RABBITMQ_SERVER_URL}
+  local amqp=$1
 
   # extract the protocol
   local proto="$(echo $amqp | grep :// | sed -e's,^\(.*://\).*,\1,g')"
@@ -105,10 +107,10 @@ parse_rabbitmq_url(){
   # extract the path (if any)
   local path="$(echo $url | grep / | cut -d/ -f2-)"
 
-  RABBITMQ_SERVER_HOST=$host
-  RABBITMQ_SERVER_USER=$user
-  RABBITMQ_SERVER_PASS=$pass
-  RABBITMQ_SERVER_PORT=$port
+  AMQP_SERVER_HOST=$host
+  AMQP_SERVER_USER=$user
+  AMQP_SERVER_PASS=$pass
+  AMQP_SERVER_PORT=$port
 }
 
 waiting_for_connection(){
@@ -122,8 +124,8 @@ waiting_for_postgresql(){
   waiting_for_connection ${POSTGRESQL_SERVER_HOST} ${POSTGRESQL_SERVER_PORT}
 }
 
-waiting_for_rabbitmq(){
-  waiting_for_connection ${RABBITMQ_SERVER_HOST} ${RABBITMQ_SERVER_PORT}
+waiting_for_amqp(){
+  waiting_for_connection ${AMQP_SERVER_HOST} ${AMQP_SERVER_PORT}
 }
 
 waiting_for_redis(){
@@ -141,7 +143,37 @@ update_postgresql_settings(){
 }
 
 update_rabbitmq_setting(){
-  ${JSON} -I -e "this.rabbitmq.url = '${RABBITMQ_SERVER_URL}'"
+  if [ "${AMQP_SERVER_ENGINE}" == "rabbitmq" ]; then
+    ${JSON} -I -e "this.rabbitmq.url = '${RABBITMQ_SERVER_URL}'"
+    sed 's/\(exports\.USE_RABBIT_MQ = \).*\(;\)/'"\1true\2"'/' -i ${APP_DIR}/server/Common/sources/constants.js
+  fi
+  
+  if [ "${AMQP_SERVER_ENGINE}" == "activemq" ]; then
+    ${JSON} -I -e "if(this.activemq===undefined)this.activemq={};"
+    ${JSON} -I -e "if(this.activemq.connectOptions===undefined)this.activemq.connectOptions={};"
+
+    ${JSON} -I -e "this.activemq.connectOptions.host = '${AMQP_SERVER_HOST}'"
+
+    if [ ! "${AMQP_SERVER_PORT}" == "" ]; then
+      ${JSON} -I -e "this.activemq.connectOptions.port = '${AMQP_SERVER_PORT}'"
+    else
+      ${JSON} -I -e "delete this.activemq.connectOptions.port"
+    fi
+
+    if [ ! "${AMQP_SERVER_USER}" == "" ]; then
+      ${JSON} -I -e "this.activemq.connectOptions.username = '${AMQP_SERVER_USER}'"
+    else
+      ${JSON} -I -e "delete this.activemq.connectOptions.username"
+    fi
+
+    if [ ! "${AMQP_SERVER_PASS}" == "" ]; then
+      ${JSON} -I -e "this.activemq.connectOptions.password = '${AMQP_SERVER_PASS}'"
+    else
+      ${JSON} -I -e "delete this.activemq.connectOptions.password"
+    fi
+
+    sed 's/\(exports\.USE_RABBIT_MQ = \).*\(;\)/'"\1false\2"'/' -i ${APP_DIR}/server/Common/sources/constants.js
+  fi
 }
 
 update_redis_settings(){
@@ -302,7 +334,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     LOCAL_SERVICES+=("postgresql")
   fi
 
-  if [ ${RABBITMQ_SERVER_HOST} != "localhost" ]; then
+  if [ ${AMQP_SERVER_HOST} != "localhost" ]; then
     update_rabbitmq_setting
   else
     LOCAL_SERVICES+=("rabbitmq-server")
@@ -336,7 +368,7 @@ fi
 
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_postgresql
-  waiting_for_rabbitmq
+  waiting_for_amqp
   waiting_for_redis
 
   update_nginx_settings
