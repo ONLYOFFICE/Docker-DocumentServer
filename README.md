@@ -167,7 +167,8 @@ Below is the complete list of parameters that can be set using environment varia
 - **POSTGRESQL_SERVER_DB_NAME**: The name of a PostgreSQL database to be created on the image startup.
 - **POSTGRESQL_SERVER_USER**: The new user name with superuser permissions for the PostgreSQL account.
 - **POSTGRESQL_SERVER_PASS**: The password set for the PostgreSQL account.
-- **RABBITMQ_SERVER_URL**: The [AMQP URL](http://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to RabbitMQ server.
+- **AMQP_SERVER_URL**: The [AMQP URL](http://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
+- **AMQP_SERVER_ENGINE**: The message broker engine. Supported values are 'rabbitmq' or 'activemq'. Defaults to 'rabbitmq'.
 - **REDIS_SERVER_HOST**: The IP address or the name of the host where the Redis server is running.
 - **REDIS_SERVER_PORT**:  The Redis server port number.
 - **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
