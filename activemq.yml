@@ -5,7 +5,7 @@ services:
     image: onlyoffice/4testing-documentserver-ie:latest
     environment:
       - AMQP_SERVER_URL=amqp://guest:guest@onlyoffice-activemq
-      - AMQP_SERVER_ENGINE=activemq
+      - AMQP_SERVER_TYPE=activemq
     stdin_open: true
     restart: always
     ports:
