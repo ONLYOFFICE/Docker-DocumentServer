@@ -145,11 +145,12 @@ update_postgresql_settings(){
 
 update_rabbitmq_setting(){
   if [ "${AMQP_SERVER_TYPE}" == "rabbitmq" ]; then
+    ${JSON} -I -e "this.queue.type = 'rabbitmq'"
     ${JSON} -I -e "this.rabbitmq.url = '${RABBITMQ_SERVER_URL}'"
-    sed 's/\(exports\.USE_RABBIT_MQ = \).*\(;\)/'"\1true\2"'/' -i ${APP_DIR}/server/Common/sources/constants.js
   fi
   
   if [ "${AMQP_SERVER_TYPE}" == "activemq" ]; then
+    ${JSON} -I -e "this.queue.type = 'activemq'"
     ${JSON} -I -e "if(this.activemq===undefined)this.activemq={};"
     ${JSON} -I -e "if(this.activemq.connectOptions===undefined)this.activemq.connectOptions={};"
 
@@ -172,8 +173,6 @@ update_rabbitmq_setting(){
     else
       ${JSON} -I -e "delete this.activemq.connectOptions.password"
     fi
-
-    sed 's/\(exports\.USE_RABBIT_MQ = \).*\(;\)/'"\1false\2"'/' -i ${APP_DIR}/server/Common/sources/constants.js
   fi
 }
 
