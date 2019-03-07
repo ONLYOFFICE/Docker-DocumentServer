@@ -145,11 +145,13 @@ update_postgresql_settings(){
 
 update_rabbitmq_setting(){
   if [ "${AMQP_SERVER_TYPE}" == "rabbitmq" ]; then
+    ${JSON} -I -e "if(this.queue===undefined)this.queue={};"
     ${JSON} -I -e "this.queue.type = 'rabbitmq'"
     ${JSON} -I -e "this.rabbitmq.url = '${RABBITMQ_SERVER_URL}'"
   fi
   
   if [ "${AMQP_SERVER_TYPE}" == "activemq" ]; then
+    ${JSON} -I -e "if(this.queue===undefined)this.queue={};"
     ${JSON} -I -e "this.queue.type = 'activemq'"
     ${JSON} -I -e "if(this.activemq===undefined)this.activemq={};"
     ${JSON} -I -e "if(this.activemq.connectOptions===undefined)this.activemq.connectOptions={};"
