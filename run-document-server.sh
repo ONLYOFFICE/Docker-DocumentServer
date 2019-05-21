@@ -277,6 +277,11 @@ update_nginx_settings(){
     ln -sf ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl ${NGINX_ONLYOFFICE_CONF}
   fi
 
+  # check if ipv6 supported otherwise remove it from nginx config
+  if [ ! -f /proc/net/if_inet6 ]; then
+    sed '/listen\s\+\[::[0-9]*\].\+/d' -i $NGINX_ONLYOFFICE_CONF
+  fi
+
   if [ -f "${NGINX_ONLYOFFICE_EXAMPLE_CONF}" ]; then
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_CONF}
   fi
