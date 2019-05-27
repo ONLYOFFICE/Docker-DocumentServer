@@ -295,7 +295,7 @@ Please note, that both executing the script and disconnecting users may take a l
 
 ## Project Information
 
-Official website: [http://www.onlyoffice.org](http://onlyoffice.org "http://www.onlyoffice.org")
+Official website: [https://www.onlyoffice.com](https://www.onlyoffice.com/?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerDS)
 
 Code repository: [https://github.com/ONLYOFFICE/DocumentServer](https://github.com/ONLYOFFICE/DocumentServer "https://github.com/ONLYOFFICE/DocumentServer")
 
@@ -303,7 +303,9 @@ Docker Image: [https://github.com/ONLYOFFICE/Docker-DocumentServer](https://gith
 
 License: [GNU AGPL v3.0](https://help.onlyoffice.com/products/files/doceditor.aspx?fileid=4358397&doc=K0ZUdlVuQzQ0RFhhMzhZRVN4ZFIvaHlhUjN2eS9XMXpKR1M5WEppUk1Gcz0_IjQzNTgzOTci0 "GNU AGPL v3.0")
 
-SaaS version: [http://www.onlyoffice.com](http://www.onlyoffice.com "http://www.onlyoffice.com")
+Free version vs commercial builds comparison: https://github.com/ONLYOFFICE/DocumentServer#onlyoffice-document-server-editions
+
+SaaS version: [https://www.onlyoffice.com/cloud-office.aspx](https://www.onlyoffice.com/cloud-office.aspx?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerDS)
 
 ## User Feedback and Support
 
