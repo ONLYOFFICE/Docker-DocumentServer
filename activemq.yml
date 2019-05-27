@@ -1,0 +1,31 @@
+version: '2'
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    image: onlyoffice/4testing-documentserver-ie:latest
+    environment:
+      - AMQP_SERVER_URL=amqp://guest:guest@onlyoffice-activemq
+      - AMQP_SERVER_TYPE=activemq
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    networks:
+      - onlyoffice
+
+  onlyoffice-activemq:
+    container_name: onlyoffice-activemq
+    image: webcenter/activemq:5.14.3
+    environment:
+      - ACTIVEMQ_USERS_guest=guest
+      - ACTIVEMQ_GROUPS_owners=guest
+    restart: always
+    networks:
+     - onlyoffice
+    expose:
+      - '5672'
+
+networks:
+  onlyoffice:
+    driver: 'bridge'

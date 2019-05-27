@@ -26,9 +26,9 @@ SYSCONF_TEMPLATES_DIR="/app/onlyoffice/setup/config"
 
 NGINX_CONFD_PATH="/etc/nginx/conf.d";
 NGINX_ONLYOFFICE_PATH="${CONF_DIR}/nginx"
-NGINX_ONLYOFFICE_CONF="${NGINX_ONLYOFFICE_PATH}/onlyoffice-documentserver.conf"
+NGINX_ONLYOFFICE_CONF="${NGINX_ONLYOFFICE_PATH}/ds.conf"
 NGINX_ONLYOFFICE_EXAMPLE_PATH="${CONF_DIR}-example/nginx"
-NGINX_ONLYOFFICE_EXAMPLE_CONF="${NGINX_ONLYOFFICE_EXAMPLE_PATH}/includes/onlyoffice-documentserver-example.conf"
+NGINX_ONLYOFFICE_EXAMPLE_CONF="${NGINX_ONLYOFFICE_EXAMPLE_PATH}/includes/ds-example.conf"
 
 NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
@@ -42,9 +42,10 @@ ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/local.json
 ONLYOFFICE_LOG4JS_CONFIG=${CONF_DIR}/log4js/production.json
 ONLYOFFICE_EXAMPLE_CONFIG=${CONF_DIR}-example/local.json
 
-JSON="json -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
-JSON_LOG="json -q -f ${ONLYOFFICE_LOG4JS_CONFIG}"
-JSON_EXAMPLE="json -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
+JSON_BIN=${APP_DIR}/npm/node_modules/.bin/json
+JSON="${JSON_BIN} -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
+JSON_LOG="${JSON_BIN} -q -f ${ONLYOFFICE_LOG4JS_CONFIG}"
+JSON_EXAMPLE="${JSON_BIN} -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
 
 LOCAL_SERVICES=()
 
@@ -62,7 +63,9 @@ read_setting(){
   POSTGRESQL_SERVER_PASS=${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
 
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
-  parse_rabbitmq_url
+  AMQP_SERVER_URL=${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}
+  AMQP_SERVER_TYPE=${AMQP_SERVER_TYPE:-rabbitmq}
+  parse_rabbitmq_url ${AMQP_SERVER_URL}
 
   REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}
   REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
@@ -71,7 +74,7 @@ read_setting(){
 }
 
 parse_rabbitmq_url(){
-  local amqp=${RABBITMQ_SERVER_URL}
+  local amqp=$1
 
   # extract the protocol
   local proto="$(echo $amqp | grep :// | sed -e's,^\(.*://\).*,\1,g')"
@@ -105,10 +108,10 @@ parse_rabbitmq_url(){
   # extract the path (if any)
   local path="$(echo $url | grep / | cut -d/ -f2-)"
 
-  RABBITMQ_SERVER_HOST=$host
-  RABBITMQ_SERVER_USER=$user
-  RABBITMQ_SERVER_PASS=$pass
-  RABBITMQ_SERVER_PORT=$port
+  AMQP_SERVER_HOST=$host
+  AMQP_SERVER_USER=$user
+  AMQP_SERVER_PASS=$pass
+  AMQP_SERVER_PORT=$port
 }
 
 waiting_for_connection(){
@@ -122,8 +125,8 @@ waiting_for_postgresql(){
   waiting_for_connection ${POSTGRESQL_SERVER_HOST} ${POSTGRESQL_SERVER_PORT}
 }
 
-waiting_for_rabbitmq(){
-  waiting_for_connection ${RABBITMQ_SERVER_HOST} ${RABBITMQ_SERVER_PORT}
+waiting_for_amqp(){
+  waiting_for_connection ${AMQP_SERVER_HOST} ${AMQP_SERVER_PORT}
 }
 
 waiting_for_redis(){
@@ -141,7 +144,38 @@ update_postgresql_settings(){
 }
 
 update_rabbitmq_setting(){
-  ${JSON} -I -e "this.rabbitmq.url = '${RABBITMQ_SERVER_URL}'"
+  if [ "${AMQP_SERVER_TYPE}" == "rabbitmq" ]; then
+    ${JSON} -I -e "if(this.queue===undefined)this.queue={};"
+    ${JSON} -I -e "this.queue.type = 'rabbitmq'"
+    ${JSON} -I -e "this.rabbitmq.url = '${RABBITMQ_SERVER_URL}'"
+  fi
+  
+  if [ "${AMQP_SERVER_TYPE}" == "activemq" ]; then
+    ${JSON} -I -e "if(this.queue===undefined)this.queue={};"
+    ${JSON} -I -e "this.queue.type = 'activemq'"
+    ${JSON} -I -e "if(this.activemq===undefined)this.activemq={};"
+    ${JSON} -I -e "if(this.activemq.connectOptions===undefined)this.activemq.connectOptions={};"
+
+    ${JSON} -I -e "this.activemq.connectOptions.host = '${AMQP_SERVER_HOST}'"
+
+    if [ ! "${AMQP_SERVER_PORT}" == "" ]; then
+      ${JSON} -I -e "this.activemq.connectOptions.port = '${AMQP_SERVER_PORT}'"
+    else
+      ${JSON} -I -e "delete this.activemq.connectOptions.port"
+    fi
+
+    if [ ! "${AMQP_SERVER_USER}" == "" ]; then
+      ${JSON} -I -e "this.activemq.connectOptions.username = '${AMQP_SERVER_USER}'"
+    else
+      ${JSON} -I -e "delete this.activemq.connectOptions.username"
+    fi
+
+    if [ ! "${AMQP_SERVER_PASS}" == "" ]; then
+      ${JSON} -I -e "this.activemq.connectOptions.password = '${AMQP_SERVER_PASS}'"
+    else
+      ${JSON} -I -e "delete this.activemq.connectOptions.password"
+    fi
+  fi
 }
 
 update_redis_settings(){
@@ -212,7 +246,7 @@ update_nginx_settings(){
 
   # setup HTTPS
   if [ -f "${SSL_CERTIFICATE_PATH}" -a -f "${SSL_KEY_PATH}" ]; then
-    cp -f ${NGINX_ONLYOFFICE_PATH}/onlyoffice-documentserver-ssl.conf.template ${NGINX_ONLYOFFICE_CONF}
+    cp -f ${NGINX_ONLYOFFICE_PATH}/ds-ssl.conf.tmpl ${NGINX_ONLYOFFICE_CONF}
 
     # configure nginx
     sed 's,{{SSL_CERTIFICATE_PATH}},'"${SSL_CERTIFICATE_PATH}"',' -i ${NGINX_ONLYOFFICE_CONF}
@@ -240,7 +274,12 @@ update_nginx_settings(){
       sed '/max-age=/d' -i ${NGINX_ONLYOFFICE_CONF}
     fi
   else
-    ln -sf ${NGINX_ONLYOFFICE_PATH}/onlyoffice-documentserver.conf.template ${NGINX_ONLYOFFICE_CONF}
+    ln -sf ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl ${NGINX_ONLYOFFICE_CONF}
+  fi
+
+  # check if ipv6 supported otherwise remove it from nginx config
+  if [ ! -f /proc/net/if_inet6 ]; then
+    sed '/listen\s\+\[::[0-9]*\].\+/d' -i $NGINX_ONLYOFFICE_CONF
   fi
 
   if [ -f "${NGINX_ONLYOFFICE_EXAMPLE_CONF}" ]; then
@@ -272,7 +311,7 @@ mkdir -p ${DS_LOG_DIR}-example
 
 # change folder rights
 for i in ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
-  chown -R onlyoffice:onlyoffice "$i"
+  chown -R ds:ds "$i"
   chmod -R 755 "$i"
 done
 
@@ -302,7 +341,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     LOCAL_SERVICES+=("postgresql")
   fi
 
-  if [ ${RABBITMQ_SERVER_HOST} != "localhost" ]; then
+  if [ ${AMQP_SERVER_HOST} != "localhost" ]; then
     update_rabbitmq_setting
   else
     LOCAL_SERVICES+=("rabbitmq-server")
@@ -336,7 +375,7 @@ fi
 
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_postgresql
-  waiting_for_rabbitmq
+  waiting_for_amqp
   waiting_for_redis
 
   update_nginx_settings
