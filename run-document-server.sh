@@ -147,7 +147,7 @@ update_rabbitmq_setting(){
   if [ "${AMQP_SERVER_TYPE}" == "rabbitmq" ]; then
     ${JSON} -I -e "if(this.queue===undefined)this.queue={};"
     ${JSON} -I -e "this.queue.type = 'rabbitmq'"
-    ${JSON} -I -e "this.rabbitmq.url = '${RABBITMQ_SERVER_URL}'"
+    ${JSON} -I -e "this.rabbitmq.url = '${AMQP_SERVER_URL}'"
   fi
   
   if [ "${AMQP_SERVER_TYPE}" == "activemq" ]; then
