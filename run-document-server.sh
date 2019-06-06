@@ -8,6 +8,7 @@ DATA_DIR="/var/www/onlyoffice/Data"
 LOG_DIR="/var/log/onlyoffice"
 DS_LOG_DIR="${LOG_DIR}/documentserver"
 LIB_DIR="/var/lib/onlyoffice"
+DS_LIB_DIR="${LIB_DIR}/documentserver"
 CONF_DIR="/etc/onlyoffice/documentserver"
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
@@ -147,7 +148,7 @@ update_rabbitmq_setting(){
   if [ "${AMQP_SERVER_TYPE}" == "rabbitmq" ]; then
     ${JSON} -I -e "if(this.queue===undefined)this.queue={};"
     ${JSON} -I -e "this.queue.type = 'rabbitmq'"
-    ${JSON} -I -e "this.rabbitmq.url = '${RABBITMQ_SERVER_URL}'"
+    ${JSON} -I -e "this.rabbitmq.url = '${AMQP_SERVER_URL}'"
   fi
   
   if [ "${AMQP_SERVER_TYPE}" == "activemq" ]; then
@@ -308,6 +309,11 @@ for i in converter docservice spellchecker metrics gc; do
 done
 
 mkdir -p ${DS_LOG_DIR}-example
+
+# create app folders
+for i in App_Data/cache/files App_Data/docbuilder; do
+  mkdir -p "${DS_LIB_DIR}/$i"
+done
 
 # change folder rights
 for i in ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
