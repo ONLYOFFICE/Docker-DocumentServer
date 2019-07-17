@@ -55,7 +55,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
 COPY config /app/onlyoffice/setup/config/
 COPY run-document-server.sh /app/onlyoffice/run-document-server.sh
 
-EXPOSE 80 443
+EXPOSE 18080 443
 
 ARG REPO_URL="deb http://download.onlyoffice.com/repo/debian squeeze main"
 ARG PRODUCT_NAME=onlyoffice-documentserver

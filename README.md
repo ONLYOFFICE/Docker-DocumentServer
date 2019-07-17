@@ -47,7 +47,7 @@ Integrating it with ONLYOFFICE Community Server you will be able to:
 
 ## Running Docker Image
 
-    sudo docker run -i -t -d -p 80:80 onlyoffice/documentserver
+    sudo docker run -i -t -d -p 80:18080 onlyoffice/documentserver
 
 Use this command if you wish to install ONLYOFFICE Document Server separately. To install ONLYOFFICE Document Server integrated with Community and Mail Servers, refer to the corresponding instructions below.
 
@@ -63,7 +63,7 @@ All the data are stored in the specially-designated directories, **data volumes*
 
 To get access to your data from outside the container, you need to mount the volumes. It can be done by specifying the '-v' option in the docker run command.
 
-    sudo docker run -i -t -d -p 80:80 \
+    sudo docker run -i -t -d -p 80:18080 \
         -v /app/onlyoffice/DocumentServer/logs:/var/log/onlyoffice  \
         -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  \
         -v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice \
@@ -78,7 +78,7 @@ Normally, you do not need to store container data because the container's operat
 
 To change the port, use the -p command. E.g.: to make your portal accessible via port 8080 execute the following command:
 
-    sudo docker run -i -t -d -p 8080:80 onlyoffice/documentserver
+    sudo docker run -i -t -d -p 8080:18080 onlyoffice/documentserver
 
 ### Running ONLYOFFICE Document Server using HTTPS
 
@@ -228,7 +228,7 @@ To learn more, refer to the [ONLYOFFICE Mail Server documentation](https://githu
 **STEP 5**: Install ONLYOFFICE Community Server
 
 ```bash
-sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-community-server -p 80:80 -p 443:443 -p 5222:5222 \
+sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-community-server -p 80:18080 -p 443:443 -p 5222:5222 \
  -e MYSQL_SERVER_ROOT_PASSWORD=my-secret-pw \
  -e MYSQL_SERVER_DB_NAME=onlyoffice \
  -e MYSQL_SERVER_HOST=onlyoffice-mysql-server \
