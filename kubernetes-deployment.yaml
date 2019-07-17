@@ -1,0 +1,402 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: documentserver-namespace
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: documentserver
+    env: dev
+  name: documentserver
+  namespace: documentserver-namespace
+  annotations:
+    seccomp.security.alpha.kubernetes.io/pod: docker/default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: documentserver
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: documentserver
+    spec:
+      # allow container PID to run as root
+      securityContext:
+        runAsNonRoot: false
+      containers:
+        - name: documentserver
+          # Registry location, container name and version
+          image: onlyoffice/documentserver
+          imagePullPolicy: Always
+          resources:
+            # CPU & memory allocations
+            limits:
+              cpu: 500m
+              memory: 4Gi
+            requests:
+              cpu: 100m
+              memory: 1250Mi
+          # License and Configuration file mounts
+          volumeMounts:
+            - name: configuration
+              mountPath: /var/www/onlyoffice/Data/license.lic
+              readOnly: true
+              subPath: license.lic
+            - name: configuration
+              mountPath: /etc/onlyoffice/documentserver/default.json
+              readOnly: true
+              subPath: default.file
+      volumes:
+        - name: configuration
+          configMap:
+            defaultMode: 0666
+            name: documentserver-license
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: documentserver-license
+  namespace: documentserver-namespace
+  labels:
+    app: documentserver-config
+data:
+  # Customer license information:
+  license.lic: |-
+    {"branding":true,"connections":500,"customization":false,"end_date":"XXXXX","light":"False","mode":"","portal_count":"0","process":4,"test":"False","trial":"False","user_quota":"0","whiteLabel":false,"customer_id":"XXXXXXXXX","start_date":"XXXXXXXX","users":[],"version":2,"signature":"XXXXXXXXXXXXXX"}
+  
+  default.file: |-
+        {                                                                                                                        
+              "statsd": {                                                                                                      
+                      "useMetrics": false,                                                                                     
+                      "host": "localhost",                                                                                     
+                      "port": "8125",                                                                                          
+                      "prefix": "ds."                                                                                          
+              },                                                                                                               
+              "log": {                                                                                                         
+                      "filePath": "",                                                                                          
+                      "options": {                                                                                             
+                              "replaceConsole": true                                                                           
+                      }                                                                                                        
+              },                                                                                                               
+              "queue": {                                                                                                       
+                      "type": "rabbitmq",                                                                                      
+                      "visibilityTimeout": 300,                                                                                
+                      "retentionPeriod": 900                                                                                   
+              },                                                                                                               
+              "storage": {                                                                                                     
+                      "name": "storage-fs",                                                                                    
+                      "fs": {                                                                                                  
+                              "folderPath": "",                                                                                
+                              "urlExpires": 900,                                                                               
+                              "secretString": "onlyoffice"                                                                     
+                      },                                                                                                       
+                      "region": "",                                                                                            
+                      "endpoint": "http://localhost/s3",                                                                       
+                      "bucketName": "cache",                                                                                   
+                      "storageFolderName": "files",                                                                            
+                      "urlExpires": 604800,                                                                                    
+                      "accessKeyId": "AKID",                                                                                   
+                      "secretAccessKey": "SECRET",                                                                             
+                      "useRequestToGetUrl": false,                                                                             
+                      "useSignedUrl": false,                                                                                   
+                      "externalHost": ""                                                                                       
+              },                                                                                                               
+              "rabbitmq": {                                                                                                    
+                      "url": "amqp://guest:guest@localhost:5672",                                                              
+                      "socketOptions": {},                                                                                     
+                      "exchangepubsub": "ds.pubsub",  
+              "queueconverttask": "ds.converttask",                                                                    
+                      "queueconvertresponse": "ds.convertresponse",                                                            
+                      "exchangeconvertdead": "ds.exchangeconvertdead",                                                         
+                      "queueconvertdead": "ds.convertdead",                                                                    
+                      "queuedelayed": "ds.delayed"                                                                             
+              },                                                                                                               
+              "activemq": {                                                                                                    
+                      "connectOptions": {                                                                                      
+                              "port": 5672,                                                                                    
+                              "host": "localhost",                                                                             
+                              "name": "admin",                                                                                 
+                              "reconnect": false                                                                               
+                      },                                                                                                       
+                      "queueconverttask": "ds.converttask",                                                                    
+                      "queueconvertresponse": "ds.convertresponse",                                                            
+                      "queueconvertdead": "ActiveMQ.DLQ",                                                                      
+                      "queuedelayed": "ds.delayed",                                                                            
+                      "topicpubsub": "ds.pubsub"                                                                               
+              },                                                                                                               
+              "dnscache": {                                                                                                    
+                      "enable" : true,                                                                                         
+                      "ttl" : 300,                                                                                             
+                      "cachesize" : 1000                                                                                       
+              },                                                                                                               
+              "services": {                                                                                                    
+                      "CoAuthoring": {                                                                                         
+                              "server": {                                                                                      
+                                      "port": 8000,                                                                            
+                                      "workerpercpu": 1,                                                                       
+                                      "mode": "development",                                                                   
+                                      "limits_tempfile_upload": 104857600,                                                     
+                                      "limits_image_size": 26214400,                                                           
+                                      "limits_image_download_timeout": {                                                       
+                                              "connectionAndInactivity": "10s",                                                
+                                              "wholeCycle": "2m"                                                               
+                                      },                                                                                       
+                                      "callbackRequestTimeout": {                                                              
+                                              "wholeCycle": "2m"                                                               
+                                      },                                                                                       
+                                      "healthcheckfilepath": "../public/healthcheck.docx",
+                      "savetimeoutdelay": 5000,                                                                
+                                      "edit_singleton": false,                                                                 
+                                      "forgottenfiles": "forgotten",                                                           
+                                      "forgottenfilesname": "output",                                                          
+                                      "maxRequestChanges": 20000,                                                              
+                                      "openProtectedFile": true                                                                
+                              },                                                                                               
+                              "requestDefaults": {                                                                             
+                                      "headers": {                                                                             
+                                              "userAgent": "Node.js/6.13"                                                      
+                                      },                                                                                       
+                                      "rejectUnauthorized": false                                                               
+                              },                                                                                               
+                              "autoAssembly": {                                                                                
+                                      "enable": false,                                                                         
+                                      "interval": "5m",                                                                        
+                                      "step": "1m"                                                                             
+                              },                                                                                               
+                              "utils": {                                                                                       
+                                      "utils_common_fontdir": "null",                                                          
+                                      "utils_fonts_search_patterns": "*.ttf;*.ttc;*.otf",                                      
+                                      "resource_expires": 31536000,                                                            
+                                      "limits_image_types_upload": "jpg;png;gif;bmp"                                           
+                              },                                                                                               
+                              "sql": {                                                                                         
+                                      "type": "postgres",                                                                      
+                                      "tableChanges": "doc_changes",                                                           
+                                      "tableResult": "task_result",                                                            
+                                      "dbHost": "localhost",                                                                   
+                                      "dbPort": 5432,                                                                          
+                                      "dbName": "onlyoffice",                                                                  
+                                      "dbUser": "onlyoffice",                                                                  
+                                      "dbPass": "onlyoffice",                                                                  
+                                      "charset": "utf8",                                                                       
+                                      "connectionlimit": 10,                                                                   
+                                      "max_allowed_packet": 1048575                                                            
+                              },                                                                                               
+                              "redis": {                                                                                       
+                                      "name": "redis",                                                                         
+                                      "prefix": "ds:",                                                                         
+                                      "host": "localhost",                                                                     
+                                      "port": 6379                                                                             
+                              },                                                                                               
+                              "pubsub": {                                                                                      
+                                      "name": "pubsubRabbitMQ",  								
+                      "maxChanges": 1000                                                                       
+                              },                                                                                               
+                              "expire": {                                                                                      
+                                      "saveLock": 60,                                                                          
+                                      "presence": 300,                                                                         
+                                      "locks": 604800,                                                                         
+                                      "changeindex": 86400,                                                                    
+                                      "lockDoc": 30,                                                                           
+                                      "message": 86400,                                                                        
+                                      "lastsave": 604800,                                                                      
+                                      "forcesave": 604800,                                                                     
+                                      "saved": 3600,                                                                           
+                                      "documentsCron": "0 */2 * * * *",                                                        
+                                      "files": 86400,                                                                          
+                                      "filesCron": "00 00 */1 * * *",                                                          
+                                      "filesremovedatonce": 100,                                                               
+                                      "sessionidle": "0",                                                                      
+                                      "sessionabsolute": "30d",                                                                
+                                      "sessionclosecommand": "2m",                                                             
+                                      "pemStdTTL": "1h",                                                                       
+                                      "pemCheckPeriod": "10m",                                                                 
+                                      "updateVersionStatus": "5m"                                                              
+                              },                                                                                               
+                              "ipfilter": {                                                                                    
+                                      "rules": [{"address": "*", "allowed": true}],                                            
+                                      "useforrequest": false,                                                                  
+                                      "errorcode": 403                                                                         
+                              },                                                                                               
+                              "secret": {                                                                                      
+                                      "browser": {"string": "secret", "file": "", "tenants": {}},                              
+                                      "inbox": {"string": "secret", "file": "", "tenants": {}},                                
+                                      "outbox": {"string": "secret", "file": ""},                                              
+                                      "session": {"string": "secret", "file": ""}                                              
+                              },                                                                                               
+                              "token": {                                                                                       
+                                      "enable": {                                                                              
+                                              "browser": false,                                                                
+                                              "request": {                                                                     
+                                                      "inbox": false,                                                          
+                                                      "outbox": false      
+                          }                                                                                
+                                      },                                                                                       
+                                      "browser": {                                                                             
+                                              "secretFromInbox": true                                                          
+                                      },                                                                                       
+                                      "inbox": {                                                                               
+                                              "header": "Authorization",                                                       
+                                              "prefix": "Bearer ",                                                             
+                                              "inBody": false                                                                  
+                                      },                                                                                       
+                                      "outbox": {                                                                              
+                                              "header": "Authorization",                                                       
+                                              "prefix": "Bearer ",                                                             
+                                              "algorithm": "HS256",                                                            
+                                              "expires": "5m",                                                                 
+                                              "inBody": false                                                                  
+                                      },                                                                                       
+                                      "session": {                                                                             
+                                              "algorithm": "HS256",                                                            
+                                              "expires": "30d"                                                                 
+                                      }                                                                                        
+                              },                                                                                               
+                              "plugins": {                                                                                     
+                                      "uri": "/sdkjs-plugins",                                                                 
+                                      "autostart": []                                                                          
+                              },                                                                                               
+                              "editor":{                                                                                       
+                                      "spellcheckerUrl": "/spellchecker",                                                      
+                                      "reconnection":{                                                                         
+                                              "attempts": 50,                                                                  
+                                              "delay": "2s"                                                                    
+                                      }                                                                                        
+                              },                                                                                               
+                              "sockjs": {                                                                                      
+                                      "sockjs_url": "",                                                                        
+                                      "websocket": true                                                                        
+                              },                                                                                               
+                              "callbackBackoffOptions": {                                                                      
+                                      "retries": 0,                                                                            
+                                      "timeout":{            
+                        "factor": 2,                                                                     
+                                              "minTimeout": 1000,                                                              
+                                              "maxTimeout": 2147483647,                                                        
+                                              "randomize": false                                                               
+                                      },                                                                                       
+                                      "httpStatus": "429,500-599"                                                              
+                              }                                                                                                
+                      }                                                                                                        
+              },                                                                                                               
+              "license" : {                                                                                                    
+                      "license_file": "",                                                                                      
+                      "warning_limit_percents": "70"                                                                           
+              },                                                                                                               
+              "FileConverter": {                                                                                               
+                      "converter": {                                                                                           
+                              "maxDownloadBytes": 104857600,                                                                   
+                              "downloadTimeout": {                                                                             
+                                      "connectionAndInactivity": "10s",                                                        
+                                      "wholeCycle": "2m"                                                                       
+                              },                                                                                               
+                              "downloadAttemptMaxCount": 3,                                                                    
+                              "downloadAttemptDelay": 1000,                                                                    
+                              "maxprocesscount": 1,                                                                            
+                              "fontDir": "null",                                                                               
+                              "presentationThemesDir": "null",                                                                 
+                              "x2tPath": "null",                                                                               
+                              "docbuilderPath": "null",                                                                        
+                              "docbuilderAllFontsPath": "null",                                                                
+                              "args": "",                                                                                      
+                              "spawnOptions": {},                                                                              
+                              "errorfiles": "",                                                                                
+                              "streamWriterBufferSize": 8388608,                                                               
+                              "maxRedeliveredCount": 2,                                                                        
+                              "inputLimits": [                                                                                 
+                                      {                                                                                        
+                                      "type": "docx;dotx;docm;dotm",                                                           
+                                      "zip": {                                                                                 
+                                              "uncompressed": "50MB",                                                          
+                                              "template": "*.xml"                                                              
+                                      }             
+                      },                                                                                       
+                                      {                                                                                        
+                                      "type": "xlsx;xltx;xlsm;xltm",                                                           
+                                      "zip": {                                                                                 
+                                              "uncompressed": "300MB",                                                         
+                                              "template": "*.xml"                                                              
+                                      }                                                                                        
+                                      },                                                                                       
+                                      {                                                                                        
+                                      "type": "pptx;ppsx;potx;pptm;ppsm;potm",                                                 
+                                      "zip": {                                                                                 
+                                              "uncompressed": "50MB",                                                          
+                                              "template": "*.xml"                                                              
+                                      }                                                                                        
+                                      }                                                                                        
+                              ]                                                                                                
+                      }                                                                                                        
+              },                                                                                                               
+              "FileStorage": {                                                                                                 
+                      "host": "",                                                                                              
+                      "port": 4567,                                                                                            
+                      "directory": "",                                                                                         
+                      "silent": true                                                                                           
+              },                                                                                                               
+              "SpellChecker": {                                                                                                
+                      "server": {                                                                                              
+                              "port": 8080,                                                                                    
+                              "mode": "development"                                                                            
+                      }                                                                                                        
+              }                                                                                                                
+          }                                                 
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  # Create a network endpoint and DNS record within the cluster named documentserver
+  name: documentserver
+  namespace: documentserver-namespace
+spec:
+  ports:
+    # Accept traffic sent to port 18080
+    - name: http
+      port: 18080
+      targetPort: 18080
+  selector:
+    # Map to all containers with label
+    app: documentserver
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  name: documentserver
+  namespace: documentserver-namespace
+spec:
+  rules:
+    # URL to load balance the application behind
+    - host: documentserver.domainname.com
+      http:
+        paths:
+          - backend:
+              serviceName: documentserver
+              servicePort: 18080
+            path: /
+  tls:
+    - hosts:
+        - documentserver.domainname.com
+      # TLS certifcate secret
+      secretName: documentserversecret-tls
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: documentserversecret-tls
+  namespace: documentserver-namespace
+data:
+  # base64 encoded cert and key
+  tls.crt: XXXXXXXXXX
+  tls.key: XXXXXXXXXX
+type: kubernetes.io/tls

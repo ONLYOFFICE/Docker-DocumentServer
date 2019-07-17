@@ -275,6 +275,19 @@ wget https://raw.githubusercontent.com/ONLYOFFICE/Docker-CommunityServer/master/
 docker-compose up -d
 ```
 
+Or, use [kubernetes](https://kubernetes.io/docs/tasks/tools/install-kubectl/). 
+
+```bash
+wget https://raw.githubusercontent.com/ONLYOFFICE/Docker-CommunityServer/master/kubernetes-deployment.yml
+```
+
+Update customer license file detail within ConfigMap primitive. Update web server certificate secret and URL within Ingress primitive. Then assuming you have kubectl installed, execute the following command:
+
+```
+kubectl apply -f kubernetes-deployment.yml
+```
+
+
 ## Issues
 
 ### Docker Issues
