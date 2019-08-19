@@ -30,7 +30,7 @@ DOCKER_TARGETS := $(foreach TAG,$(DOCKER_TAGS),$(DOCKER_REPO)$(COLON)$(TAG))
 
 $(DOCKER_TARGETS): $(DEB_REPO_DATA)
 
-	sudo docker build --build-arg REPO_URL=$(REPO_URL) --build-arg PRODUCT_NAME=$(COMPANY_NAME)-$(PRODUCT_NAME) -t $(subst $(COLON),:,$@) . &&\
+	docker build --build-arg REPO_URL=$(REPO_URL) --build-arg PRODUCT_NAME=$(COMPANY_NAME)-$(PRODUCT_NAME) -t $(subst $(COLON),:,$@) . &&\
 	mkdir -p $$(dirname $@) &&\
 	echo "Done" > $@
 
@@ -40,7 +40,7 @@ clean:
 	rm -rfv $(DOCKER_TARGETS)
 		
 clean-docker:
-	sudo docker rmi -f $$(sudo docker images -q $(COMPANY_NAME)/*) || exit 0
+	docker rmi -f $$(docker images -q $(COMPANY_NAME)/*) || exit 0
 
 deploy: $(DOCKER_TARGETS)
-	$(foreach TARGET,$(DOCKER_TARGETS),sudo docker push $(subst $(COLON),:,$(TARGET));)
+	$(foreach TARGET,$(DOCKER_TARGETS),docker push $(subst $(COLON),:,$(TARGET));)
