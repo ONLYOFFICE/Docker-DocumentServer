@@ -109,6 +109,7 @@ parse_rabbitmq_url(){
   # extract the path (if any)
   local path="$(echo $url | grep / | cut -d/ -f2-)"
 
+  AMQP_SERVER_PROTO=${proto:0:-3}
   AMQP_SERVER_HOST=$host
   AMQP_SERVER_USER=$user
   AMQP_SERVER_PASS=$pass
@@ -176,6 +177,15 @@ update_rabbitmq_setting(){
     else
       ${JSON} -I -e "delete this.activemq.connectOptions.password"
     fi
+
+    case "${AMQP_SERVER_PROTO}" in
+      amqp+ssl|amqps)
+        ${JSON} -I -e "this.activemq.connectOptions.transport = 'tls'"
+        ;;
+      *)
+        ${JSON} -I -e "delete this.activemq.connectOptions.transport"
+        ;;
+    esac 
   fi
 }
 
