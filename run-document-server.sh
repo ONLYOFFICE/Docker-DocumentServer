@@ -57,11 +57,17 @@ PGDATA=${PG_ROOT}/${PG_VERSION}/${PG_NAME}
 PG_NEW_CLUSTER=false
 
 read_setting(){
+  DB_SERVER_TYPE=${DB_SERVER_TYPE:-postgres}
   POSTGRESQL_SERVER_HOST=${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}
-  POSTGRESQL_SERVER_PORT=${POSTGRESQL_SERVER_PORT:-5432}
+  POSTGRESQL_SERVER_PORT=${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}
   POSTGRESQL_SERVER_DB_NAME=${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}
   POSTGRESQL_SERVER_USER=${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}
   POSTGRESQL_SERVER_PASS=${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
+  DB_SERVER_HOST=${DB_SERVER_HOST:-$POSTGRESQL_SERVER_HOST}
+  DB_SERVER_PORT=${DB_SERVER_PORT:-$POSTGRESQL_SERVER_PORT}
+  DB_SERVER_NAME=${DB_SERVER_NAME:-$POSTGRESQL_SERVER_DB_NAME}
+  DB_SERVER_USER=${DB_SERVER_USER:-$POSTGRESQL_SERVER_USER}
+  DB_SERVER_PASS=${DB_SERVER_PASS:-$POSTGRESQL_SERVER_PASS}
 
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
   AMQP_SERVER_URL=${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}
@@ -123,8 +129,8 @@ waiting_for_connection(){
   done
 }
 
-waiting_for_postgresql(){
-  waiting_for_connection ${POSTGRESQL_SERVER_HOST} ${POSTGRESQL_SERVER_PORT}
+waiting_for_db(){
+  waiting_for_connection $DB_SERVER_HOST $DB_SERVER_PORT
 }
 
 waiting_for_amqp(){
@@ -137,12 +143,13 @@ waiting_for_redis(){
 waiting_for_datacontainer(){
   waiting_for_connection ${ONLYOFFICE_DATA_CONTAINER_HOST} ${ONLYOFFICE_DATA_CONTAINER_PORT}
 }
-update_postgresql_settings(){
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbHost = '${POSTGRESQL_SERVER_HOST}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPort = '${POSTGRESQL_SERVER_PORT}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbName = '${POSTGRESQL_SERVER_DB_NAME}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${POSTGRESQL_SERVER_USER}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${POSTGRESQL_SERVER_PASS}'"
+update_db_settings(){
+  ${JSON} -I -e "this.services.CoAuthoring.sql.type = '${DB_SERVER_TYPE}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbHost = '${DB_SERVER_HOST}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPort = '${DB_SERVER_PORT}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbName = '${DB_SERVER_NAME}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${DB_SERVER_USER}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${DB_SERVER_PASS}'"
 }
 
 update_rabbitmq_setting(){
@@ -226,27 +233,49 @@ create_postgresql_cluster(){
   pg_createcluster ${PG_VERSION} ${PG_NAME}
 }
 
-create_postgresql_db(){
-  sudo -u postgres psql -c "CREATE DATABASE onlyoffice;"
-  sudo -u postgres psql -c "CREATE USER onlyoffice WITH password 'onlyoffice';"
-  sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;"
+create_db(){
+  case $DB_SERVER_TYPE in
+    "postgres")
+      sudo -u postgres psql -c "CREATE DATABASE onlyoffice;"
+      sudo -u postgres psql -c "CREATE USER onlyoffice WITH password 'onlyoffice';"
+      sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;"
+    ;;
+    "mariadb"|"mysql")
+      sudo mysql -e "CREATE DATABASE IF NOT EXISTS onlyoffice DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;"
+      sudo mysql -e "CREATE USER 'onlyoffice'@'localhost' IDENTIFIED BY 'onlyoffice';"
+      sudo mysql -e "GRANT ALL PRIVILEGES ON \`onlyoffice\`.* TO 'onlyoffice'@'localhost';"
+    ;;
+  esac
 }
 
-create_postgresql_tbl(){
-  CONNECTION_PARAMS="-h${POSTGRESQL_SERVER_HOST} -p${POSTGRESQL_SERVER_PORT} -U${POSTGRESQL_SERVER_USER} -w"
-  if [ -n "${POSTGRESQL_SERVER_PASS}" ]; then
-    export PGPASSWORD=${POSTGRESQL_SERVER_PASS}
-  fi
+create_db_tbl(){
+  case $DB_SERVER_TYPE in
+    "postgres")
+      CONNECTION_PARAMS="-h$DB_SERVER_HOST -p$DB_SERVER_PORT -U$DB_SERVER_USER -w"
+      if [ -n "$DB_SERVER_PASS" ]; then
+        export PGPASSWORD=$DB_SERVER_PASS
+      fi
 
-  PSQL="psql -q $CONNECTION_PARAMS"
-  CREATEDB="createdb $CONNECTION_PARAMS"
+      PSQL="psql -q $CONNECTION_PARAMS"
+      CREATEDB="createdb $CONNECTION_PARAMS"
 
-  # Create db on remote server
-  if $PSQL -lt | cut -d\| -f 1 | grep -qw | grep 0; then
-    $CREATEDB $POSTGRESQL_SERVER_DB_NAME
-  fi
+      # Create db on remote server
+      if $PSQL -lt | cut -d\| -f 1 | grep -qw | grep 0; then
+        $CREATEDB $DB_SERVER_NAME
+      fi
 
-  $PSQL -d "${POSTGRESQL_SERVER_DB_NAME}" -f "${APP_DIR}/server/schema/postgresql/createdb.sql"
+      $PSQL -d "$DB_SERVER_NAME" -f "$APP_DIR/server/schema/postgresql/createdb.sql"
+    ;;
+    "mariadb"|"mysql")
+      CONNECTION_PARAMS="-h$DB_SERVER_HOST -P${DB_SERVER_PORT:="3306"} -u$DB_SERVER_USER -p$DB_SERVER_PASS -w"
+      MYSQL="mysql -q $CONNECTION_PARAMS"
+
+      # Create db on remote server
+      $MYSQL -e "CREATE DATABASE IF NOT EXISTS $DB_SERVER_NAME DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null 2>&1
+
+      $MYSQL $DB_SERVER_NAME < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
+    ;;
+  esac
 }
 
 update_nginx_settings(){
@@ -340,11 +369,11 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   update_jwt_settings
 
   # update settings by env variables
-  if [ ${POSTGRESQL_SERVER_HOST} != "localhost" ]; then
-    update_postgresql_settings
-    waiting_for_postgresql
-    create_postgresql_tbl
-  else
+  if [ $DB_SERVER_HOST != "localhost" ]; then
+    update_db_settings
+    waiting_for_db
+    create_db_tbl
+  elif [ $DB_SERVER_TYPE == "postgres" ]; then
     # change rights for postgres directory
     chown -R postgres:postgres ${PG_ROOT}
     chmod -R 700 ${PG_ROOT}
@@ -385,12 +414,12 @@ for i in ${LOCAL_SERVICES[@]}; do
 done
 
 if [ ${PG_NEW_CLUSTER} = "true" ]; then
-  create_postgresql_db
-  create_postgresql_tbl
+  create_db
+  create_db_tbl
 fi
 
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
-  waiting_for_postgresql
+  waiting_for_db
   waiting_for_amqp
   waiting_for_redis
 

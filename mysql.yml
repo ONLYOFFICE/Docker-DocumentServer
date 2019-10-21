@@ -1,0 +1,43 @@
+version: '2'
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    image: onlyoffice/4testing-documentserver-ie:latest
+    depends_on:
+      - onlyoffice-mysql
+    environment:
+      - DB_SERVER_TYPE=mysql
+      - DB_SERVER_HOST=onlyoffice-mysql
+      - DB_SERVER_PORT=3306
+      - DB_SERVER_NAME=onlyoffice
+      - DB_SERVER_USER=onlyoffice
+      - DB_SERVER_PASS=onlyoffice
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+    networks:
+      - onlyoffice
+
+  onlyoffice-mysql:
+    container_name: onlyoffice-mysql
+    image: mysql:8.0
+    environment:
+      - MYSQL_DATABASE=onlyoffice
+      - MYSQL_USER=onlyoffice
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    restart: always
+    volumes:
+      - mysql_data:/var/lib/mysql
+    expose:
+      - '3306'
+      - '33060'
+    networks:
+      - onlyoffice
+
+networks:
+  onlyoffice:
+    driver: 'bridge'
+
+volumes:
+  mysql_data:

@@ -5,10 +5,11 @@ services:
     image: onlyoffice/documentserver:latest
     environment:
       - ONLYOFFICE_DATA_CONTAINER=true
-      - POSTGRESQL_SERVER_HOST=onlyoffice-postgresql
-      - POSTGRESQL_SERVER_PORT=5432
-      - POSTGRESQL_SERVER_DB_NAME=onlyoffice
-      - POSTGRESQL_SERVER_USER=onlyoffice
+      - DB_SERVER_TYPE=postgres
+      - DB_SERVER_HOST=onlyoffice-postgresql
+      - DB_SERVER_PORT=5432
+      - DB_SERVER_NAME=onlyoffice
+      - DB_SERVER_USER=onlyoffice
       - AMQP_SERVER_URL=amqp://guest:guest@onlyoffice-rabbitmq
       - REDIS_SERVER_HOST=onlyoffice-redis
       - REDIS_SERVER_PORT=6379
