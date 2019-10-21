@@ -1,8 +1,9 @@
 COMPANY_NAME ?= onlyoffice
-GIT_BRANCH ?= origin/develop
+GIT_BRANCH ?= develop
 PRODUCT_NAME ?= documentserver-ie
 PRODUCT_VERSION ?= 0.0.0
 BUILD_NUMBER ?= 0
+ONLYOFFICE_VALUE ?= onlyoffice
 
 PACKAGE_VERSION := $(PRODUCT_VERSION)-$(BUILD_NUMBER)
 
@@ -30,7 +31,12 @@ DOCKER_TARGETS := $(foreach TAG,$(DOCKER_TAGS),$(DOCKER_REPO)$(COLON)$(TAG))
 
 $(DOCKER_TARGETS): $(DEB_REPO_DATA)
 
-	docker build --build-arg REPO_URL=$(REPO_URL) --build-arg PRODUCT_NAME=$(COMPANY_NAME)-$(PRODUCT_NAME) -t $(subst $(COLON),:,$@) . &&\
+	docker build \
+		--build-arg REPO_URL=$(REPO_URL) \
+		--build-arg COMPANY_NAME=$(COMPANY_NAME) \
+		--build-arg PRODUCT_NAME=$(PRODUCT_NAME) \
+		--build-arg ONLYOFFICE_VALUE=$(ONLYOFFICE_VALUE) \
+		-t $(subst $(COLON),:,$@) . &&\
 	mkdir -p $$(dirname $@) &&\
 	echo "Done" > $@
 
