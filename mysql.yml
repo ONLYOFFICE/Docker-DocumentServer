@@ -6,11 +6,12 @@ services:
     depends_on:
       - onlyoffice-mysql
     environment:
-      - DB_SERVER_TYPE=mysql
-      - DB_SERVER_HOST=onlyoffice-mysql
-      - DB_SERVER_PORT=3306
-      - DB_SERVER_NAME=onlyoffice
-      - DB_SERVER_USER=onlyoffice
+      - DB_TYPE=mysql
+      - DB_HOST=onlyoffice-mysql
+      - DB_PORT=3306
+      - DB_NAME=onlyoffice
+      - DB_USER=onlyoffice
+      - DB_PWD=onlyoffice
     stdin_open: true
     restart: always
     ports:
@@ -20,10 +21,11 @@ services:
 
   onlyoffice-mysql:
     container_name: onlyoffice-mysql
-    image: mysql:8.0
+    image: mysql:5.7
     environment:
       - MYSQL_DATABASE=onlyoffice
       - MYSQL_USER=onlyoffice
+      - MYSQL_PASSWORD=onlyoffice
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
     restart: always
     volumes:

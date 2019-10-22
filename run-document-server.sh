@@ -57,28 +57,34 @@ PGDATA=${PG_ROOT}/${PG_VERSION}/${PG_NAME}
 PG_NEW_CLUSTER=false
 
 read_setting(){
-  DB_SERVER_TYPE=${DB_SERVER_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
+  deprecated_var POSTGRESQL_SERVER_HOST DB_HOST
+  deprecated_var POSTGRESQL_SERVER_PORT DB_PORT
+  deprecated_var POSTGRESQL_SERVER_DB_NAME DB_NAME
+  deprecated_var POSTGRESQL_SERVER_USER DB_USER
+  deprecated_var POSTGRESQL_SERVER_PASS DB_PWD
+
+  DB_TYPE=${DB_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
   POSTGRESQL_SERVER_HOST=${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}
-  DB_SERVER_HOST=${DB_SERVER_HOST:-$POSTGRESQL_SERVER_HOST}
-  if [[ -n $DB_SERVER_PORT || -n $POSTGRESQL_SERVER_PORT || ($DB_SERVER_TYPE == $(${JSON} services.CoAuthoring.sql.type)) ]]; then
+  DB_HOST=${DB_HOST:-$POSTGRESQL_SERVER_HOST}
+  if [[ -n $DB_PORT || -n $POSTGRESQL_SERVER_PORT || ($DB_TYPE == $(${JSON} services.CoAuthoring.sql.type)) ]]; then
     POSTGRESQL_SERVER_PORT=${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}
-    DB_SERVER_PORT=${DB_SERVER_PORT:-$POSTGRESQL_SERVER_PORT}
+    DB_PORT=${DB_PORT:-$POSTGRESQL_SERVER_PORT}
   else
     OLD_PORT=$(${JSON} services.CoAuthoring.sql.dbPort)
-    if [[ (($DB_SERVER_TYPE == "mysql") || ($DB_SERVER_TYPE == "mariadb")) && ($OLD_PORT == "5432") ]]; then
-      $DB_SERVER_PORT="3306"
-    elif [[ ($DB_SERVER_TYPE == "postgres") && ($OLD_PORT == "3306") ]]; then
-      $DB_SERVER_PORT="5432"
+    if [[ (($DB_TYPE == "mysql") || ($DB_TYPE == "mariadb")) && ($OLD_PORT == "5432") ]]; then
+      $DB_PORT="3306"
+    elif [[ ($DB_TYPE == "postgres") && ($OLD_PORT == "3306") ]]; then
+      $DB_PORT="5432"
     else
-      $DB_SERVER_PORT=$OLD_PORT
+      $DB_PORT=$OLD_PORT
     fi
   fi
   POSTGRESQL_SERVER_DB_NAME=${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}
-  DB_SERVER_NAME=${DB_SERVER_NAME:-$POSTGRESQL_SERVER_DB_NAME}
+  DB_NAME=${DB_NAME:-$POSTGRESQL_SERVER_DB_NAME}
   POSTGRESQL_SERVER_USER=${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}
-  DB_SERVER_USER=${DB_SERVER_USER:-$POSTGRESQL_SERVER_USER}
+  DB_USER=${DB_USER:-$POSTGRESQL_SERVER_USER}
   POSTGRESQL_SERVER_PASS=${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
-  DB_SERVER_PASS=${DB_SERVER_PASS:-$POSTGRESQL_SERVER_PASS}
+  DB_PWD=${DB_PWD:-$POSTGRESQL_SERVER_PASS}
 
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
   AMQP_SERVER_URL=${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}
@@ -89,6 +95,12 @@ read_setting(){
   REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
 
   DS_LOG_LEVEL=${DS_LOG_LEVEL:-$(${JSON_LOG} categories.default.level)}
+}
+
+deprecated_var() {
+  if [[ -n ${!1} ]]; then
+    echo "Variable $1 is deprecated. Use $2 instead."
+  fi
 }
 
 parse_rabbitmq_url(){
@@ -141,7 +153,7 @@ waiting_for_connection(){
 }
 
 waiting_for_db(){
-  waiting_for_connection $DB_SERVER_HOST $DB_SERVER_PORT
+  waiting_for_connection $DB_HOST $DB_PORT
 }
 
 waiting_for_amqp(){
@@ -155,12 +167,12 @@ waiting_for_datacontainer(){
   waiting_for_connection ${ONLYOFFICE_DATA_CONTAINER_HOST} ${ONLYOFFICE_DATA_CONTAINER_PORT}
 }
 update_db_settings(){
-  ${JSON} -I -e "this.services.CoAuthoring.sql.type = '${DB_SERVER_TYPE}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbHost = '${DB_SERVER_HOST}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPort = '${DB_SERVER_PORT}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbName = '${DB_SERVER_NAME}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${DB_SERVER_USER}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${DB_SERVER_PASS}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.type = '${DB_TYPE}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbHost = '${DB_HOST}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPort = '${DB_PORT}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbName = '${DB_NAME}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${DB_USER}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${DB_PWD}'"
 }
 
 update_rabbitmq_setting(){
@@ -251,7 +263,7 @@ create_postgresql_db(){
 }
 
 create_db_tbl() {
-  case $DB_SERVER_TYPE in
+  case $DB_TYPE in
     "postgres")
       create_postgresql_tbl
     ;;
@@ -262,9 +274,9 @@ create_db_tbl() {
 }
 
 create_postgresql_tbl() {
-  CONNECTION_PARAMS="-h$DB_SERVER_HOST -p${$DB_SERVER_PORT:="5432"} -U$DB_SERVER_USER -w"
-  if [ -n "$DB_SERVER_PASS" ]; then
-    export PGPASSWORD=$DB_SERVER_PASS
+  CONNECTION_PARAMS="-h$DB_HOST -p${DB_PORT:="5432"} -U$DB_USER -w"
+  if [ -n "$DB_PWD" ]; then
+    export PGPASSWORD=$DB_PWD
   fi
 
   PSQL="psql -q $CONNECTION_PARAMS"
@@ -272,20 +284,20 @@ create_postgresql_tbl() {
 
   # Create db on remote server
   if $PSQL -lt | cut -d\| -f 1 | grep -qw | grep 0; then
-    $CREATEDB $DB_SERVER_NAME
+    $CREATEDB $DB_NAME
   fi
 
-  $PSQL -d "$DB_SERVER_NAME" -f "$APP_DIR/server/schema/postgresql/createdb.sql"
+  $PSQL -d "$DB_NAME" -f "$APP_DIR/server/schema/postgresql/createdb.sql"
 }
 
 create_mysql_tbl() {
-  CONNECTION_PARAMS="-h$DB_SERVER_HOST -P${DB_SERVER_PORT:="3306"} -u$DB_SERVER_USER -p$DB_SERVER_PASS -w"
+  CONNECTION_PARAMS="-h$DB_HOST -P${DB_PORT:="3306"} -u$DB_USER -p$DB_PWD -w"
   MYSQL="mysql -q $CONNECTION_PARAMS"
 
   # Create db on remote server
-  $MYSQL -e "CREATE DATABASE IF NOT EXISTS $DB_SERVER_NAME DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null 2>&1
+  $MYSQL -e "CREATE DATABASE IF NOT EXISTS $DB_NAME DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null 2>&1
 
-  $MYSQL $DB_SERVER_NAME < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
+  $MYSQL $DB_NAME < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
 }
 
 update_nginx_settings(){
@@ -379,7 +391,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   update_jwt_settings
 
   # update settings by env variables
-  if [ $DB_SERVER_HOST != "localhost" ]; then
+  if [ $DB_HOST != "localhost" ]; then
     update_db_settings
     waiting_for_db
     create_db_tbl
