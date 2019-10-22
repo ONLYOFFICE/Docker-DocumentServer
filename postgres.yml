@@ -4,11 +4,11 @@ services:
     container_name: onlyoffice-documentserver
     image: onlyoffice/4testing-documentserver-ie:latest
     depends_on:
-      - onlyoffice-mysql
+      - onlyoffice-postgresql
     environment:
-      - DB_SERVER_TYPE=mysql
-      - DB_SERVER_HOST=onlyoffice-mysql
-      - DB_SERVER_PORT=3306
+      - DB_SERVER_TYPE=postgres
+      - DB_SERVER_HOST=onlyoffice-postgresql
+      - DB_SERVER_PORT=5432
       - DB_SERVER_NAME=onlyoffice
       - DB_SERVER_USER=onlyoffice
     stdin_open: true
@@ -18,25 +18,23 @@ services:
     networks:
       - onlyoffice
 
-  onlyoffice-mysql:
-    container_name: onlyoffice-mysql
-    image: mysql:8.0
+  onlyoffice-postgresql:
+    container_name: onlyoffice-postgresql
+    image: postgres:9.5
     environment:
-      - MYSQL_DATABASE=onlyoffice
-      - MYSQL_USER=onlyoffice
-      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
-    restart: always
-    volumes:
-      - mysql_data:/var/lib/mysql
-    expose:
-      - '3306'
-      - '33060'
+      - POSTGRES_DB=onlyoffice
+      - POSTGRES_USER=onlyoffice
     networks:
       - onlyoffice
+    restart: always
+    expose:
+      - '5432'
+    volumes:
+      - postgresql_data:/var/lib/postgresql
 
 networks:
   onlyoffice:
     driver: 'bridge'
 
 volumes:
-  mysql_data:
+  postgresql_data:
