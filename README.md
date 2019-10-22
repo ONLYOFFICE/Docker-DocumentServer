@@ -162,12 +162,12 @@ Below is the complete list of parameters that can be set using environment varia
 - **SSL_KEY_PATH**: The path to the SSL certificate's private key. Defaults to `/var/www/onlyoffice/Data/certs/onlyoffice.key`.
 - **SSL_DHPARAM_PATH**: The path to the Diffie-Hellman parameter. Defaults to `/var/www/onlyoffice/Data/certs/dhparam.pem`.
 - **SSL_VERIFY_CLIENT**: Enable verification of client certificates using the `CA_CERTIFICATES_PATH` file. Defaults to `false`
-- **DB_SERVER_TYPE**: The DBMS type. Supported values are `postgres`, `mariadb` or `mysql`. Defaults to `postgres`.
+- **DB_SERVER_TYPE**: The database type. Supported values are `postgres`, `mariadb` or `mysql`. Defaults to `postgres`.
 - **DB_SERVER_HOST**: The IP address or the name of the host where the database server is running.
 - **DB_SERVER_PORT**: The database server port number.
 - **DB_SERVER_NAME**: The name of a database to be created on the image startup.
-- **DB_SERVER_USER**: The new user name with superuser permissions for the DBMS account.
-- **DB_SERVER_PASS**: The password set for the DBMS account.
+- **DB_SERVER_USER**: The new user name with superuser permissions for the database account.
+- **DB_SERVER_PASS**: The password set for the database account.
 - **AMQP_SERVER_URL**: The [AMQP URL](http://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
 - **AMQP_SERVER_TYPE**: The message broker type. Supported values are `rabbitmq` or `activemq`. Defaults to `rabbitmq`.
 - **REDIS_SERVER_HOST**: The IP address or the name of the host where the Redis server is running.
