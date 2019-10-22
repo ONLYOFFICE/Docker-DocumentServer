@@ -59,13 +59,25 @@ PG_NEW_CLUSTER=false
 read_setting(){
   DB_SERVER_TYPE=${DB_SERVER_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
   POSTGRESQL_SERVER_HOST=${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}
-  POSTGRESQL_SERVER_DB_NAME=${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}
-  POSTGRESQL_SERVER_USER=${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}
-  POSTGRESQL_SERVER_PASS=${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
   DB_SERVER_HOST=${DB_SERVER_HOST:-$POSTGRESQL_SERVER_HOST}
-  DB_SERVER_PORT=${DB_SERVER_PORT:-$POSTGRESQL_SERVER_PORT}
+  if [[ -n $DB_SERVER_PORT || -n $POSTGRESQL_SERVER_PORT || ($DB_SERVER_TYPE == $(${JSON} services.CoAuthoring.sql.type)) ]]; then
+    POSTGRESQL_SERVER_PORT=${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}
+    DB_SERVER_PORT=${DB_SERVER_PORT:-$POSTGRESQL_SERVER_PORT}
+  else
+    OLD_PORT=$(${JSON} services.CoAuthoring.sql.dbPort)
+    if [[ (($DB_SERVER_TYPE == "mysql") || ($DB_SERVER_TYPE == "mariadb")) && ($OLD_PORT == "5432") ]]; then
+      $DB_SERVER_PORT="3306"
+    elif [[ ($DB_SERVER_TYPE == "postgres") && ($OLD_PORT == "3306") ]]; then
+      $DB_SERVER_PORT="5432"
+    else
+      $DB_SERVER_PORT=$OLD_PORT
+    fi
+  fi
+  POSTGRESQL_SERVER_DB_NAME=${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}
   DB_SERVER_NAME=${DB_SERVER_NAME:-$POSTGRESQL_SERVER_DB_NAME}
+  POSTGRESQL_SERVER_USER=${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}
   DB_SERVER_USER=${DB_SERVER_USER:-$POSTGRESQL_SERVER_USER}
+  POSTGRESQL_SERVER_PASS=${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
   DB_SERVER_PASS=${DB_SERVER_PASS:-$POSTGRESQL_SERVER_PASS}
 
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
