@@ -10,5 +10,5 @@ before_install:
   - chmod +x docker-compose
   - sudo mv docker-compose /usr/local/bin
 script:
-  - docker-compose-f mysql.yml up -d
+  - docker-compose -f mysql.yml up -d
   - curl -sSf localhost/healthcheck > /dev/null
