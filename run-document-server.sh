@@ -71,8 +71,12 @@ read_setting(){
     "mariadb"|"mysql")
       DB_PORT=${DB_PORT:-"3306"}
       ;;
-    *)
+    "")
       DB_PORT=${DB_PORT:-${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}}
+      ;;
+    *)
+      echo "ERROR: unknown database type"
+      exit 1
       ;;
   esac
   DB_NAME=${DB_NAME:-${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}}
