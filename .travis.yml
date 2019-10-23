@@ -9,6 +9,8 @@ env:
 
   - file: activemq.yml
 
+  - file: postgres-deprecated-vars.yml
+
 services:
   - docker
 

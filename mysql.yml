@@ -30,7 +30,6 @@ services:
       - mysql_data:/var/lib/mysql
     expose:
       - '3306'
-      - '33060'
 
 volumes:
   mysql_data:
