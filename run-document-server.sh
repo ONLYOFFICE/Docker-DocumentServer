@@ -64,7 +64,7 @@ read_setting(){
   deprecated_var POSTGRESQL_SERVER_PASS DB_PWD
 
   DB_HOST=${DB_HOST:-${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}}
-  case $DB_TYPE; in
+  case $DB_TYPE in
     "postgres")
       DB_PORT=${DB_PORT:-"5432"}
       ;;
