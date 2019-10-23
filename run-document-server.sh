@@ -63,28 +63,22 @@ read_setting(){
   deprecated_var POSTGRESQL_SERVER_USER DB_USER
   deprecated_var POSTGRESQL_SERVER_PASS DB_PWD
 
+  DB_HOST=${DB_HOST:-${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}}
+  case $DB_TYPE; in
+    "postgres")
+      DB_PORT=${DB_PORT:-"5432"}
+      ;;
+    "mariadb"|"mysql")
+      DB_PORT=${DB_PORT:-"3306"}
+      ;;
+    *)
+      DB_PORT=${DB_PORT:-${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}}
+      ;;
+  esac
+  DB_NAME=${DB_NAME:-${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}}
+  DB_USER=${DB_USER:-${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}}
+  DB_PWD=${DB_PWD:-${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}}
   DB_TYPE=${DB_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
-  POSTGRESQL_SERVER_HOST=${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}
-  DB_HOST=${DB_HOST:-$POSTGRESQL_SERVER_HOST}
-  if [[ -n $DB_PORT || -n $POSTGRESQL_SERVER_PORT || ($DB_TYPE == $(${JSON} services.CoAuthoring.sql.type)) ]]; then
-    POSTGRESQL_SERVER_PORT=${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}
-    DB_PORT=${DB_PORT:-$POSTGRESQL_SERVER_PORT}
-  else
-    OLD_PORT=$(${JSON} services.CoAuthoring.sql.dbPort)
-    if [[ (($DB_TYPE == "mysql") || ($DB_TYPE == "mariadb")) && ($OLD_PORT == "5432") ]]; then
-      $DB_PORT="3306"
-    elif [[ ($DB_TYPE == "postgres") && ($OLD_PORT == "3306") ]]; then
-      $DB_PORT="5432"
-    else
-      $DB_PORT=$OLD_PORT
-    fi
-  fi
-  POSTGRESQL_SERVER_DB_NAME=${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}
-  DB_NAME=${DB_NAME:-$POSTGRESQL_SERVER_DB_NAME}
-  POSTGRESQL_SERVER_USER=${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}
-  DB_USER=${DB_USER:-$POSTGRESQL_SERVER_USER}
-  POSTGRESQL_SERVER_PASS=${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
-  DB_PWD=${DB_PWD:-$POSTGRESQL_SERVER_PASS}
 
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
   AMQP_SERVER_URL=${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}
@@ -274,7 +268,7 @@ create_db_tbl() {
 }
 
 create_postgresql_tbl() {
-  CONNECTION_PARAMS="-h$DB_HOST -p${DB_PORT:="5432"} -U$DB_USER -w"
+  CONNECTION_PARAMS="-h$DB_HOST -p$DB_PORT -U$DB_USER -w"
   if [ -n "$DB_PWD" ]; then
     export PGPASSWORD=$DB_PWD
   fi
@@ -291,7 +285,7 @@ create_postgresql_tbl() {
 }
 
 create_mysql_tbl() {
-  CONNECTION_PARAMS="-h$DB_HOST -P${DB_PORT:="3306"} -u$DB_USER -p$DB_PWD -w"
+  CONNECTION_PARAMS="-h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PWD -w"
   MYSQL="mysql -q $CONNECTION_PARAMS"
 
   # Create db on remote server
