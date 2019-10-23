@@ -16,8 +16,6 @@ services:
     restart: always
     ports:
       - '80:80'
-    networks:
-      - onlyoffice
 
   onlyoffice-postgresql:
     container_name: onlyoffice-postgresql
@@ -25,17 +23,11 @@ services:
     environment:
       - POSTGRES_DB=onlyoffice
       - POSTGRES_USER=onlyoffice
-    networks:
-      - onlyoffice
     restart: always
     expose:
       - '5432'
     volumes:
       - postgresql_data:/var/lib/postgresql
-
-networks:
-  onlyoffice:
-    driver: 'bridge'
 
 volumes:
   postgresql_data:

@@ -16,8 +16,6 @@ services:
     restart: always
     ports:
       - '80:80'
-    networks:
-      - onlyoffice
 
   onlyoffice-mysql:
     container_name: onlyoffice-mysql
@@ -33,12 +31,6 @@ services:
     expose:
       - '3306'
       - '33060'
-    networks:
-      - onlyoffice
-
-networks:
-  onlyoffice:
-    driver: 'bridge'
 
 volumes:
   mysql_data:
