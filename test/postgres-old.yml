@@ -6,11 +6,11 @@ services:
     depends_on:
       - onlyoffice-postgresql
     environment:
-      - POSTGRESQL_SERVER_HOST=onlyoffice-postgresql
-      - POSTGRESQL_SERVER_PORT=5432
-      - POSTGRESQL_SERVER_DB_NAME=onlyoffice
-      - POSTGRESQL_SERVER_USER=onlyoffice
-      - POSTGRESQL_SERVER_PASS=onlyoffice
+      - POSTGRESQL_SERVER_HOST
+      - POSTGRESQL_SERVER_PORT
+      - POSTGRESQL_SERVER_DB_NAME
+      - POSTGRESQL_SERVER_USER
+      - POSTGRESQL_SERVER_PASS
     stdin_open: true
     restart: always
     ports:
@@ -20,8 +20,8 @@ services:
     container_name: onlyoffice-postgresql
     image: postgres:9.5
     environment:
-      - POSTGRES_DB=onlyoffice
-      - POSTGRES_USER=onlyoffice
+      - POSTGRES_DB
+      - POSTGRES_USER
     restart: always
     expose:
       - '5432'

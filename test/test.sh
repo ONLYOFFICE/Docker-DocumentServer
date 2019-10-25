@@ -1,13 +1,23 @@
 #!/bin/bash
 
 # Check if the yml exists
-if [[ ! -f $file ]]; then
-  echo "File $file doesn't exist!"
+if [[ ! -f $config ]]; then
+  echo "File $config doesn't exist!"
+  exit 1
+fi
+
+env_file=defaults.env
+
+# Copy .env
+if [[ -f $env_file ]]; then
+  cp $env_file .env
+else
+  echo "File $env_file doesn't exist!"
   exit 1
 fi
 
 # Run test environment
-docker-compose -p ds -f $file up -d
+docker-compose -p ds -f $config up -d
 
 wakeup_timeout=30
 
@@ -24,4 +34,4 @@ else
   exit 1
 fi
 
-docker-compose -p ds -f $file down
+docker-compose -p ds -f $config down

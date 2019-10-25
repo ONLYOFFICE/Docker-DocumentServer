@@ -3,16 +3,38 @@ language: generic
 dist: trusty
 
 env:
-  - file: postgres.yml
+  # postgresql
+  - config: postgres.yml
 
-  - file: mysql.yml
+  # custom values
+  - config: postgres.yml
+    DB_NAME: mydb
+    DB_USER: myuser
+    DB_PWD: password
+    POSTGRES_DB: mydb
+    POSTGRES_USER: myuser
 
-  - file: activemq.yml
+  # deprecated variables
+  - config: postgres-old.yml
+    POSTGRESQL_SERVER_HOST: onlyoffice-postgresql
+    POSTGRESQL_SERVER_PORT: 5432
+    POSTGRESQL_SERVER_DB_NAME: onlyoffice
+    POSTGRESQL_SERVER_USER: onlyoffice
+    POSTGRESQL_SERVER_PASS: onlyoffice
 
-  - file: postgres-deprecated-vars.yml
+  # mysql
+  - config: mysql.yml
+    DB_TYPE: mysql
+    DB_HOST: onlyoffice-mysql
+    DB_PORT: 3306
+
+  # activemq
+  - config: activemq.yml
+    AMQP_SERVER_TYPE: activemq
+    AMQP_SERVER_URL: amqp://guest:guest@onlyoffice-activemq
 
 services:
   - docker
 
 script:
-  - ./test.sh
+  - ./test/test.sh
