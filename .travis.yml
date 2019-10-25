@@ -37,4 +37,8 @@ services:
   - docker
 
 script:
-  - ./test/test.sh
+  # Go to tests dir
+  - cd ${PWD}/tests
+
+  # Run test.
+  - ./test.sh
