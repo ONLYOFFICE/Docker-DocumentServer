@@ -57,11 +57,32 @@ PGDATA=${PG_ROOT}/${PG_VERSION}/${PG_NAME}
 PG_NEW_CLUSTER=false
 
 read_setting(){
-  POSTGRESQL_SERVER_HOST=${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}
-  POSTGRESQL_SERVER_PORT=${POSTGRESQL_SERVER_PORT:-5432}
-  POSTGRESQL_SERVER_DB_NAME=${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}
-  POSTGRESQL_SERVER_USER=${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}
-  POSTGRESQL_SERVER_PASS=${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
+  deprecated_var POSTGRESQL_SERVER_HOST DB_HOST
+  deprecated_var POSTGRESQL_SERVER_PORT DB_PORT
+  deprecated_var POSTGRESQL_SERVER_DB_NAME DB_NAME
+  deprecated_var POSTGRESQL_SERVER_USER DB_USER
+  deprecated_var POSTGRESQL_SERVER_PASS DB_PWD
+
+  DB_HOST=${DB_HOST:-${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}}
+  case $DB_TYPE in
+    "postgres")
+      DB_PORT=${DB_PORT:-"5432"}
+      ;;
+    "mariadb"|"mysql")
+      DB_PORT=${DB_PORT:-"3306"}
+      ;;
+    "")
+      DB_PORT=${DB_PORT:-${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}}
+      ;;
+    *)
+      echo "ERROR: unknown database type"
+      exit 1
+      ;;
+  esac
+  DB_NAME=${DB_NAME:-${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}}
+  DB_USER=${DB_USER:-${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}}
+  DB_PWD=${DB_PWD:-${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}}
+  DB_TYPE=${DB_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
 
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
   AMQP_SERVER_URL=${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}
@@ -72,6 +93,12 @@ read_setting(){
   REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
 
   DS_LOG_LEVEL=${DS_LOG_LEVEL:-$(${JSON_LOG} categories.default.level)}
+}
+
+deprecated_var() {
+  if [[ -n ${!1} ]]; then
+    echo "Variable $1 is deprecated. Use $2 instead."
+  fi
 }
 
 parse_rabbitmq_url(){
@@ -123,8 +150,8 @@ waiting_for_connection(){
   done
 }
 
-waiting_for_postgresql(){
-  waiting_for_connection ${POSTGRESQL_SERVER_HOST} ${POSTGRESQL_SERVER_PORT}
+waiting_for_db(){
+  waiting_for_connection $DB_HOST $DB_PORT
 }
 
 waiting_for_amqp(){
@@ -137,12 +164,13 @@ waiting_for_redis(){
 waiting_for_datacontainer(){
   waiting_for_connection ${ONLYOFFICE_DATA_CONTAINER_HOST} ${ONLYOFFICE_DATA_CONTAINER_PORT}
 }
-update_postgresql_settings(){
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbHost = '${POSTGRESQL_SERVER_HOST}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPort = '${POSTGRESQL_SERVER_PORT}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbName = '${POSTGRESQL_SERVER_DB_NAME}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${POSTGRESQL_SERVER_USER}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${POSTGRESQL_SERVER_PASS}'"
+update_db_settings(){
+  ${JSON} -I -e "this.services.CoAuthoring.sql.type = '${DB_TYPE}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbHost = '${DB_HOST}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPort = '${DB_PORT}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbName = '${DB_NAME}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${DB_USER}'"
+  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${DB_PWD}'"
 }
 
 update_rabbitmq_setting(){
@@ -232,10 +260,21 @@ create_postgresql_db(){
   sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;"
 }
 
-create_postgresql_tbl(){
-  CONNECTION_PARAMS="-h${POSTGRESQL_SERVER_HOST} -p${POSTGRESQL_SERVER_PORT} -U${POSTGRESQL_SERVER_USER} -w"
-  if [ -n "${POSTGRESQL_SERVER_PASS}" ]; then
-    export PGPASSWORD=${POSTGRESQL_SERVER_PASS}
+create_db_tbl() {
+  case $DB_TYPE in
+    "postgres")
+      create_postgresql_tbl
+    ;;
+    "mariadb"|"mysql")
+      create_mysql_tbl
+    ;;
+  esac
+}
+
+create_postgresql_tbl() {
+  CONNECTION_PARAMS="-h$DB_HOST -p$DB_PORT -U$DB_USER -w"
+  if [ -n "$DB_PWD" ]; then
+    export PGPASSWORD=$DB_PWD
   fi
 
   PSQL="psql -q $CONNECTION_PARAMS"
@@ -243,10 +282,20 @@ create_postgresql_tbl(){
 
   # Create db on remote server
   if $PSQL -lt | cut -d\| -f 1 | grep -qw | grep 0; then
-    $CREATEDB $POSTGRESQL_SERVER_DB_NAME
+    $CREATEDB $DB_NAME
   fi
 
-  $PSQL -d "${POSTGRESQL_SERVER_DB_NAME}" -f "${APP_DIR}/server/schema/postgresql/createdb.sql"
+  $PSQL -d "$DB_NAME" -f "$APP_DIR/server/schema/postgresql/createdb.sql"
+}
+
+create_mysql_tbl() {
+  CONNECTION_PARAMS="-h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PWD -w"
+  MYSQL="mysql -q $CONNECTION_PARAMS"
+
+  # Create db on remote server
+  $MYSQL -e "CREATE DATABASE IF NOT EXISTS $DB_NAME DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null 2>&1
+
+  $MYSQL $DB_NAME < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
 }
 
 update_nginx_settings(){
@@ -340,10 +389,10 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   update_jwt_settings
 
   # update settings by env variables
-  if [ ${POSTGRESQL_SERVER_HOST} != "localhost" ]; then
-    update_postgresql_settings
-    waiting_for_postgresql
-    create_postgresql_tbl
+  if [ $DB_HOST != "localhost" ]; then
+    update_db_settings
+    waiting_for_db
+    create_db_tbl
   else
     # change rights for postgres directory
     chown -R postgres:postgres ${PG_ROOT}
@@ -390,7 +439,7 @@ if [ ${PG_NEW_CLUSTER} = "true" ]; then
 fi
 
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
-  waiting_for_postgresql
+  waiting_for_db
   waiting_for_amqp
   waiting_for_redis
 

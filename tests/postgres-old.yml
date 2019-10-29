@@ -1,0 +1,32 @@
+version: '2'
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    image: onlyoffice/4testing-documentserver-ie:latest
+    depends_on:
+      - onlyoffice-postgresql
+    environment:
+      - POSTGRESQL_SERVER_HOST
+      - POSTGRESQL_SERVER_PORT
+      - POSTGRESQL_SERVER_DB_NAME
+      - POSTGRESQL_SERVER_USER
+      - POSTGRESQL_SERVER_PASS
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+
+  onlyoffice-postgresql:
+    container_name: onlyoffice-postgresql
+    image: postgres:9.5
+    environment:
+      - POSTGRES_DB
+      - POSTGRES_USER
+    restart: always
+    expose:
+      - '5432'
+    volumes:
+      - postgresql_data:/var/lib/postgresql
+
+volumes:
+  postgresql_data:

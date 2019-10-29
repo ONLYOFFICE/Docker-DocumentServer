@@ -27,6 +27,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         libxml2 \
         libxss1 \
         libxtst6 \
+        mysql-client \
         nano \
         net-tools \
         netcat \

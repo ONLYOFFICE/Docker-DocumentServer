@@ -1,0 +1,35 @@
+version: '2'
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    image: onlyoffice/4testing-documentserver-ie:latest
+    depends_on:
+      - onlyoffice-mysql
+    environment:
+      - DB_TYPE
+      - DB_HOST
+      - DB_PORT
+      - DB_NAME
+      - DB_USER
+      - DB_PWD
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+
+  onlyoffice-mysql:
+    container_name: onlyoffice-mysql
+    image: mysql:5.7
+    environment:
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_ALLOW_EMPTY_PASSWORD
+    restart: always
+    volumes:
+      - mysql_data:/var/lib/mysql
+    expose:
+      - '3306'
+
+volumes:
+  mysql_data:
