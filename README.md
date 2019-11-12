@@ -161,6 +161,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **SSL_CERTIFICATE_PATH**: The path to the SSL certificate to use. Defaults to `/var/www/onlyoffice/Data/certs/onlyoffice.crt`.
 - **SSL_KEY_PATH**: The path to the SSL certificate's private key. Defaults to `/var/www/onlyoffice/Data/certs/onlyoffice.key`.
 - **SSL_DHPARAM_PATH**: The path to the Diffie-Hellman parameter. Defaults to `/var/www/onlyoffice/Data/certs/dhparam.pem`.
+- **SSL_SELFSIGNED_CERTIFICATE**: Set to `true`if using selfsigned certificates. Defaults to `false`
 - **SSL_VERIFY_CLIENT**: Enable verification of client certificates using the `CA_CERTIFICATES_PATH` file. Defaults to `false`
 - **POSTGRESQL_SERVER_HOST**: The IP address or the name of the host where the PostgreSQL server is running.
 - **POSTGRESQL_SERVER_PORT**: The PostgreSQL server port number.
