@@ -17,6 +17,7 @@ services:
       #- JWT_ENABLED=true
       #- JWT_SECRET=secret
       #- JWT_HEADER=Authorization
+      #- JWT_IN_BODY=true
     stdin_open: true
     restart: always
     networks:
