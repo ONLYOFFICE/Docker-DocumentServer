@@ -43,6 +43,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         supervisor \
         xvfb \
         zlib1g && \
+    echo "SERVER_ADDITIONAL_ERL_ARGS=\"+S 1:1\"" | tee -a /etc/rabbitmq/rabbitmq-env.conf && \
     sudo -u postgres psql -c "CREATE DATABASE onlyoffice;" && \
     sudo -u postgres psql -c "CREATE USER onlyoffice WITH password 'onlyoffice';" && \
     sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;" && \ 
@@ -69,8 +70,7 @@ RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/onlyoffice.list && \
     service supervisor stop && \
     chmod 755 /app/onlyoffice/*.sh && \
     rm -rf /var/log/onlyoffice && \
-    rm -rf /var/lib/apt/lists/* && \
-    echo "SERVER_ADDITIONAL_ERL_ARGS=\"+S 1:1\"" | tee -a /etc/rabbitmq/rabbitmq-env.conf
+    rm -rf /var/lib/apt/lists/*
 
 VOLUME /var/log/onlyoffice /var/lib/onlyoffice /var/www/onlyoffice/Data /var/lib/postgresql /usr/share/fonts/truetype/custom
 
