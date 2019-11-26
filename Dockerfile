@@ -69,7 +69,8 @@ RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/onlyoffice.list && \
     service supervisor stop && \
     chmod 755 /app/onlyoffice/*.sh && \
     rm -rf /var/log/onlyoffice && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    echo "SERVER_ADDITIONAL_ERL_ARGS=\"+S 1:1\"" | tee -a /etc/rabbitmq/rabbitmq-env.conf
 
 VOLUME /var/log/onlyoffice /var/lib/onlyoffice /var/www/onlyoffice/Data /var/lib/postgresql /usr/share/fonts/truetype/custom
 

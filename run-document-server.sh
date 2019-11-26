@@ -412,8 +412,6 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     LOCAL_SERVICES+=("rabbitmq-server")
     # allow Rabbitmq startup after container kill
     rm -rf /var/run/rabbitmq
-    # number of threads
-    echo "SERVER_ADDITIONAL_ERL_ARGS=\"+S 1:1\"" >> /etc/rabbitmq/rabbitmq-env.conf
   fi
 
   if [ ${REDIS_SERVER_HOST} != "localhost" ]; then
