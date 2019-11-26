@@ -43,6 +43,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         supervisor \
         xvfb \
         zlib1g && \
+    echo "SERVER_ADDITIONAL_ERL_ARGS=\"+S 1:1\"" | tee -a /etc/rabbitmq/rabbitmq-env.conf && \
     sudo -u postgres psql -c "CREATE DATABASE onlyoffice;" && \
     sudo -u postgres psql -c "CREATE USER onlyoffice WITH password 'onlyoffice';" && \
     sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;" && \ 
