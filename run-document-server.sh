@@ -38,6 +38,7 @@ NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
 JWT_ENABLED=${JWT_ENABLED:-false}
 JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
+JWT_IN_BODY=${JWT_IN_BODY:-false}
 
 ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/local.json
 ONLYOFFICE_LOG4JS_CONFIG=${CONF_DIR}/log4js/production.json
@@ -234,6 +235,9 @@ update_jwt_settings(){
 
     ${JSON} -I -e "this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'"
     ${JSON} -I -e "this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'"
+
+    ${JSON} -I -e "this.services.CoAuthoring.token.inbox.inBody = '${JWT_IN_BODY}'"
+    ${JSON} -I -e "this.services.CoAuthoring.token.outbox.inBody = '${JWT_IN_BODY}'"
 
     if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ] && [ "${JWT_ENABLED}" == "true" ]; then
       ${JSON_EXAMPLE} -I -e "this.server.token.enable = ${JWT_ENABLED}"
