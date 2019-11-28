@@ -304,12 +304,14 @@ create_mysql_tbl() {
 
 update_welcome_page() {
   WELCOME_PAGE="${APP_DIR}-example/welcome/docker.html"
-  DOCKER_CONTAINER_ID=$(basename $(cat /proc/1/cpuset))
-  if [[ -x $(command -v docker) ]]; then
-    DOCKER_CONTAINER_NAME=$(docker inspect --format="{{.Name}}" $DOCKER_CONTAINER_ID)
-    sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_NAME#/}"'/' -i $WELCOME_PAGE
-  else
-    sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_ID::12}"'/' -i $WELCOME_PAGE
+  if [[ -e $WELCOME_PAGE ]]; then
+    DOCKER_CONTAINER_ID=$(basename $(cat /proc/1/cpuset))
+    if [[ -x $(command -v docker) ]]; then
+      DOCKER_CONTAINER_NAME=$(docker inspect --format="{{.Name}}" $DOCKER_CONTAINER_ID)
+      sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_NAME#/}"'/' -i $WELCOME_PAGE
+    else
+      sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_ID::12}"'/' -i $WELCOME_PAGE
+    fi
   fi
 }
 
