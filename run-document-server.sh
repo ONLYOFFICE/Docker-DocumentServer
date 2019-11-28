@@ -302,6 +302,19 @@ create_mysql_tbl() {
   $MYSQL $DB_NAME < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
 }
 
+update_welcome_page() {
+  WELCOME_PAGE="${APP_DIR}-example/welcome/docker.html"
+  if [[ -e $WELCOME_PAGE ]]; then
+    DOCKER_CONTAINER_ID=$(basename $(cat /proc/1/cpuset))
+    if [[ -x $(command -v docker) ]]; then
+      DOCKER_CONTAINER_NAME=$(docker inspect --format="{{.Name}}" $DOCKER_CONTAINER_ID)
+      sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_NAME#/}"'/' -i $WELCOME_PAGE
+    else
+      sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_ID::12}"'/' -i $WELCOME_PAGE
+    fi
+  fi
+}
+
 update_nginx_settings(){
   # Set up nginx
   sed 's/^worker_processes.*/'"worker_processes ${NGINX_WORKER_PROCESSES};"'/' -i ${NGINX_CONFIG_PATH}
@@ -388,6 +401,8 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
   read_setting
 
+  update_welcome_page
+
   update_log_settings
 
   update_jwt_settings
@@ -430,6 +445,8 @@ else
   # read settings after the data container in ready state
   # to prevent get unconfigureted data
   read_setting
+  
+  update_welcome_page
 fi
 
 #start needed local services
