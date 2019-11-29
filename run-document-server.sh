@@ -3,13 +3,13 @@
 # Define '**' behavior explicitly
 shopt -s globstar
 
-APP_DIR="/var/www/onlyoffice/documentserver"
-DATA_DIR="/var/www/onlyoffice/Data"
-LOG_DIR="/var/log/onlyoffice"
+APP_DIR="/var/www/${COMPANY_NAME}/documentserver"
+DATA_DIR="/var/www/${COMPANY_NAME}/Data"
+LOG_DIR="/var/log/${COMPANY_NAME}"
 DS_LOG_DIR="${LOG_DIR}/documentserver"
-LIB_DIR="/var/lib/onlyoffice"
+LIB_DIR="/var/lib/${COMPANY_NAME}"
 DS_LIB_DIR="${LIB_DIR}/documentserver"
-CONF_DIR="/etc/onlyoffice/documentserver"
+CONF_DIR="/etc/${COMPANY_NAME}/documentserver"
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
 ONLYOFFICE_DATA_CONTAINER_HOST=${ONLYOFFICE_DATA_CONTAINER_HOST:-localhost}
@@ -23,7 +23,7 @@ SSL_DHPARAM_PATH=${SSL_DHPARAM_PATH:-${SSL_CERTIFICATES_DIR}/dhparam.pem}
 SSL_VERIFY_CLIENT=${SSL_VERIFY_CLIENT:-off}
 ONLYOFFICE_HTTPS_HSTS_ENABLED=${ONLYOFFICE_HTTPS_HSTS_ENABLED:-true}
 ONLYOFFICE_HTTPS_HSTS_MAXAGE=${ONLYOFFICE_HTTPS_HSTS_MAXAGE:-31536000}
-SYSCONF_TEMPLATES_DIR="/app/onlyoffice/setup/config"
+SYSCONF_TEMPLATES_DIR="/app/ds/setup/config"
 
 NGINX_CONFD_PATH="/etc/nginx/conf.d";
 NGINX_ONLYOFFICE_PATH="${CONF_DIR}/nginx"
@@ -482,4 +482,4 @@ service nginx start
 documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
-tail -f /var/log/onlyoffice/**/*.log
+tail -f /var/log/${COMPANY_NAME}/**/*.log
