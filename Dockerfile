@@ -29,6 +29,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         libxml2 \
         libxss1 \
         libxtst6 \
+        mysql-client \
         nano \
         net-tools \
         netcat \
@@ -44,6 +45,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         supervisor \
         xvfb \
         zlib1g && \
+    echo "SERVER_ADDITIONAL_ERL_ARGS=\"+S 1:1\"" | tee -a /etc/rabbitmq/rabbitmq-env.conf && \
     sudo -u postgres psql -c "CREATE DATABASE $ONLYOFFICE_VALUE;" && \
     sudo -u postgres psql -c "CREATE USER $ONLYOFFICE_VALUE WITH password '$ONLYOFFICE_VALUE';" && \
     sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE $ONLYOFFICE_VALUE TO $ONLYOFFICE_VALUE;" && \ 
