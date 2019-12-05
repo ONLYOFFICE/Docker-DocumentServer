@@ -21,7 +21,7 @@ SSL_KEY_PATH=${SSL_KEY_PATH:-${SSL_CERTIFICATES_DIR}/onlyoffice.key}
 CA_CERTIFICATES_PATH=${CA_CERTIFICATES_PATH:-${SSL_CERTIFICATES_DIR}/ca-certificates.pem}
 SSL_DHPARAM_PATH=${SSL_DHPARAM_PATH:-${SSL_CERTIFICATES_DIR}/dhparam.pem}
 SSL_VERIFY_CLIENT=${SSL_VERIFY_CLIENT:-off}
-SSL_SELFSIGNED_CERTIFICATE=${SSL_SELFSIGNED_CERTIFICATE:-false}
+REJECT_UNAUTHORIZED_STORAGE=${REJECT_UNAUTHORIZED_STORAGE:-false}
 ONLYOFFICE_HTTPS_HSTS_ENABLED=${ONLYOFFICE_HTTPS_HSTS_ENABLED:-true}
 ONLYOFFICE_HTTPS_HSTS_MAXAGE=${ONLYOFFICE_HTTPS_HSTS_MAXAGE:-31536000}
 SYSCONF_TEMPLATES_DIR="/app/onlyoffice/setup/config"
@@ -286,7 +286,7 @@ update_nginx_settings(){
       sed '/max-age=/d' -i ${NGINX_ONLYOFFICE_CONF}
     fi
 
-    if [ "${SSL_SELFSIGNED_CERTIFICATE}" == "true" ]; then
+    if [ "${REJECT_UNAUTHORIZED_STORAGE}" == "true" ]; then
       ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults===undefined)this.services.CoAuthoring.requestDefaults={}"
       ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults.rejectUnauthorized===undefined)this.services.CoAuthoring.requestDefaults.rejectUnauthorized=false"
     fi

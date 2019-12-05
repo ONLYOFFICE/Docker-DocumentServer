@@ -161,7 +161,6 @@ Below is the complete list of parameters that can be set using environment varia
 - **SSL_CERTIFICATE_PATH**: The path to the SSL certificate to use. Defaults to `/var/www/onlyoffice/Data/certs/onlyoffice.crt`.
 - **SSL_KEY_PATH**: The path to the SSL certificate's private key. Defaults to `/var/www/onlyoffice/Data/certs/onlyoffice.key`.
 - **SSL_DHPARAM_PATH**: The path to the Diffie-Hellman parameter. Defaults to `/var/www/onlyoffice/Data/certs/dhparam.pem`.
-- **SSL_SELFSIGNED_CERTIFICATE**: Set to `true`if using selfsigned certificates. Defaults to `false`
 - **SSL_VERIFY_CLIENT**: Enable verification of client certificates using the `CA_CERTIFICATES_PATH` file. Defaults to `false`
 - **POSTGRESQL_SERVER_HOST**: The IP address or the name of the host where the PostgreSQL server is running.
 - **POSTGRESQL_SERVER_PORT**: The PostgreSQL server port number.
@@ -177,6 +176,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `false`.
 - **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to `secret`.
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
+- **REJECT_UNAUTHORIZED_STORAGE**: Set to `true`if using selfsigned certificates for your storage server e.g. Nextcloud. Defaults to `false`
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
