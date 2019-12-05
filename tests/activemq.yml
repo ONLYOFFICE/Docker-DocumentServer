@@ -4,8 +4,8 @@ services:
     container_name: onlyoffice-documentserver
     image: onlyoffice/4testing-documentserver-ie:latest
     environment:
-      - AMQP_SERVER_URL=amqp://guest:guest@onlyoffice-activemq
-      - AMQP_SERVER_TYPE=activemq
+      - AMQP_SERVER_TYPE
+      - AMQP_SERVER_URL
     stdin_open: true
     restart: always
     ports:
@@ -18,8 +18,8 @@ services:
     container_name: onlyoffice-activemq
     image: webcenter/activemq:5.14.3
     environment:
-      - ACTIVEMQ_USERS_guest=guest
-      - ACTIVEMQ_GROUPS_owners=guest
+      - ACTIVEMQ_USERS_guest
+      - ACTIVEMQ_GROUPS_owners
     restart: always
     networks:
      - onlyoffice

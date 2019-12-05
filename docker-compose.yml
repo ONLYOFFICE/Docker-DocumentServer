@@ -5,10 +5,11 @@ services:
     image: onlyoffice/documentserver:latest
     environment:
       - ONLYOFFICE_DATA_CONTAINER=true
-      - POSTGRESQL_SERVER_HOST=onlyoffice-postgresql
-      - POSTGRESQL_SERVER_PORT=5432
-      - POSTGRESQL_SERVER_DB_NAME=onlyoffice
-      - POSTGRESQL_SERVER_USER=onlyoffice
+      - DB_TYPE=postgres
+      - DB_HOST=onlyoffice-postgresql
+      - DB_PORT=5432
+      - DB_NAME=onlyoffice
+      - DB_USER=onlyoffice
       - AMQP_SERVER_URL=amqp://guest:guest@onlyoffice-rabbitmq
       - REDIS_SERVER_HOST=onlyoffice-redis
       - REDIS_SERVER_PORT=6379
@@ -16,6 +17,7 @@ services:
       #- JWT_ENABLED=true
       #- JWT_SECRET=secret
       #- JWT_HEADER=Authorization
+      #- JWT_IN_BODY=true
     stdin_open: true
     restart: always
     networks:
