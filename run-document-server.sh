@@ -57,8 +57,8 @@ PG_VERSION=9.5
 PG_NAME=main
 PGDATA=${PG_ROOT}/${PG_VERSION}/${PG_NAME}
 PG_NEW_CLUSTER=false
-RABBIT_ROOT=/var/lib/rabbitmq
-REDIS_ROOT=/var/lib/redis
+RABBITMQ_DATA=/var/lib/rabbitmq
+REDIS_DATA=/var/lib/redis
 
 read_setting(){
   deprecated_var POSTGRESQL_SERVER_HOST DB_HOST
@@ -431,19 +431,15 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
       PG_NEW_CLUSTER=true
     fi
     LOCAL_SERVICES+=("postgresql")
-
-    # change rights for rabbitmq directory
-    chown -R rabbitmq:rabbitmq ${RABBIT_ROOT}
-    chmod -R 755 ${RABBIT_ROOT}
-
-    # change rights for redis directory
-    chown -R redis:redis ${REDIS_ROOT}
-    chmod -R 755 ${REDIS_ROOT}
   fi
 
   if [ ${AMQP_SERVER_HOST} != "localhost" ]; then
     update_rabbitmq_setting
   else
+    # change rights for rabbitmq directory
+    chown -R rabbitmq:rabbitmq ${RABBITMQ_DATA}
+    chmod -R 755 ${RABBITMQ_DATA}
+
     LOCAL_SERVICES+=("rabbitmq-server")
     # allow Rabbitmq startup after container kill
     rm -rf /var/run/rabbitmq
@@ -452,6 +448,10 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   if [ ${REDIS_SERVER_HOST} != "localhost" ]; then
     update_redis_settings
   else
+    # change rights for redis directory
+    chown -R redis:redis ${REDIS_DATA}
+    chmod -R 750 ${REDIS_DATA}
+
     LOCAL_SERVICES+=("redis-server")
   fi
 else
