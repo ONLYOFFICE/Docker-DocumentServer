@@ -436,16 +436,10 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   if [ ${AMQP_SERVER_HOST} != "localhost" ]; then
     update_rabbitmq_setting
   else
-    # check rabbitmq current owner
-    stat -c '%U' /var/lib/rabbitmq>/tmp/rabbitmq_owner.txt
-    read RABBITMQ_OWNER</tmp/rabbitmq_owner.txt
-
     # change rights for rabbitmq directory
-    if [ ${RABBITMQ_OWNER} != "rabbitmq" ]; then
-        chown -R rabbitmq:rabbitmq ${RABBITMQ_DATA}
-        chmod -R 755 ${RABBITMQ_DATA}
-    fi
-
+    chown -R rabbitmq:rabbitmq ${RABBITMQ_DATA}
+    chmod -R go=rX,u=rwX ${RABBITMQ_DATA}
+    chmod 400 ${RABBITMQ_DATA}/.erlang.cookie
 
     LOCAL_SERVICES+=("rabbitmq-server")
     # allow Rabbitmq startup after container kill
