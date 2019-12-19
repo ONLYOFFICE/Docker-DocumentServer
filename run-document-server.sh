@@ -437,12 +437,10 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     update_rabbitmq_setting
   else
     # change rights for rabbitmq directory
-    if [ -e ${RABBITMQ_DATA} ]; then
-        chown -R rabbitmq:rabbitmq ${RABBITMQ_DATA}
-        chmod -R go=rX,u=rwX ${RABBITMQ_DATA}
-        if [ -e ${RABBITMQ_DATA}/.erlang.cookie ]; then
-            chmod 400 ${RABBITMQ_DATA}/.erlang.cookie
-        fi
+    chown -R rabbitmq:rabbitmq ${RABBITMQ_DATA}
+    chmod -R go=rX,u=rwX ${RABBITMQ_DATA}
+    if [ -f ${RABBITMQ_DATA}/.erlang.cookie ]; then
+        chmod 400 ${RABBITMQ_DATA}/.erlang.cookie
     fi
 
     LOCAL_SERVICES+=("rabbitmq-server")
@@ -454,10 +452,8 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     update_redis_settings
   else
     # change rights for redis directory
-    if [ -e ${RABBITMQ_DATA} ]; then
-        chown -R redis:redis ${REDIS_DATA}
-        chmod -R 750 ${REDIS_DATA}
-    fi
+    chown -R redis:redis ${REDIS_DATA}
+    chmod -R 750 ${REDIS_DATA}
 
     LOCAL_SERVICES+=("redis-server")
   fi
