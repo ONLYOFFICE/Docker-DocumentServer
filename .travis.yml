@@ -33,6 +33,11 @@ env:
     AMQP_SERVER_TYPE: activemq
     AMQP_SERVER_URL: amqp://guest:guest@onlyoffice-activemq
 
+  # amqp variables
+  - config: amqp.yml
+    AMQP_TYPE: activemq
+    AMQP_URL: amqp://guest:guest@onlyoffice-activemq
+
 services:
   - docker
 
