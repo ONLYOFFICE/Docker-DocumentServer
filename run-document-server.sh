@@ -64,6 +64,9 @@ read_setting(){
   deprecated_var POSTGRESQL_SERVER_DB_NAME DB_NAME
   deprecated_var POSTGRESQL_SERVER_USER DB_USER
   deprecated_var POSTGRESQL_SERVER_PASS DB_PWD
+  deprecated_var RABBITMQ_SERVER_URL AMQP_URI
+  deprecated_var AMQP_SERVER_URL AMQP_URI
+  deprecated_var AMQP_SERVER_TYPE AMQP_TYPE
 
   DB_HOST=${DB_HOST:-${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}}
   case $DB_TYPE in
