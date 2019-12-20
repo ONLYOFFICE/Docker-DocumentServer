@@ -67,6 +67,8 @@ To get access to your data from outside the container, you need to mount the vol
         -v /app/onlyoffice/DocumentServer/logs:/var/log/onlyoffice  \
         -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  \
         -v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice \
+        -v /app/onlyoffice/DocumentServer/rabbitmq:/var/lib/rabbitmq \
+        -v /app/onlyoffice/DocumentServer/redis:/var/lib/redis \
         -v /app/onlyoffice/DocumentServer/db:/var/lib/postgresql  onlyoffice/documentserver
 
 Normally, you do not need to store container data because the container's operation does not depend on its state. Saving data will be useful:
