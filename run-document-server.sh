@@ -87,9 +87,9 @@ read_setting(){
   DB_TYPE=${DB_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
 
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
-  AMQP_URL=${AMQP_URL:-${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}}
+  AMQP_URI=${AMQP_URI:-${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}}
   AMQP_TYPE=${AMQP_TYPE:-${AMQP_SERVER_TYPE:-rabbitmq}}
-  parse_rabbitmq_url ${AMQP_URL}
+  parse_rabbitmq_url ${AMQP_URI}
 
   REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}
   REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
@@ -179,7 +179,7 @@ update_rabbitmq_setting(){
   if [ "${AMQP_TYPE}" == "rabbitmq" ]; then
     ${JSON} -I -e "if(this.queue===undefined)this.queue={};"
     ${JSON} -I -e "this.queue.type = 'rabbitmq'"
-    ${JSON} -I -e "this.rabbitmq.url = '${AMQP_URL}'"
+    ${JSON} -I -e "this.rabbitmq.url = '${AMQP_URI}'"
   fi
   
   if [ "${AMQP_TYPE}" == "activemq" ]; then

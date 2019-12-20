@@ -14,18 +14,6 @@ services:
     networks:
       - onlyoffice
 
-  onlyoffice-activemq:
-    container_name: onlyoffice-activemq
-    image: webcenter/activemq:5.14.3
-    environment:
-      - ACTIVEMQ_USERS_guest
-      - ACTIVEMQ_GROUPS_owners
-    restart: always
-    networks:
-     - onlyoffice
-    expose:
-      - '5672'
-
 networks:
   onlyoffice:
     driver: 'bridge'
