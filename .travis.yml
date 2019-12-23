@@ -35,8 +35,8 @@ env:
 
   # redis
   - config: redis.yml
-     REDIS_SERVER_HOST: onlyoffice-redis
-     REDIS_SERVER_PORT: 6379
+    REDIS_SERVER_HOST: onlyoffice-redis
+    REDIS_SERVER_PORT: 6379
 
 services:
   - docker
