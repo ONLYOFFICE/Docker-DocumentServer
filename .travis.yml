@@ -33,6 +33,11 @@ env:
     AMQP_SERVER_TYPE: activemq
     AMQP_SERVER_URL: amqp://guest:guest@onlyoffice-activemq
 
+  # redis
+  - config: redis.yml
+     REDIS_SERVER_HOST: onlyoffice-redis
+     REDIS_SERVER_PORT: 6379
+
 services:
   - docker
 
