@@ -30,8 +30,18 @@ env:
 
   # activemq
   - config: activemq.yml
-    AMQP_SERVER_TYPE: activemq
-    AMQP_SERVER_URL: amqp://guest:guest@onlyoffice-activemq
+    AMQP_TYPE: activemq
+    AMQP_URI: amqp://guest:guest@onlyoffice-activemq
+
+  # rabbitmq
+  - config: rabbitmq.yml
+    AMQP_TYPE: rabbitmq
+    AMQP_URI: amqp://guest:guest@onlyoffice-rabbitmq
+
+  # rabbitmq old variables
+  - config: rabbitmq-old.yml
+    AMQP_SERVER_TYPE: rabbitmq
+    AMQP_SERVER_URL: amqp://guest:guest@onlyoffice-rabbitmq
 
 services:
   - docker

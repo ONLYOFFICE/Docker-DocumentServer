@@ -14,12 +14,9 @@ services:
     networks:
       - onlyoffice
 
-  onlyoffice-activemq:
-    container_name: onlyoffice-activemq
-    image: webcenter/activemq:5.14.3
-    environment:
-      - ACTIVEMQ_USERS_guest
-      - ACTIVEMQ_GROUPS_owners
+  onlyoffice-rabbitmq:
+    container_name: onlyoffice-rabbitmq
+    image: rabbitmq
     restart: always
     networks:
      - onlyoffice
