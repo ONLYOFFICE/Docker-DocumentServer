@@ -1,0 +1,28 @@
+version: '2'
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    image: onlyoffice/4testing-documentserver-ie:latest
+    environment:
+      - REDIS_SERVER_HOST
+      - REDIS_SERVER_PORT
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    networks:
+      - onlyoffice
+
+  onlyoffice-redis:
+    container_name: onlyoffice-redis
+    image: redis
+    restart: always
+    networks:
+     - onlyoffice
+    expose:
+      - '6379'
+
+networks:
+  onlyoffice:
+    driver: 'bridge'

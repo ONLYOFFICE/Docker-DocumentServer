@@ -43,6 +43,11 @@ env:
     AMQP_SERVER_TYPE: rabbitmq
     AMQP_SERVER_URL: amqp://guest:guest@onlyoffice-rabbitmq
 
+  # redis
+  - config: redis.yml
+    REDIS_SERVER_HOST: onlyoffice-redis
+    REDIS_SERVER_PORT: 6379
+
 services:
   - docker
 
