@@ -242,8 +242,8 @@ update_jwt_settings(){
     ${JSON} -I -e "this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'"
     ${JSON} -I -e "this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'"
 
-    ${JSON} -I -e "this.services.CoAuthoring.token.inbox.inBody = '${JWT_IN_BODY}'"
-    ${JSON} -I -e "this.services.CoAuthoring.token.outbox.inBody = '${JWT_IN_BODY}'"
+    ${JSON} -I -e "this.services.CoAuthoring.token.inbox.inBody = ${JWT_IN_BODY}"
+    ${JSON} -I -e "this.services.CoAuthoring.token.outbox.inBody = ${JWT_IN_BODY}"
 
     if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ] && [ "${JWT_ENABLED}" == "true" ]; then
       ${JSON_EXAMPLE} -I -e "this.server.token.enable = ${JWT_ENABLED}"
