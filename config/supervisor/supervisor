@@ -30,8 +30,8 @@ DESC=supervisor
 
 test -x $DAEMON || exit 0
 
-LOGDIR=/var/log/supervisor
-PIDFILE=/var/run/$NAME.pid
+LOGDIR=/tmp
+PIDFILE=/tmp/$NAME.pid
 PS_COUNT=0
 DODTIME=5                   # Time to wait for the server to die, in seconds
                             # If this value is set too low you might not
@@ -101,7 +101,7 @@ case "$1" in
             rm -f "$PIDFILE"
         fi
 	echo -n "Starting $DESC: "
-	start-stop-daemon --start --quiet --pidfile $PIDFILE \
+	start-stop-daemon --start --quiet --chuid ds:ds --pidfile $PIDFILE \
 		--startas $DAEMON -- $DAEMON_OPTS
 	test -f $PIDFILE || sleep 1
         if running ; then
@@ -152,7 +152,7 @@ case "$1" in
     echo -n "Restarting $DESC: "
     start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
 	[ -n "$DODTIME" ] && sleep $DODTIME
-	start-stop-daemon --start --quiet --pidfile $PIDFILE \
+	start-stop-daemon --start --quiet --chuid ds:ds --pidfile $PIDFILE \
 		--startas $DAEMON -- $DAEMON_OPTS
 	echo "$NAME."
 	;;

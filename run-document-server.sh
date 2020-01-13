@@ -48,6 +48,8 @@ JSON="${JSON_BIN} -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
 JSON_LOG="${JSON_BIN} -q -f ${ONLYOFFICE_LOG4JS_CONFIG}"
 JSON_EXAMPLE="${JSON_BIN} -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
 
+DS_PORT=${DS_PORT:-80}
+
 LOCAL_SERVICES=()
 
 PG_ROOT=/var/lib/postgresql
@@ -286,6 +288,8 @@ update_nginx_settings(){
     fi
   else
     ln -sf ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl ${NGINX_ONLYOFFICE_CONF}
+    # set up default listening port
+    sed 's,\(listen.\+:\)\([0-9]\+\)\(.*;\),'"\1${DS_PORT}\3"',' -i ${NGINX_ONLYOFFICE_CONF}
   fi
 
   # check if ipv6 supported otherwise remove it from nginx config
@@ -303,6 +307,10 @@ update_supervisor_settings(){
   cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisor /etc/init.d/
   # Copy modified supervisor config
   cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+  # Copy modified nginx start script
+  cp ${SYSCONF_TEMPLATES_DIR}/nginx/nginx /etc/init.d/
+  # Copy modified ngnix config
+  cp ${SYSCONF_TEMPLATES_DIR}/nginx/nginx.conf /etc/nginx/nginx.conf
 }
 
 update_log_settings(){
@@ -330,6 +338,9 @@ for i in ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
   chown -R ds:ds "$i"
   chmod -R 755 "$i"
 done
+
+touch ${DS_LOG_DIR}/nginx.error.log
+chown www-data:www-data ${DS_LOG_DIR}/nginx.error.log
 
 if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
