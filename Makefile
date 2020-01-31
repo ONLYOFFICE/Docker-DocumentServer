@@ -11,7 +11,7 @@ COMPANY_NAME_LOW_ESCAPED = $(subst -,,$(COMPANY_NAME_LOW))
 
 PACKAGE_VERSION := $(PRODUCT_VERSION)-$(BUILD_NUMBER)
 
-REPO_URL := "deb [trusted=yes] http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/$(COMPANY_NAME)-$(PRODUCT_NAME)/$(GIT_BRANCH)/$(PACKAGE_VERSION)/ repo/"
+REPO_URL := "deb [trusted=yes] http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/$(COMPANY_NAME_LOW)-$(PRODUCT_NAME_LOW)/$(GIT_BRANCH)/$(PACKAGE_VERSION)/ repo/"
 
 UPDATE_LATEST := false
 
@@ -28,7 +28,7 @@ endif
 
 DOCKER_TAGS += $(DOCKER_TAG)
 
-DOCKER_REPO = $(COMPANY_NAME_LOW)/4testing-$(PRODUCT_NAME_LOW)
+DOCKER_REPO = $(COMPANY_NAME_LOW_ESCAPED)/4testing-$(PRODUCT_NAME_LOW)
 
 COLON := __colon__
 DOCKER_TARGETS := $(foreach TAG,$(DOCKER_TAGS),$(DOCKER_REPO)$(COLON)$(TAG))
