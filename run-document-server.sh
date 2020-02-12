@@ -398,8 +398,8 @@ done
 mkdir -p ${DS_LOG_DIR}-example
 
 # create app folders
-for i in App_Data/cache/files App_Data/docbuilder; do
-  mkdir -p "${DS_LIB_DIR}/$i"
+for i in ${DS_LIB_DIR}/App_Data/cache/files ${DS_LIB_DIR}/App_Data/docbuilder ${DS_LIB_DIR}-example/files; do
+  mkdir -p "$i"
 done
 
 # change folder rights
