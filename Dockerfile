@@ -23,7 +23,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         libcurl3 \
         libcurl3-gnutls \
         libgconf2-4 \
-        libgtkglext1 \
+        libgtk-3-0 \
         libnspr4 \
         libnss3 \
         libstdc++6 \
