@@ -7,15 +7,14 @@ ARG ONLYOFFICE_VALUE=onlyoffice
 
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get -y update && \
-    apt-get -yq install wget apt-transport-https gnupg curl locales && \
+    apt-get -yq install wget apt-transport-https gnupg locales && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 0x8320ca65cb2de8e5 && \
     locale-gen en_US.UTF-8 && \
-    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
-    apt-get -y update && \
     apt-get -yq install \
         adduser \
         apt-utils \
         bomstrip \
+        curl \
         htop \
         libasound2 \
         libboost-regex-dev \
@@ -35,7 +34,6 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         net-tools \
         netcat \
         nginx-extras \
-        nodejs \
         postgresql \
         postgresql-client \
         pwgen \
