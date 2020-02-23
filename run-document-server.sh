@@ -242,7 +242,7 @@ create_postgresql_tbl(){
   CREATEDB="createdb $CONNECTION_PARAMS"
 
   # Create db on remote server
-  if $PSQL -lt | cut -d\| -f 1 | grep -qw | grep 0; then
+  if $PSQL -lt | cut -d\| -f 1 | grep -qw $POSTGRESQL_SERVER_DB_NAME | grep 0; then
     $CREATEDB $POSTGRESQL_SERVER_DB_NAME
   fi
 
