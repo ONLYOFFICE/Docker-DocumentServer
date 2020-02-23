@@ -167,7 +167,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **POSTGRESQL_SERVER_DB_NAME**: The name of a PostgreSQL database to be created on the image startup.
 - **POSTGRESQL_SERVER_USER**: The new user name with superuser permissions for the PostgreSQL account.
 - **POSTGRESQL_SERVER_PASS**: The password set for the PostgreSQL account.
-- **AMQP_SERVER_URL**: The [AMQP URL](http://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
+- **AMQP_SERVER_URL**: The [AMQP URL](https://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
 - **AMQP_SERVER_TYPE**: The message broker type. Supported values are `rabbitmq` or `activemq`. Defaults to `rabbitmq`.
 - **REDIS_SERVER_HOST**: The IP address or the name of the host where the Redis server is running.
 - **REDIS_SERVER_PORT**:  The Redis server port number.
@@ -259,7 +259,7 @@ Alternatively, you can use an automatic installation script to install the whole
 **STEP 1**: Download the Community Edition Docker script file
 
 ```bash
-wget http://download.onlyoffice.com/install/opensource-install.sh
+wget https://download.onlyoffice.com/install/opensource-install.sh
 ```
 
 **STEP 2**: Install ONLYOFFICE Community Edition executing the following command:
@@ -311,5 +311,5 @@ SaaS version: [https://www.onlyoffice.com/cloud-office.aspx](https://www.onlyoff
 
 If you have any problems with or questions about this image, please visit our official forum to find answers to your questions: [dev.onlyoffice.org][1] or you can ask and answer ONLYOFFICE development questions on [Stack Overflow][2].
 
-  [1]: http://dev.onlyoffice.org
-  [2]: http://stackoverflow.com/questions/tagged/onlyoffice
+  [1]: https://dev.onlyoffice.org
+  [2]: https://stackoverflow.com/questions/tagged/onlyoffice
