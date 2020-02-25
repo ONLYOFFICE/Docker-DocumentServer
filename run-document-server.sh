@@ -391,7 +391,7 @@ update_logrotate_settings(){
 }
 
 # create base folders
-for i in converter docservice spellchecker metrics gc; do
+for i in converter docservice spellchecker metrics; do
   mkdir -p "${DS_LOG_DIR}/$i"
 done
 
