@@ -67,6 +67,8 @@ To get access to your data from outside the container, you need to mount the vol
         -v /app/onlyoffice/DocumentServer/logs:/var/log/onlyoffice  \
         -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  \
         -v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice \
+        -v /app/onlyoffice/DocumentServer/rabbitmq:/var/lib/rabbitmq \
+        -v /app/onlyoffice/DocumentServer/redis:/var/lib/redis \
         -v /app/onlyoffice/DocumentServer/db:/var/lib/postgresql  onlyoffice/documentserver
 
 Normally, you do not need to store container data because the container's operation does not depend on its state. Saving data will be useful:
@@ -178,7 +180,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to `secret`.
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
 - **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
-- **REJECT_UNAUTHORIZED_STORAGE**: Set to `true`if using selfsigned certificates for your storage server e.g. Nextcloud. Defaults to `false`
+- **USE_UNAUTHORIZED_STORAGE**: Set to `true`if using selfsigned certificates for your storage server e.g. Nextcloud. Defaults to `false`
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 

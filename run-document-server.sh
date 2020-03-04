@@ -21,7 +21,7 @@ SSL_KEY_PATH=${SSL_KEY_PATH:-${SSL_CERTIFICATES_DIR}/onlyoffice.key}
 CA_CERTIFICATES_PATH=${CA_CERTIFICATES_PATH:-${SSL_CERTIFICATES_DIR}/ca-certificates.pem}
 SSL_DHPARAM_PATH=${SSL_DHPARAM_PATH:-${SSL_CERTIFICATES_DIR}/dhparam.pem}
 SSL_VERIFY_CLIENT=${SSL_VERIFY_CLIENT:-off}
-REJECT_UNAUTHORIZED_STORAGE=${REJECT_UNAUTHORIZED_STORAGE:-false}
+USE_UNAUTHORIZED_STORAGE=${USE_UNAUTHORIZED_STORAGE:-false}
 ONLYOFFICE_HTTPS_HSTS_ENABLED=${ONLYOFFICE_HTTPS_HSTS_ENABLED:-true}
 ONLYOFFICE_HTTPS_HSTS_MAXAGE=${ONLYOFFICE_HTTPS_HSTS_MAXAGE:-31536000}
 SYSCONF_TEMPLATES_DIR="/app/ds/setup/config"
@@ -45,7 +45,7 @@ ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/local.json
 ONLYOFFICE_LOG4JS_CONFIG=${CONF_DIR}/log4js/production.json
 ONLYOFFICE_EXAMPLE_CONFIG=${CONF_DIR}-example/local.json
 
-JSON_BIN=${APP_DIR}/npm/node_modules/.bin/json
+JSON_BIN=${APP_DIR}/npm/json
 JSON="${JSON_BIN} -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
 JSON_LOG="${JSON_BIN} -q -f ${ONLYOFFICE_LOG4JS_CONFIG}"
 JSON_EXAMPLE="${JSON_BIN} -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
@@ -53,10 +53,12 @@ JSON_EXAMPLE="${JSON_BIN} -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
 LOCAL_SERVICES=()
 
 PG_ROOT=/var/lib/postgresql
-PG_VERSION=9.5
+PG_VERSION=10
 PG_NAME=main
 PGDATA=${PG_ROOT}/${PG_VERSION}/${PG_NAME}
 PG_NEW_CLUSTER=false
+RABBITMQ_DATA=/var/lib/rabbitmq
+REDIS_DATA=/var/lib/redis
 
 read_setting(){
   deprecated_var POSTGRESQL_SERVER_HOST DB_HOST
@@ -227,7 +229,7 @@ update_redis_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.redis.port = '${REDIS_SERVER_PORT}'"
 }
 
-update_jwt_settings(){
+update_ds_settings(){
   if [ "${JWT_ENABLED}" == "true" ]; then
     ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}"
     ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.inbox = ${JWT_ENABLED}"
@@ -240,14 +242,19 @@ update_jwt_settings(){
     ${JSON} -I -e "this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'"
     ${JSON} -I -e "this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'"
 
-    ${JSON} -I -e "this.services.CoAuthoring.token.inbox.inBody = '${JWT_IN_BODY}'"
-    ${JSON} -I -e "this.services.CoAuthoring.token.outbox.inBody = '${JWT_IN_BODY}'"
+    ${JSON} -I -e "this.services.CoAuthoring.token.inbox.inBody = ${JWT_IN_BODY}"
+    ${JSON} -I -e "this.services.CoAuthoring.token.outbox.inBody = ${JWT_IN_BODY}"
 
     if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ] && [ "${JWT_ENABLED}" == "true" ]; then
       ${JSON_EXAMPLE} -I -e "this.server.token.enable = ${JWT_ENABLED}"
       ${JSON_EXAMPLE} -I -e "this.server.token.secret = '${JWT_SECRET}'"
       ${JSON_EXAMPLE} -I -e "this.server.token.authorizationHeader = '${JWT_HEADER}'"
     fi
+  fi
+
+  if [ "${USE_UNAUTHORIZED_STORAGE}" == "true" ]; then
+    ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults===undefined)this.services.CoAuthoring.requestDefaults={}"
+    ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults.rejectUnauthorized===undefined)this.services.CoAuthoring.requestDefaults.rejectUnauthorized=false"
   fi
 }
 
@@ -354,11 +361,6 @@ update_nginx_settings(){
     else
       sed '/max-age=/d' -i ${NGINX_ONLYOFFICE_CONF}
     fi
-
-    if [ "${REJECT_UNAUTHORIZED_STORAGE}" == "true" ]; then
-      ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults===undefined)this.services.CoAuthoring.requestDefaults={}"
-      ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults.rejectUnauthorized===undefined)this.services.CoAuthoring.requestDefaults.rejectUnauthorized=false"
-    fi
   else
     ln -sf ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl ${NGINX_ONLYOFFICE_CONF}
   fi
@@ -389,15 +391,15 @@ update_logrotate_settings(){
 }
 
 # create base folders
-for i in converter docservice spellchecker metrics gc; do
+for i in converter docservice spellchecker metrics; do
   mkdir -p "${DS_LOG_DIR}/$i"
 done
 
 mkdir -p ${DS_LOG_DIR}-example
 
 # create app folders
-for i in App_Data/cache/files App_Data/docbuilder; do
-  mkdir -p "${DS_LIB_DIR}/$i"
+for i in ${DS_LIB_DIR}/App_Data/cache/files ${DS_LIB_DIR}/App_Data/docbuilder ${DS_LIB_DIR}-example/files; do
+  mkdir -p "$i"
 done
 
 # change folder rights
@@ -414,7 +416,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
   update_log_settings
 
-  update_jwt_settings
+  update_ds_settings
 
   # update settings by env variables
   if [ $DB_HOST != "localhost" ]; then
@@ -437,6 +439,13 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   if [ ${AMQP_SERVER_HOST} != "localhost" ]; then
     update_rabbitmq_setting
   else
+    # change rights for rabbitmq directory
+    chown -R rabbitmq:rabbitmq ${RABBITMQ_DATA}
+    chmod -R go=rX,u=rwX ${RABBITMQ_DATA}
+    if [ -f ${RABBITMQ_DATA}/.erlang.cookie ]; then
+        chmod 400 ${RABBITMQ_DATA}/.erlang.cookie
+    fi
+
     LOCAL_SERVICES+=("rabbitmq-server")
     # allow Rabbitmq startup after container kill
     rm -rf /var/run/rabbitmq
@@ -445,6 +454,10 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   if [ ${REDIS_SERVER_HOST} != "localhost" ]; then
     update_redis_settings
   else
+    # change rights for redis directory
+    chown -R redis:redis ${REDIS_DATA}
+    chmod -R 750 ${REDIS_DATA}
+
     LOCAL_SERVICES+=("redis-server")
   fi
 else
