@@ -67,6 +67,8 @@ To get access to your data from outside the container, you need to mount the vol
         -v /app/onlyoffice/DocumentServer/logs:/var/log/onlyoffice  \
         -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  \
         -v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice \
+        -v /app/onlyoffice/DocumentServer/rabbitmq:/var/lib/rabbitmq \
+        -v /app/onlyoffice/DocumentServer/redis:/var/lib/redis \
         -v /app/onlyoffice/DocumentServer/db:/var/lib/postgresql  onlyoffice/documentserver
 
 Normally, you do not need to store container data because the container's operation does not depend on its state. Saving data will be useful:
@@ -162,13 +164,14 @@ Below is the complete list of parameters that can be set using environment varia
 - **SSL_KEY_PATH**: The path to the SSL certificate's private key. Defaults to `/var/www/onlyoffice/Data/certs/onlyoffice.key`.
 - **SSL_DHPARAM_PATH**: The path to the Diffie-Hellman parameter. Defaults to `/var/www/onlyoffice/Data/certs/dhparam.pem`.
 - **SSL_VERIFY_CLIENT**: Enable verification of client certificates using the `CA_CERTIFICATES_PATH` file. Defaults to `false`
-- **POSTGRESQL_SERVER_HOST**: The IP address or the name of the host where the PostgreSQL server is running.
-- **POSTGRESQL_SERVER_PORT**: The PostgreSQL server port number.
-- **POSTGRESQL_SERVER_DB_NAME**: The name of a PostgreSQL database to be created on the image startup.
-- **POSTGRESQL_SERVER_USER**: The new user name with superuser permissions for the PostgreSQL account.
-- **POSTGRESQL_SERVER_PASS**: The password set for the PostgreSQL account.
-- **AMQP_SERVER_URL**: The [AMQP URL](https://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
-- **AMQP_SERVER_TYPE**: The message broker type. Supported values are `rabbitmq` or `activemq`. Defaults to `rabbitmq`.
+- **DB_TYPE**: The database type. Supported values are `postgres`, `mariadb` or `mysql`. Defaults to `postgres`.
+- **DB_HOST**: The IP address or the name of the host where the database server is running.
+- **DB_PORT**: The database server port number.
+- **DB_NAME**: The name of a database to be created on the image startup.
+- **DB_USER**: The new user name with superuser permissions for the database account.
+- **DB_PWD**: The password set for the database account.
+- **AMQP_URI**: The [AMQP URI](https://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
+- **AMQP_TYPE**: The message broker type. Supported values are `rabbitmq` or `activemq`. Defaults to `rabbitmq`.
 - **REDIS_SERVER_HOST**: The IP address or the name of the host where the Redis server is running.
 - **REDIS_SERVER_PORT**:  The Redis server port number.
 - **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
@@ -176,6 +179,8 @@ Below is the complete list of parameters that can be set using environment varia
 - **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `false`.
 - **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to `secret`.
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
+- **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
+- **USE_UNAUTHORIZED_STORAGE**: Set to `true`if using selfsigned certificates for your storage server e.g. Nextcloud. Defaults to `false`
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
