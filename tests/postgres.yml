@@ -23,6 +23,7 @@ services:
     environment:
       - POSTGRES_DB
       - POSTGRES_USER
+      - POSTGRES_HOST_AUTH_METHOD
     restart: always
     expose:
       - '5432'
