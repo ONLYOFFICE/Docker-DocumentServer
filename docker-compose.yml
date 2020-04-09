@@ -1,99 +1,40 @@
 version: '2'
 services:
-  onlyoffice-documentserver-data:
-    container_name: onlyoffice-documentserver-data
-    image: onlyoffice/documentserver:latest
+  onlyoffice-documentserver:
+    build:
+      context: .
+    container_name: onlyoffice-documentserver
+    depends_on:
+      - onlyoffice-postgresql
+      - onlyoffice-rabbitmq
     environment:
-      - ONLYOFFICE_DATA_CONTAINER=true
       - DB_TYPE=postgres
       - DB_HOST=onlyoffice-postgresql
       - DB_PORT=5432
       - DB_NAME=onlyoffice
       - DB_USER=onlyoffice
       - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
-      - REDIS_SERVER_HOST=onlyoffice-redis
-      - REDIS_SERVER_PORT=6379
       # Uncomment strings below to enable the JSON Web Token validation.
       #- JWT_ENABLED=true
       #- JWT_SECRET=secret
       #- JWT_HEADER=Authorization
       #- JWT_IN_BODY=true
+    ports:
+      - '80:80'
+      - '443:443'
     stdin_open: true
     restart: always
-    networks:
-      - onlyoffice
     volumes:
-       - /etc/onlyoffice
        - /var/www/onlyoffice/Data
        - /var/log/onlyoffice
        - /var/lib/onlyoffice/documentserver/App_Data/cache/files
        - /var/www/onlyoffice/documentserver-example/public/files
        - /usr/share/fonts
        
-  onlyoffice-documentserver:
-    image: onlyoffice/documentserver:latest
-    depends_on:
-      - onlyoffice-documentserver-data
-      - onlyoffice-postgresql
-      - onlyoffice-redis
-      - onlyoffice-rabbitmq
-    environment:
-      - ONLYOFFICE_DATA_CONTAINER_HOST=onlyoffice-documentserver-data
-      - BALANCE=uri depth 3
-      - EXCLUDE_PORTS=443
-      - HTTP_CHECK=GET /healthcheck
-      - EXTRA_SETTINGS=http-check expect string true
-      # Uncomment the string below to redirect HTTP request to HTTPS request.
-      #- FORCE_SSL=true
-    stdin_open: true
-    restart: always
-    networks:
-      - onlyoffice
-    expose:
-      - '80'
-    volumes_from:
-     - onlyoffice-documentserver-data
-
-  onlyoffice-haproxy:
-    container_name: onlyoffice-haproxy
-    image: dockercloud/haproxy:1.5.1
-    depends_on:
-      - onlyoffice-documentserver
-    environment:
-      - MODE=http
-      # Uncomment the string below to specify the path of ssl certificates
-      #- CERT_FOLDER=/certs/
-    stdin_open: true
-    links:
-     - onlyoffice-documentserver
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      # Uncomment the string below to map a ssl certificate from host
-      # to the proxy container
-      #- /app/onlyoffice/DocumentServer/data/certs/onlyoffice.pem:/certs/cert1.pem
-    restart: always
-    networks:
-     - onlyoffice
-    ports:
-      - '80:80'
-      - '443:443'
-      - '1936:1936'
-       
-  onlyoffice-redis:
-    container_name: onlyoffice-redis
-    image: redis
-    restart: always
-    networks:
-     - onlyoffice
-    expose:
-      - '6379'
-
   onlyoffice-rabbitmq:
     container_name: onlyoffice-rabbitmq
     image: rabbitmq
     restart: always
-    networks:
-     - onlyoffice
     expose:
       - '5672'
 
@@ -103,17 +44,12 @@ services:
     environment:
       - POSTGRES_DB=onlyoffice
       - POSTGRES_USER=onlyoffice
-    networks:
-      - onlyoffice
+      - POSTGRES_HOST_AUTH_METHOD=trust
     restart: always
     expose:
       - '5432'
     volumes:
       - postgresql_data:/var/lib/postgresql
-
-networks:
-  onlyoffice:
-    driver: 'bridge'
 
 volumes:
   postgresql_data:

@@ -28,6 +28,12 @@ env:
     DB_HOST: onlyoffice-mysql
     DB_PORT: 3306
 
+  # mariadb
+  - config: mariadb.yml
+    DB_TYPE: mysql
+    DB_HOST: db
+    DB_PORT: 3306
+
   # activemq
   - config: activemq.yml
     AMQP_TYPE: activemq

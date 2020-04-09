@@ -1,0 +1,35 @@
+version: '2'
+services:
+  ds:
+    container_name: ds
+    image: onlyoffice/4testing-documentserver-ie:latest
+    depends_on:
+      - db
+    environment:
+      - DB_TYPE
+      - DB_HOST
+      - DB_PORT
+      - DB_NAME
+      - DB_USER
+      - DB_PWD
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+
+  db:
+    container_name: db
+    image: mariadb:10.5
+    environment:
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_ALLOW_EMPTY_PASSWORD
+    restart: always
+    volumes:
+      - mysql_data:/var/lib/mysql
+    expose:
+      - '3306'
+
+volumes:
+  mysql_data:
