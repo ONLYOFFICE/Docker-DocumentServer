@@ -270,9 +270,9 @@ create_postgresql_cluster(){
 }
 
 create_postgresql_db(){
-  sudo -u postgres psql -c "CREATE DATABASE onlyoffice;"
-  sudo -u postgres psql -c "CREATE USER onlyoffice WITH password 'onlyoffice';"
-  sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE onlyoffice TO onlyoffice;"
+  sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
+  sudo -u postgres psql -c "CREATE USER $DB_USER WITH password '"$DB_PWD"';"
+  sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE $DB_NAME TO $DB_USER;"
 }
 
 create_db_tbl() {
@@ -296,7 +296,7 @@ create_postgresql_tbl() {
   CREATEDB="createdb $CONNECTION_PARAMS"
 
   # Create db on remote server
-  if $PSQL -lt | cut -d\| -f 1 | grep -qw | grep 0; then
+  if $PSQL -lt | cut -d\| -f 1 | grep -qw $DB_NAME | grep 0; then
     $CREATEDB $DB_NAME
   fi
 
