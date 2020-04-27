@@ -14,6 +14,11 @@ env:
     POSTGRES_DB: mydb
     POSTGRES_USER: myuser
 
+  # custom certificates path
+  - config: certs.yml
+    SSL_CERTIFICATE_PATH: /var/www/onlyoffice/Data/certs/onlyoffice.crt
+    SSL_KEY_PATH: /var/www/onlyoffice/Data/certs/onlyoffice.key
+
   # deprecated variables
   - config: postgres-old.yml
 
