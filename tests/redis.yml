@@ -2,7 +2,8 @@ version: '2.1'
 services:
   onlyoffice-documentserver:
     container_name: onlyoffice-documentserver
-    image: onlyoffice/4testing-documentserver-ie:latest
+    build:
+      context: ../.
     environment:
       - REDIS_SERVER_HOST=${EXT_REDIS_SERVER_HOST:-onlyoffice-redis}
       - REDIS_SERVER_PORT=${EXT_REDIS_SERVER_PORT:-6379}

@@ -2,7 +2,8 @@ version: '2.1'
 services:
   onlyoffice-documentserver:
     container_name: onlyoffice-documentserver
-    image: onlyoffice/4testing-documentserver-ie:latest
+    build:
+      context: ../.
     depends_on:
       - onlyoffice-postgresql
     environment:

@@ -2,7 +2,8 @@ version: '2.1'
 services:
   ds:
     container_name: ds
-    image: onlyoffice/4testing-documentserver-ie:latest
+    build:
+      context: ../.
     depends_on:
       - db
     environment:

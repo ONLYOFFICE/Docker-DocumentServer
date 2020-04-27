@@ -2,7 +2,8 @@ version: '2.1'
 services:
   onlyoffice-documentserver:
     container_name: onlyoffice-documentserver
-    image: onlyoffice/4testing-documentserver-ie:latest
+    build:
+      context: ../.
     environment:
       - AMQP_SERVER_TYPE=${EXT_AMQP_SERVER_TYPE:-rabbitmq}
       - AMQP_SERVER_URL=${EXT_AMQP_SERVER_URL:-amqp://guest:guest@onlyoffice-rabbitmq}
