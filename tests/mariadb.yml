@@ -6,12 +6,12 @@ services:
     depends_on:
       - db
     environment:
-      - DB_TYPE
-      - DB_HOST
-      - DB_PORT
-      - DB_NAME
-      - DB_USER
-      - DB_PWD
+      - DB_TYPE=${EXT_DB_TYPE:-mysql}
+      - DB_HOST=${EXT_DB_HOST:-db}
+      - DB_PORT=${EXT_DB_PORT:-3306}
+      - DB_NAME=${EXT_DB_NAME:-onlyoffice}
+      - DB_USER=${EXT_DB_USER:-onlyoffice}
+      - DB_PWD=${EXT_DB_PWD:-onlyoffice}
     stdin_open: true
     restart: always
     ports:
@@ -21,10 +21,10 @@ services:
     container_name: db
     image: mariadb:10.5
     environment:
-      - MYSQL_DATABASE
-      - MYSQL_USER
-      - MYSQL_PASSWORD
-      - MYSQL_ALLOW_EMPTY_PASSWORD
+      - MYSQL_DATABASE=${EXT_MYSQL_DATABASE:-onlyoffice}
+      - MYSQL_USER=${EXT_MYSQL_USER:-onlyoffice}
+      - MYSQL_PASSWORD=${EXT_MYSQL_PASSWORD:-onlyoffice}
+      - MYSQL_ALLOW_EMPTY_PASSWORD=${EXT_MYSQL_ALLOW_EMPTY_PASSWORD:-yes}
     restart: always
     volumes:
       - mysql_data:/var/lib/mysql

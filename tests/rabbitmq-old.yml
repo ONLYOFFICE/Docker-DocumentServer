@@ -4,8 +4,8 @@ services:
     container_name: onlyoffice-documentserver
     image: onlyoffice/4testing-documentserver-ie:latest
     environment:
-      - AMQP_SERVER_TYPE
-      - AMQP_SERVER_URL
+      - AMQP_SERVER_TYPE=${EXT_AMQP_SERVER_TYPE:-rabbitmq}
+      - AMQP_SERVER_URL=${EXT_AMQP_SERVER_URL:-amqp://guest:guest@onlyoffice-rabbitmq}
     stdin_open: true
     restart: always
     ports:
