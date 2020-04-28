@@ -1,17 +1,18 @@
-version: '2'
+version: '2.1'
 services:
   onlyoffice-documentserver:
     container_name: onlyoffice-documentserver
-    image: onlyoffice/4testing-documentserver-ie:latest
+    build:
+      context: ../.
     depends_on:
       - onlyoffice-postgresql
     environment:
-      - DB_TYPE
-      - DB_HOST
-      - DB_PORT
-      - DB_NAME
-      - DB_USER
-      - DB_PWD
+      - DB_TYPE=${DB_TYPE:-postgres}
+      - DB_HOST=${DB_HOST:-onlyoffice-postgresql}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-onlyoffice}
+      - DB_USER=${DB_USER:-onlyoffice}
+      - DB_PWD=${DB_PWD:-onlyoffice}
     stdin_open: true
     restart: always
     ports:
@@ -21,9 +22,9 @@ services:
     container_name: onlyoffice-postgresql
     image: postgres:9.5
     environment:
-      - POSTGRES_DB
-      - POSTGRES_USER
-      - POSTGRES_HOST_AUTH_METHOD
+      - POSTGRES_DB=${POSTGRES_DB:-onlyoffice}
+      - POSTGRES_USER=${POSTGRES_USER:-onlyoffice}
+      - POSTGRES_HOST_AUTH_METHOD=${POSTGRES_HOST_AUTH_METHOD:-trust}
     restart: always
     expose:
       - '5432'

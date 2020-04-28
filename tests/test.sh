@@ -6,16 +6,6 @@ if [[ ! -f $config ]]; then
   exit 1
 fi
 
-env_file=defaults.env
-
-# Copy .env
-if [[ -f $env_file ]]; then
-  cp $env_file .env
-else
-  echo "File $env_file doesn't exist!"
-  exit 1
-fi
-
 # Run test environment
 docker-compose -p ds -f $config up -d
 

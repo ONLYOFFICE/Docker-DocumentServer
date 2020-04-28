@@ -16,43 +16,24 @@ env:
 
   # deprecated variables
   - config: postgres-old.yml
-    POSTGRESQL_SERVER_HOST: onlyoffice-postgresql
-    POSTGRESQL_SERVER_PORT: 5432
-    POSTGRESQL_SERVER_DB_NAME: onlyoffice
-    POSTGRESQL_SERVER_USER: onlyoffice
-    POSTGRESQL_SERVER_PASS: onlyoffice
 
   # mysql
   - config: mysql.yml
-    DB_TYPE: mysql
-    DB_HOST: onlyoffice-mysql
-    DB_PORT: 3306
 
   # mariadb
   - config: mariadb.yml
-    DB_TYPE: mysql
-    DB_HOST: db
-    DB_PORT: 3306
 
   # activemq
   - config: activemq.yml
-    AMQP_TYPE: activemq
-    AMQP_URI: amqp://guest:guest@onlyoffice-activemq
 
   # rabbitmq
   - config: rabbitmq.yml
-    AMQP_TYPE: rabbitmq
-    AMQP_URI: amqp://guest:guest@onlyoffice-rabbitmq
 
   # rabbitmq old variables
   - config: rabbitmq-old.yml
-    AMQP_SERVER_TYPE: rabbitmq
-    AMQP_SERVER_URL: amqp://guest:guest@onlyoffice-rabbitmq
 
   # redis
   - config: redis.yml
-    REDIS_SERVER_HOST: onlyoffice-redis
-    REDIS_SERVER_PORT: 6379
 
 services:
   - docker
