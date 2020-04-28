@@ -1,5 +1,31 @@
 #!/bin/bash
 
+private_key=tls.key
+certificate_request=tls.csr
+certificate=tls.crt
+
+# Generate certificate
+openssl genrsa -out ${private_key} 2048
+openssl req \
+  -new \
+  -key ${private_key} \
+  -out ${certificate_request}
+openssl x509 \
+  -req \
+  -days 365 \
+  -in ${certificate_request} \
+  -signkey ${private_key} \
+  -out ${certificate}
+
+# Strengthening the server security
+openssl dhparam -out dhparam.pem 2048
+
+mkdir -p /app/onlyoffice/DocumentServer/data/certs
+cp $private_key /app/onlyoffice/DocumentServer/data/certs/
+cp $certificate /app/onlyoffice/DocumentServer/data/certs/
+cp dhparam.pem /app/onlyoffice/DocumentServer/data/certs/
+chmod 400 /app/onlyoffice/DocumentServer/data/certs/$private_key
+
 # Check if the yml exists
 if [[ ! -f $config ]]; then
   echo "File $config doesn't exist!"
