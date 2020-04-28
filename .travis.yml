@@ -8,11 +8,11 @@ env:
 
   # custom values
   - config: postgres.yml
-    EXT_DB_NAME: mydb
-    EXT_DB_USER: myuser
-    EXT_DB_PWD: password
-    EXT_POSTGRES_DB: mydb
-    EXT_POSTGRES_USER: myuser
+    DB_NAME: mydb
+    DB_USER: myuser
+    DB_PWD: password
+    POSTGRES_DB: mydb
+    POSTGRES_USER: myuser
 
   # deprecated variables
   - config: postgres-old.yml
