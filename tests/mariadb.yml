@@ -1,7 +1,7 @@
 version: '2.1'
 services:
-  onlyoffice-documentserver:
-    container_name: onlyoffice-documentserver
+  ds:
+    container_name: ds
     build:
       context: ../.
     depends_on:
