@@ -1,30 +1,31 @@
-version: '2'
+version: '2.1'
 services:
   ds:
     container_name: ds
-    image: onlyoffice/4testing-documentserver-ie:latest
+    build:
+      context: ../.
     depends_on:
-      - db
+      - onlyoffice-mariadb
     environment:
-      - DB_TYPE
-      - DB_HOST
-      - DB_PORT
-      - DB_NAME
-      - DB_USER
-      - DB_PWD
+      - DB_TYPE=${DB_TYPE:-mysql}
+      - DB_HOST=${DB_HOST:-onlyoffice-mariadb}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_NAME=${DB_NAME:-onlyoffice}
+      - DB_USER=${DB_USER:-onlyoffice}
+      - DB_PWD=${DB_PWD:-onlyoffice}
     stdin_open: true
     restart: always
     ports:
       - '80:80'
 
-  db:
-    container_name: db
+  onlyoffice-mariadb:
+    container_name: onlyoffice-mariadb
     image: mariadb:10.5
     environment:
-      - MYSQL_DATABASE
-      - MYSQL_USER
-      - MYSQL_PASSWORD
-      - MYSQL_ALLOW_EMPTY_PASSWORD
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-onlyoffice}
+      - MYSQL_USER=${MYSQL_USER:-onlyoffice}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-onlyoffice}
+      - MYSQL_ALLOW_EMPTY_PASSWORD=${MYSQL_ALLOW_EMPTY_PASSWORD:-yes}
     restart: always
     volumes:
       - mysql_data:/var/lib/mysql
