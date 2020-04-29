@@ -15,4 +15,4 @@ services:
       - '80:80'
       - '433:433'
     volumes:
-      - /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data
+      - ./data:/var/www/onlyoffice/Data

@@ -21,11 +21,11 @@ openssl x509 \
 # Strengthening the server security
 openssl dhparam -out dhparam.pem 2048
 
-mkdir -p /app/onlyoffice/DocumentServer/data/certs
-cp $private_key /app/onlyoffice/DocumentServer/data/certs/
-cp $certificate /app/onlyoffice/DocumentServer/data/certs/
-cp dhparam.pem /app/onlyoffice/DocumentServer/data/certs/
-chmod 400 /app/onlyoffice/DocumentServer/data/certs/$private_key
+mkdir -p data/certs
+cp $private_key data/certs/
+cp $certificate data/certs/
+cp dhparam.pem data/certs/
+chmod 400 data/certs/$private_key
 
 # Check if the yml exists
 if [[ ! -f $config ]]; then
