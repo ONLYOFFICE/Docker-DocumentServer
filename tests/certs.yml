@@ -13,6 +13,6 @@ services:
     restart: always
     ports:
       - '80:80'
-      - '433:433'
+      - '443:443'
     volumes:
       - ./data:/var/www/onlyoffice/Data
