@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ssl=${ssl:-true}
+ssl=${ssl:-false}
 private_key=${private_key:-tls.key}
 certificate_request=${certificate_request:-tls.csr}
 certificate=${certificate:-tls.crt}
