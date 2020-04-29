@@ -1,0 +1,18 @@
+version: '2.1'
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    build:
+      context: ../.
+    environment:
+      - SSL_CERTIFICATE_PATH=${SSL_CERTIFICATE_PATH:-/var/www/onlyoffice/Data/certs/tls.crt}
+      - SSL_KEY_PATH=${SSL_KEY_PATH:-/var/www/onlyoffice/Data/certs/tls.key}
+      - CA_CERTIFICATES_PATH=${CA_CERTIFICATES_PATH:-/var/www/onlyoffice/Data/certs/ca-certificates.pem}
+      - SSL_DHPARAM_PATH=${SSL_DHPARAM_PATH:-/var/www/onlyoffice/Data/certs/dhparam.pem}
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./data:/var/www/onlyoffice/Data
