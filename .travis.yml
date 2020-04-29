@@ -14,10 +14,6 @@ env:
     certificate_request: onlyoffice.csr
     certificate: onlyoffice.crt
 
-  # custom certificates (default tls)
-  - config: certs-customized.yml
-    ssl: true
-
   # custom certificates
   - config: certs-customized.yml
     ssl: true
