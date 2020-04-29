@@ -1,32 +1,31 @@
 #!/bin/bash
 
-url=${url:-"https://localhost"}
-private_key=tls.key
-certificate_request=tls.csr
-certificate=tls.crt
+ssl=${ssl:-true}
+private_key=${private_key:-tls.key}
+certificate_request=${certificate_request:-tls.csr}
+certificate=${certificate:-tls.crt}
 
 # Generate certificate
-openssl genrsa -out ${private_key} 2048
-openssl req \
-  -new \
-  -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=backendserver-address" \
-  -key ${private_key} \
-  -out ${certificate_request}
-openssl x509 \
-  -req \
-  -days 365 \
-  -in ${certificate_request} \
-  -signkey ${private_key} \
-  -out ${certificate}
+if [[ $ssl == "true" ]]; then
+  url=${url:-"https://localhost"}
 
-# Strengthening the server security
-openssl dhparam -out dhparam.pem 2048
+  mkdir -p data/certs
+  pushd data/certs
 
-mkdir -p data/certs
-cp $private_key data/certs/
-cp $certificate data/certs/
-cp dhparam.pem data/certs/
-chmod 400 data/certs/$private_key
+  openssl genrsa -out ${private_key} 2048
+  openssl req \
+    -new \
+    -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" \
+    -key ${private_key} \
+    -out ${certificate_request}
+  openssl x509 -req -days 365 -in ${certificate_request} -signkey ${private_key} -out ${certificate}
+  openssl dhparam -out dhparam.pem 2048
+  chmod 400 ${private_key}
+
+  popd
+else
+  url=${url:-"http://localhost"}
+fi
 
 # Check if the yml exists
 if [[ ! -f $config ]]; then

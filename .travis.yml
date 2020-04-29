@@ -14,8 +14,18 @@ env:
     POSTGRES_DB: mydb
     POSTGRES_USER: myuser
 
-  # certificates
+  # no certificates
   - config: certs.yml
+    ssl: false
+
+  # certificates (default tls if onlyoffice not exists)
+  - config: certs.yml
+
+  # old certificates path (default onlyoffice if exists)
+  - config: certs.yml
+    private_key: onlyoffice.key
+    certificate_request: onlyoffice.csr
+    certificate: onlyoffice.crt
 
   # custom certificates path
   - config: certs.yml
@@ -24,12 +34,6 @@ env:
     certificate: mycert.crt
     SSL_CERTIFICATE_PATH: /var/www/onlyoffice/Data/certs/mycert.crt
     SSL_KEY_PATH: /var/www/onlyoffice/Data/certs/mycert.key
-
-  # old certificates path
-  - config: certs.yml
-    private_key: onlyoffice.key
-    certificate_request: onlyoffice.csr
-    certificate: onlyoffice.crt
 
   # deprecated variables
   - config: postgres-old.yml
