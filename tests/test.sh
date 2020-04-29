@@ -1,5 +1,6 @@
 #!/bin/bash
 
+url=${url:-"https://localhost"}
 private_key=tls.key
 certificate_request=tls.csr
 certificate=tls.crt
@@ -41,7 +42,7 @@ wakeup_timeout=30
 # Get documentserver healthcheck status
 echo "Wait for service wake up"
 sleep $wakeup_timeout
-healthcheck_res=$(wget --no-check-certificate -qO - localhost/healthcheck)
+healthcheck_res=$(wget --no-check-certificate -qO - ${url}/healthcheck)
 
 # Fail if it isn't true
 if [[ $healthcheck_res == "true" ]]; then
