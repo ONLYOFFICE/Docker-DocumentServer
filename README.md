@@ -96,8 +96,8 @@ To secure the application via SSL basically two things are needed:
 
 So you need to create and install the following files:
 
-        /app/onlyoffice/DocumentServer/data/certs/onlyoffice.key
-        /app/onlyoffice/DocumentServer/data/certs/onlyoffice.crt
+        /app/onlyoffice/DocumentServer/data/certs/tls.key
+        /app/onlyoffice/DocumentServer/data/certs/tls.crt
 
 When using CA certified certificates, these files are provided to you by the CA. When using self-signed certificates you need to generate these files yourself. Skip the following section if you are have CA certified SSL certificates.
 
@@ -108,19 +108,19 @@ Generation of self-signed SSL certificates involves a simple 3 step procedure.
 **STEP 1**: Create the server private key
 
 ```bash
-openssl genrsa -out onlyoffice.key 2048
+openssl genrsa -out tls.key 2048
 ```
 
 **STEP 2**: Create the certificate signing request (CSR)
 
 ```bash
-openssl req -new -key onlyoffice.key -out onlyoffice.csr
+openssl req -new -key tls.key -out tls.csr
 ```
 
 **STEP 3**: Sign the certificate using the private key and CSR
 
 ```bash
-openssl x509 -req -days 365 -in onlyoffice.csr -signkey onlyoffice.key -out onlyoffice.crt
+openssl x509 -req -days 365 -in tls.csr -signkey tls.key -out tls.crt
 ```
 
 You have now generated an SSL certificate that's valid for 365 days.
@@ -136,18 +136,18 @@ openssl dhparam -out dhparam.pem 2048
 
 #### Installation of the SSL Certificates
 
-Out of the four files generated above, you need to install the `onlyoffice.key`, `onlyoffice.crt` and `dhparam.pem` files at the onlyoffice server. The CSR file is not needed, but do make sure you safely backup the file (in case you ever need it again).
+Out of the four files generated above, you need to install the `tls.key`, `tls.crt` and `dhparam.pem` files at the onlyoffice server. The CSR file is not needed, but do make sure you safely backup the file (in case you ever need it again).
 
 The default path that the onlyoffice application is configured to look for the SSL certificates is at `/var/www/onlyoffice/Data/certs`, this can however be changed using the `SSL_KEY_PATH`, `SSL_CERTIFICATE_PATH` and `SSL_DHPARAM_PATH` configuration options.
 
-The `/var/www/onlyoffice/Data/` path is the path of the data store, which means that you have to create a folder named certs inside `/app/onlyoffice/DocumentServer/data/` and copy the files into it and as a measure of security you will update the permission on the `onlyoffice.key` file to only be readable by the owner.
+The `/var/www/onlyoffice/Data/` path is the path of the data store, which means that you have to create a folder named certs inside `/app/onlyoffice/DocumentServer/data/` and copy the files into it and as a measure of security you will update the permission on the `tls.key` file to only be readable by the owner.
 
 ```bash
 mkdir -p /app/onlyoffice/DocumentServer/data/certs
-cp onlyoffice.key /app/onlyoffice/DocumentServer/data/certs/
-cp onlyoffice.crt /app/onlyoffice/DocumentServer/data/certs/
+cp tls.key /app/onlyoffice/DocumentServer/data/certs/
+cp tls.crt /app/onlyoffice/DocumentServer/data/certs/
 cp dhparam.pem /app/onlyoffice/DocumentServer/data/certs/
-chmod 400 /app/onlyoffice/DocumentServer/data/certs/onlyoffice.key
+chmod 400 /app/onlyoffice/DocumentServer/data/certs/tls.key
 ```
 
 You are now just one step away from having our application secured.
@@ -160,8 +160,8 @@ Below is the complete list of parameters that can be set using environment varia
 
 - **ONLYOFFICE_HTTPS_HSTS_ENABLED**: Advanced configuration option for turning off the HSTS configuration. Applicable only when SSL is in use. Defaults to `true`.
 - **ONLYOFFICE_HTTPS_HSTS_MAXAGE**: Advanced configuration option for setting the HSTS max-age in the onlyoffice nginx vHost configuration. Applicable only when SSL is in use. Defaults to `31536000`.
-- **SSL_CERTIFICATE_PATH**: The path to the SSL certificate to use. Defaults to `/var/www/onlyoffice/Data/certs/onlyoffice.crt`.
-- **SSL_KEY_PATH**: The path to the SSL certificate's private key. Defaults to `/var/www/onlyoffice/Data/certs/onlyoffice.key`.
+- **SSL_CERTIFICATE_PATH**: The path to the SSL certificate to use. Defaults to `/var/www/onlyoffice/Data/certs/tls.crt`.
+- **SSL_KEY_PATH**: The path to the SSL certificate's private key. Defaults to `/var/www/onlyoffice/Data/certs/tls.key`.
 - **SSL_DHPARAM_PATH**: The path to the Diffie-Hellman parameter. Defaults to `/var/www/onlyoffice/Data/certs/dhparam.pem`.
 - **SSL_VERIFY_CLIENT**: Enable verification of client certificates using the `CA_CERTIFICATES_PATH` file. Defaults to `false`
 - **DB_TYPE**: The database type. Supported values are `postgres`, `mariadb` or `mysql`. Defaults to `postgres`.
