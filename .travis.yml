@@ -3,6 +3,26 @@ language: generic
 dist: trusty
 
 env:
+  # certificates (default tls if onlyoffice not exists)
+  - config: certs.yml
+    ssl: true
+
+  # certificates (default onlyoffice if exists)
+  - config: certs.yml
+    ssl: true
+    private_key: onlyoffice.key
+    certificate_request: onlyoffice.csr
+    certificate: onlyoffice.crt
+
+  # custom certificates
+  - config: certs-customized.yml
+    ssl: true
+    private_key: mycert.key
+    certificate_request: mycert.csr
+    certificate: mycert.crt
+    SSL_CERTIFICATE_PATH: /var/www/onlyoffice/Data/certs/mycert.crt
+    SSL_KEY_PATH: /var/www/onlyoffice/Data/certs/mycert.key
+
   # postgresql
   - config: postgres.yml
 
@@ -16,43 +36,24 @@ env:
 
   # deprecated variables
   - config: postgres-old.yml
-    POSTGRESQL_SERVER_HOST: onlyoffice-postgresql
-    POSTGRESQL_SERVER_PORT: 5432
-    POSTGRESQL_SERVER_DB_NAME: onlyoffice
-    POSTGRESQL_SERVER_USER: onlyoffice
-    POSTGRESQL_SERVER_PASS: onlyoffice
 
   # mysql
   - config: mysql.yml
-    DB_TYPE: mysql
-    DB_HOST: onlyoffice-mysql
-    DB_PORT: 3306
 
   # mariadb
   - config: mariadb.yml
-    DB_TYPE: mysql
-    DB_HOST: db
-    DB_PORT: 3306
 
   # activemq
   - config: activemq.yml
-    AMQP_TYPE: activemq
-    AMQP_URI: amqp://guest:guest@onlyoffice-activemq
 
   # rabbitmq
   - config: rabbitmq.yml
-    AMQP_TYPE: rabbitmq
-    AMQP_URI: amqp://guest:guest@onlyoffice-rabbitmq
 
   # rabbitmq old variables
   - config: rabbitmq-old.yml
-    AMQP_SERVER_TYPE: rabbitmq
-    AMQP_SERVER_URL: amqp://guest:guest@onlyoffice-rabbitmq
 
   # redis
   - config: redis.yml
-    REDIS_SERVER_HOST: onlyoffice-redis
-    REDIS_SERVER_PORT: 6379
 
 services:
   - docker

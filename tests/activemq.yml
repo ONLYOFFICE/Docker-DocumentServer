@@ -1,11 +1,12 @@
-version: '2'
+version: '2.1'
 services:
   onlyoffice-documentserver:
     container_name: onlyoffice-documentserver
-    image: onlyoffice/4testing-documentserver-ie:latest
+    build:
+      context: ../.
     environment:
-      - AMQP_TYPE
-      - AMQP_URI
+      - AMQP_TYPE=${AMQP_TYPE:-activemq}
+      - AMQP_URI=${AMQP_URI:-amqp://guest:guest@onlyoffice-activemq}
     stdin_open: true
     restart: always
     ports:
@@ -18,8 +19,8 @@ services:
     container_name: onlyoffice-activemq
     image: webcenter/activemq:5.14.3
     environment:
-      - ACTIVEMQ_USERS_guest
-      - ACTIVEMQ_GROUPS_owners
+      - ACTIVEMQ_USERS_guest=${ACTIVEMQ_USERS_guest:-guest}
+      - ACTIVEMQ_GROUPS_owners=${ACTIVEMQ_GROUPS_owners:-guest}
     restart: always
     networks:
      - onlyoffice
