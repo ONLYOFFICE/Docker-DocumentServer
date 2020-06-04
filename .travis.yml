@@ -59,8 +59,12 @@ env:
   # rabbitmq old variables
   - config: rabbitmq-old.yml
 
-  # redis
+  # redis with community edition
   - config: redis.yml
+
+  # redis with integraion edition
+  - config: redis.yml
+    PRODUCT_NAME: documentserver-ie
 
 services:
   - docker
