@@ -49,6 +49,12 @@ JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
+if [[ ${PRODUCT_NAME} == "documentserver" ]]; then
+  REDIS_ENABLED=false
+else
+  REDIS_ENABLED=true
+fi
+
 ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/local.json
 ONLYOFFICE_LOG4JS_CONFIG=${CONF_DIR}/log4js/production.json
 ONLYOFFICE_EXAMPLE_CONFIG=${CONF_DIR}-example/local.json
@@ -466,7 +472,9 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     chown -R redis:redis ${REDIS_DATA}
     chmod -R 750 ${REDIS_DATA}
 
-    # LOCAL_SERVICES+=("redis-server")
+    if [ ${REDIS_ENABLED} = "true" ]; then
+      LOCAL_SERVICES+=("redis-server")
+    fi
   fi
 else
   # no need to update settings just wait for remote data
@@ -492,7 +500,9 @@ fi
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_db
   waiting_for_amqp
-  # waiting_for_redis
+  if [ ${REDIS_ENABLED} = "true" ]; then
+    waiting_for_redis
+  fi
 
   update_nginx_settings
 
