@@ -467,14 +467,12 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
   if [ ${REDIS_SERVER_HOST} != "localhost" ]; then
     update_redis_settings
-  else
+  elif [ ${REDIS_ENABLED} = "true" ]; then
     # change rights for redis directory
     chown -R redis:redis ${REDIS_DATA}
     chmod -R 750 ${REDIS_DATA}
 
-    if [ ${REDIS_ENABLED} = "true" ]; then
-      LOCAL_SERVICES+=("redis-server")
-    fi
+    LOCAL_SERVICES+=("redis-server")
   fi
 else
   # no need to update settings just wait for remote data
