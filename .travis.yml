@@ -4,10 +4,10 @@ dist: trusty
 
 env:
   # community edition
-  - config: edition.yml
+  - config: standalone.yml
 
   # integration edition
-  - config: edition.yml
+  - config: standalone.yml
     PRODUCT_NAME: documentserver-ie
 
   # certificates (default tls if onlyoffice not exists)
