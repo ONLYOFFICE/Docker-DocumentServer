@@ -466,7 +466,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     chown -R redis:redis ${REDIS_DATA}
     chmod -R 750 ${REDIS_DATA}
 
-    LOCAL_SERVICES+=("redis-server")
+    # LOCAL_SERVICES+=("redis-server")
   fi
 else
   # no need to update settings just wait for remote data
@@ -492,7 +492,7 @@ fi
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_db
   waiting_for_amqp
-  waiting_for_redis
+  # waiting_for_redis
 
   update_nginx_settings
 
