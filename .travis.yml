@@ -3,6 +3,13 @@ language: generic
 dist: trusty
 
 env:
+  # community edition
+  - config: edition.yml
+
+  # integration edition
+  - config: edition.yml
+    PRODUCT_NAME: documentserver-ie
+
   # certificates (default tls if onlyoffice not exists)
   - config: certs.yml
     ssl: true
@@ -22,10 +29,6 @@ env:
     certificate: mycert.crt
     SSL_CERTIFICATE_PATH: /var/www/onlyoffice/Data/certs/mycert.crt
     SSL_KEY_PATH: /var/www/onlyoffice/Data/certs/mycert.key
-
-  # integration edition
-  - config: edition.yml
-    PRODUCT_NAME: documentserver-ie
 
   # postgresql
   - config: postgres.yml
