@@ -61,7 +61,10 @@ clean-docker:
 	docker rmi -f $$(docker images -q $(COMPANY_NAME_LOW)/*) || exit 0
 
 deploy: $(DOCKER_TARGETS)
-	$(foreach TARGET,$(DOCKER_TARGETS),docker push $(subst $(COLON),:,$(TARGET));)
+	$(foreach TARGET,$(DOCKER_TARGETS), \
+		for i in {1..10}; do \
+			docker push $(subst $(COLON),:,$(TARGET)) && break; \
+		done;)
 
 publish: $(DOCKER_ARCH)
 	aws s3 cp \
