@@ -62,8 +62,8 @@ clean-docker:
 
 deploy: $(DOCKER_TARGETS)
 	$(foreach TARGET,$(DOCKER_TARGETS), \
-		for i in {1..10}; do \
-			docker push $(subst $(COLON),:,$(TARGET)) && break; \
+		for i in {1..3}; do \
+			docker push $(subst $(COLON),:,$(TARGET)) && break || sleep 1m; \
 		done;)
 
 publish: $(DOCKER_ARCH)
