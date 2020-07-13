@@ -44,6 +44,25 @@ spec:
             requests:
               cpu: 100m
               memory: 1250Mi
+          # Readiness & Liveness Health Checks
+          readinessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /healthcheck
+              port: 18080
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 2
+          livenessProbe:
+            failureThreshold: 3
+            tcpSocket:
+              port: 18080
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 2
           # License and Configuration file mounts
           volumeMounts:
             - name: configuration
