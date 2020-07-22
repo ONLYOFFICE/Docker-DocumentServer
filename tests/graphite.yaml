@@ -25,7 +25,7 @@ services:
     image: graphiteapp/graphite-statsd
     environment:
       - GRAPHITE_STATSD_HOST=${GRAPHITE_STATSD_HOST:-onlyoffice-documentserver}
-      - GRAPHITE_TIME_ZONE=${GRAPHITE_TIME_ZONE:-Europe/Moscow}
+      - GRAPHITE_TIME_ZONE=${GRAPHITE_TIME_ZONE:-Etc/UTC}
     ports:
       - '8888:80'
     stdin_open: true
