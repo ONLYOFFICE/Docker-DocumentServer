@@ -1,0 +1,31 @@
+version: '2.1'
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    build:
+      context: ../.
+    depends_on:
+      - onlyoffice-graphite
+    environment:
+      - METRICS_ENABLED=${METRICS_ENABLED:-true}
+      - METRICS_HOST="${METRICS_HOST:-localhost}"
+      - METRICS_PORT="${METRICS_PORT:-8125}"
+      - METRICS_PREFIX="${METRICS_PREFIX:-ds.}"
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+    expose:
+      - '8125'
+
+  onlyoffice-graphite:
+    container_name: onlyoffice-graphite
+    build:
+      context: ../.
+      dockerfile: graphite.dockerfile
+    environment:
+      - GRAPHITE_TIME_ZONE=${GRAPHITE_TIME_ZONE:-Europe/Moscow}
+    ports:
+      - '9999:80'
+    stdin_open: true
+    restart: always
