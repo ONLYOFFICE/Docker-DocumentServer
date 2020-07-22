@@ -78,10 +78,10 @@ read_setting(){
   deprecated_var AMQP_SERVER_URL AMQP_URI
   deprecated_var AMQP_SERVER_TYPE AMQP_TYPE
 
-  METRICS_ENABLED="${METRICS_ENABLED:-$(${JSON} statsd.useMetrics)}"
-  METRICS_HOST="${METRICS_HOST:-$(${JSON} statsd.host)}"
-  METRICS_PORT="${METRICS_PORT:-$(${JSON} statsd.port)}"
-  METRICS_PREFIX="${METRICS_PREFIX:-$(${JSON} statsd.prefix)}"
+  METRICS_ENABLED="${METRICS_ENABLED:-false}"
+  METRICS_HOST="${METRICS_HOST:-localhost}"
+  METRICS_PORT="${METRICS_PORT:-8125}"
+  METRICS_PREFIX="${METRICS_PREFIX:-.ds}"
 
   DB_HOST=${DB_HOST:-${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}}
   case $DB_TYPE in
