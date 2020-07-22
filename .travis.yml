@@ -55,6 +55,9 @@ env:
   # redis
   - config: redis.yml
 
+  # graphite
+  - config: graphite.yml
+
 services:
   - docker
 
