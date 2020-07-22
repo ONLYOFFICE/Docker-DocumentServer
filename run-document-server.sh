@@ -186,8 +186,7 @@ waiting_for_datacontainer(){
 }
 
 update_statsd_settings(){
-  cp ${SYSCONF_TEMPLATES_DIR}/statsd/config.js ${APP_DIR}/server/Metrics/config/config.js
-
+  ${JSON} -I -e "if(this.statsd===undefined)this.statsd={};"
   ${JSON} -I -e "this.statsd.useMetrics = '${METRICS_ENABLED}'"
   ${JSON} -I -e "this.statsd.host = '${METRICS_HOST}'"
   ${JSON} -I -e "this.statsd.port = '${METRICS_PORT}'"
