@@ -1,5 +1,5 @@
 {
-  "graphiteHost": "127.0.0.1",
+  "graphiteHost": "onlyoffice-graphite",
   "graphitePort": 2003,
   "port": 8125,
   "flushInterval": 3000,
