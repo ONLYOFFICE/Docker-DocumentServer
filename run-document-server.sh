@@ -78,6 +78,11 @@ read_setting(){
   deprecated_var AMQP_SERVER_URL AMQP_URI
   deprecated_var AMQP_SERVER_TYPE AMQP_TYPE
 
+  METRICS_ENABLED="${METRICS_ENABLED:-false}"
+  METRICS_HOST="${METRICS_HOST:-localhost}"
+  METRICS_PORT="${METRICS_PORT:-8125}"
+  METRICS_PREFIX="${METRICS_PREFIX:-.ds}"
+
   DB_HOST=${DB_HOST:-${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}}
   case $DB_TYPE in
     "postgres")
@@ -179,6 +184,15 @@ waiting_for_redis(){
 waiting_for_datacontainer(){
   waiting_for_connection ${ONLYOFFICE_DATA_CONTAINER_HOST} ${ONLYOFFICE_DATA_CONTAINER_PORT}
 }
+
+update_statsd_settings(){
+  ${JSON} -I -e "if(this.statsd===undefined)this.statsd={};"
+  ${JSON} -I -e "this.statsd.useMetrics = '${METRICS_ENABLED}'"
+  ${JSON} -I -e "this.statsd.host = '${METRICS_HOST}'"
+  ${JSON} -I -e "this.statsd.port = '${METRICS_PORT}'"
+  ${JSON} -I -e "this.statsd.prefix = '${METRICS_PREFIX}'"
+}
+
 update_db_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.sql.type = '${DB_TYPE}'"
   ${JSON} -I -e "this.services.CoAuthoring.sql.dbHost = '${DB_HOST}'"
@@ -419,6 +433,10 @@ done
 if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
   read_setting
+
+  if [ $METRICS_ENABLED = "true" ]; then
+    update_statsd_settings
+  fi
 
   update_welcome_page
 
