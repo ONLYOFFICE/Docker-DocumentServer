@@ -3,6 +3,13 @@ language: generic
 dist: trusty
 
 env:
+  # community edition
+  - config: standalone.yml
+
+  # integration edition
+  - config: standalone.yml
+    PRODUCT_NAME: documentserver-ie
+
   # certificates (default tls if onlyoffice not exists)
   - config: certs.yml
     ssl: true
@@ -52,8 +59,12 @@ env:
   # rabbitmq old variables
   - config: rabbitmq-old.yml
 
-  # redis
+  # redis with community edition
   - config: redis.yml
+
+  # redis with integraion edition
+  - config: redis.yml
+    PRODUCT_NAME: documentserver-ie
 
   # graphite
   - config: graphite.yml
