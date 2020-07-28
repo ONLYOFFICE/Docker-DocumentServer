@@ -67,7 +67,8 @@ ARG REPO_URL="deb http://download.onlyoffice.com/repo/debian squeeze main"
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_NAME=documentserver
 
-ENV COMPANY_NAME=$COMPANY_NAME
+ENV COMPANY_NAME=$COMPANY_NAME \
+    PRODUCT_NAME=$PRODUCT_NAME
 
 RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/ds.list && \
     apt-get -y update && \
