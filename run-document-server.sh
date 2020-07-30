@@ -483,14 +483,16 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     rm -rf /var/run/rabbitmq
   fi
 
-  if [ ${REDIS_SERVER_HOST} != "localhost" ]; then
-    update_redis_settings
-  elif [ ${REDIS_ENABLED} = "true" ]; then
-    # change rights for redis directory
-    chown -R redis:redis ${REDIS_DATA}
-    chmod -R 750 ${REDIS_DATA}
+  if [ ${REDIS_ENABLED} = "true" ]; then
+    if [ ${REDIS_SERVER_HOST} != "localhost" ]; then
+      update_redis_settings
+    else
+      # change rights for redis directory
+      chown -R redis:redis ${REDIS_DATA}
+      chmod -R 750 ${REDIS_DATA}
 
-    LOCAL_SERVICES+=("redis-server")
+      LOCAL_SERVICES+=("redis-server")
+    fi
   fi
 else
   # no need to update settings just wait for remote data
