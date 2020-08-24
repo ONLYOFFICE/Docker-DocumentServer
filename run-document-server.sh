@@ -1,5 +1,12 @@
 #!/bin/bash
 
+function clean_exit {
+  echo -n Preparing for shutdown, it can take a lot of time, please wait... >> /var/log/${COMPANY_NAME}/documentserver/docservice/out.log
+  curl http://localhost:8000/internal/cluster/inactive -X PUT -s -o /dev/null
+}
+
+trap clean_exit SIGTERM
+
 # Define '**' behavior explicitly
 shopt -s globstar
 
@@ -522,4 +529,5 @@ service nginx start
 documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
-tail -f /var/log/${COMPANY_NAME}/**/*.log
+tail -f /var/log/${COMPANY_NAME}/**/*.log &
+wait $!
