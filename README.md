@@ -99,7 +99,7 @@ So you need to create and install the following files:
         /app/onlyoffice/DocumentServer/data/certs/tls.key
         /app/onlyoffice/DocumentServer/data/certs/tls.crt
 
-When using CA certified certificates, these files are provided to you by the CA. When using self-signed certificates you need to generate these files yourself. Skip the following section if you are have CA certified SSL certificates.
+When using CA certified certificates, these files are provided to you by the CA. When using self-signed certificates you need to generate these files yourself. Skip the following section if you have CA certified SSL certificates (e.g. [Let's Encrypt](https://letsencrypt.org)).
 
 #### Generation of Self Signed Certificates
 
