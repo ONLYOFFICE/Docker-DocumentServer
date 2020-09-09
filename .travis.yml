@@ -61,10 +61,6 @@ env:
   - config: mysql.yml
     MYSQL_VERSION: 5
 
-  # mysql latest
-  - config: mysql.yml
-    MYSQL_VERSION: latest
-
 
   # mariadb 10.5
   - config: mariadb.yml
