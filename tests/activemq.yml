@@ -17,7 +17,7 @@ services:
 
   onlyoffice-activemq:
     container_name: onlyoffice-activemq
-    image: webcenter/activemq:5.14.3
+    image: webcenter/activemq:${ACTIVEMQ_VERSION:-5.14.3}
     environment:
       - ACTIVEMQ_USERS_guest=${ACTIVEMQ_USERS_guest:-guest}
       - ACTIVEMQ_GROUPS_owners=${ACTIVEMQ_GROUPS_owners:-guest}
