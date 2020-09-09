@@ -32,9 +32,17 @@ env:
     SSL_KEY_PATH: /var/www/onlyoffice/Data/certs/mycert.key
 
 
-  # postgresql latest
+  # postgresql 12
   - config: postgres.yml
-    POSTGRES_VERSION: latest
+    POSTGRES_VERSION: 12
+
+  # postgresql 11
+  - config: postgres.yml
+    POSTGRES_VERSION: 11
+
+  # postgresql 10
+  - config: postgres.yml
+    POSTGRES_VERSION: 10
 
   # postgresql 9
   - config: postgres.yml
@@ -55,6 +63,10 @@ env:
   - config: postgres-old.yml
 
 
+  # mysql 8
+  - config: mysql.yml
+    MYSQL_VERSION: 8
+
   # mysql 5
   - config: mysql.yml
     MYSQL_VERSION: 5
@@ -62,10 +74,6 @@ env:
   # mysql 5.7
   - config: mysql.yml
 
-
-  # mariadb latest
-  - config: mariadb.yml
-    MARIADB_VERSION: latest
 
   # mariadb 10
   - config: mariadb.yml
@@ -75,13 +83,8 @@ env:
   - config: mariadb.yml
 
 
-  # activemq latest
   - config: activemq.yml
     ACTIVEMQ_VERSION: latest
-
-  # activemq 5
-  - config: activemq.yml
-    ACTIVEMQ_VERSION: 5
 
   # activemq 5.14.3
   - config: activemq.yml
@@ -101,13 +104,17 @@ env:
   # redis latest with community edition
   - config: redis.yml
 
-  # redis 5
-  - config: redis.yml
-    REDIS_VERSION: 5
-
   # redis latest with integraion edition
   - config: redis.yml
     PRODUCT_NAME: documentserver-ie
+
+  # redis 6
+  - config: redis.yml
+    REDIS_VERSION: 6
+
+  # redis 5
+  - config: redis.yml
+    REDIS_VERSION: 5
 
 
   # graphite
