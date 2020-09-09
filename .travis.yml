@@ -30,7 +30,8 @@ env:
     SSL_CERTIFICATE_PATH: /var/www/onlyoffice/Data/certs/mycert.crt
     SSL_KEY_PATH: /var/www/onlyoffice/Data/certs/mycert.key
 
-  # postgresql
+
+  # postgresql 9.5
   - config: postgres.yml
 
   # custom values
@@ -41,30 +42,68 @@ env:
     POSTGRES_DB: mydb
     POSTGRES_USER: myuser
 
+  # postgresql 9
+  - config: postgres.yml
+    POSTGRES_VERSION: 
+
+  # postgresql latest
+  - config: postgres.yml
+    POSTGRES_VERSION: latest
+
   # deprecated variables
   - config: postgres-old.yml
 
-  # mysql
+
+  # mysql 5.7
   - config: mysql.yml
 
-  # mariadb
+  # mysql 5
+  - config: mysql.yml
+    MYSQL_VERSION: 5
+
+  # mysql latest
+  - config: mysql.yml
+    MYSQL_VERSION: latest
+
+
+  # mariadb 10.5
   - config: mariadb.yml
 
-  # activemq
+  # mariadb latest
+  - config: mariadb.yml
+    MARIADB_VERSION: latest
+
+
+  # activemq 5.14.3
   - config: activemq.yml
 
-  # rabbitmq
+  # activemq latest
+  - config: activemq.yml
+    ACTIVEMQ_VERSION: latest
+
+
+  # rabbitmq latest
   - config: rabbitmq.yml
+
+  # rabbitmq 3
+  - config: rabbitmq.yml
+    RABBITMQ_VERSION: 3
 
   # rabbitmq old variables
   - config: rabbitmq-old.yml
 
-  # redis with community edition
+
+  # redis latest with community edition
   - config: redis.yml
 
-  # redis with integraion edition
+  # redis latest with integraion edition
   - config: redis.yml
     PRODUCT_NAME: documentserver-ie
+
+  # redis 5 with community edition
+  - config: redis.yml
+    REDIS_VERSION: 5
+
 
   # graphite
   - config: graphite.yml
