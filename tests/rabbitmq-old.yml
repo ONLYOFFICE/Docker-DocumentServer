@@ -17,7 +17,7 @@ services:
 
   onlyoffice-rabbitmq:
     container_name: onlyoffice-rabbitmq
-    image: rabbitmq
+    image: rabbitmq:${RABBITMQ_VERSION:-latest}
     restart: always
     networks:
      - onlyoffice

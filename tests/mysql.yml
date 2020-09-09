@@ -20,7 +20,7 @@ services:
 
   onlyoffice-mysql:
     container_name: onlyoffice-mysql
-    image: mysql:5.7
+    image: mysql:${MYSQL_VERSION:-5.7}
     environment:
       - MYSQL_DATABASE=${MYSQL_DATABASE:-onlyoffice}
       - MYSQL_USER=${MYSQL_USER:-onlyoffice}
