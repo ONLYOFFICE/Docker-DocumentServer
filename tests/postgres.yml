@@ -20,7 +20,7 @@ services:
 
   onlyoffice-postgresql:
     container_name: onlyoffice-postgresql
-    image: postgres:9.5
+    image: postgres:${POSTGRES_VERSION:-9.5}
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-onlyoffice}
       - POSTGRES_USER=${POSTGRES_USER:-onlyoffice}

@@ -10,6 +10,7 @@ env:
   - config: standalone.yml
     PRODUCT_NAME: documentserver-ie
 
+
   # certificates (default tls if onlyoffice not exists)
   - config: certs.yml
     ssl: true
@@ -30,10 +31,27 @@ env:
     SSL_CERTIFICATE_PATH: /var/www/onlyoffice/Data/certs/mycert.crt
     SSL_KEY_PATH: /var/www/onlyoffice/Data/certs/mycert.key
 
-  # postgresql
+
+  # postgresql 12
+  - config: postgres.yml
+    POSTGRES_VERSION: 12
+
+  # postgresql 11
+  - config: postgres.yml
+    POSTGRES_VERSION: 11
+
+  # postgresql 10
+  - config: postgres.yml
+    POSTGRES_VERSION: 10
+
+  # postgresql 9
+  - config: postgres.yml
+    POSTGRES_VERSION: 9
+
+  # postgresql 9.5
   - config: postgres.yml
 
-  # custom values
+  # postgresql custom values
   - config: postgres.yml
     DB_NAME: mydb
     DB_USER: myuser
@@ -41,30 +59,63 @@ env:
     POSTGRES_DB: mydb
     POSTGRES_USER: myuser
 
-  # deprecated variables
+  # postgresql deprecated variables
   - config: postgres-old.yml
 
-  # mysql
+
+  # mysql 8
+  - config: mysql.yml
+    MYSQL_VERSION: 8
+
+  # mysql 5
+  - config: mysql.yml
+    MYSQL_VERSION: 5
+
+  # mysql 5.7
   - config: mysql.yml
 
-  # mariadb
+
+  # mariadb 10
+  - config: mariadb.yml
+    MARIADB_VERSION: 10
+
+  # mariadb 10.5
   - config: mariadb.yml
 
-  # activemq
+
+  - config: activemq.yml
+    ACTIVEMQ_VERSION: latest
+
+  # activemq 5.14.3
   - config: activemq.yml
 
-  # rabbitmq
+
+  # rabbitmq latest
   - config: rabbitmq.yml
+
+  # rabbitmq 3
+  - config: rabbitmq.yml
+    RABBITMQ_VERSION: 3
 
   # rabbitmq old variables
   - config: rabbitmq-old.yml
 
-  # redis with community edition
+
+  # redis latest with community edition
   - config: redis.yml
 
-  # redis with integraion edition
+  # redis latest with integraion edition
   - config: redis.yml
     PRODUCT_NAME: documentserver-ie
+
+  # redis 6
+  - config: redis.yml
+    REDIS_VERSION: 6
+
+  # redis 5
+  - config: redis.yml
+    REDIS_VERSION: 5
+
 
   # graphite
   - config: graphite.yml
