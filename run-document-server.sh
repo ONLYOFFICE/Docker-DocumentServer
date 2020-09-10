@@ -1,5 +1,11 @@
 #!/bin/bash
 
+function clean_exit {
+  /usr/bin/documentserver-prepare4shutdown.sh
+}
+
+trap clean_exit SIGTERM
+
 # Define '**' behavior explicitly
 shopt -s globstar
 
@@ -522,4 +528,5 @@ service nginx start
 documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
-tail -f /var/log/${COMPANY_NAME}/**/*.log
+tail -f /var/log/${COMPANY_NAME}/**/*.log &
+wait $!
