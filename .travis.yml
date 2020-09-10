@@ -63,7 +63,7 @@ env:
   - config: postgres-old.yml
 
 
-  # mysql 8 (not supported)
+  # mysql 8 (not supported, test fail)
   # - config: mysql.yml
   #   MYSQL_VERSION: 8
 
