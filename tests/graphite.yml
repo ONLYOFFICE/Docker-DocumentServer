@@ -1,0 +1,32 @@
+version: '2.1'
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    build:
+      context: ../.
+    depends_on:
+      - onlyoffice-graphite
+    environment:
+      - METRICS_ENABLED=${METRICS_ENABLED:-true}
+      - METRICS_HOST=${METRICS_HOST:-localhost}
+      - METRICS_PORT=${METRICS_PORT:-8125}
+      - METRICS_PREFIX=${METRICS_PREFIX:-ds.}
+    stdin_open: true
+    restart: always
+    expose:
+      - '2003'
+    ports:
+      - '80:80'
+    volumes:
+      - ./graphite/statsd:/var/www/onlyoffice/documentserver/server/Metrics/config
+
+  onlyoffice-graphite:
+    container_name: onlyoffice-graphite
+    image: graphiteapp/graphite-statsd
+    environment:
+      - GRAPHITE_STATSD_HOST=${GRAPHITE_STATSD_HOST:-onlyoffice-documentserver}
+      - GRAPHITE_TIME_ZONE=${GRAPHITE_TIME_ZONE:-Etc/UTC}
+    ports:
+      - '8888:80'
+    stdin_open: true
+    restart: always

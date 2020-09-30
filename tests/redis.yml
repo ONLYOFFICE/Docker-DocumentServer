@@ -19,7 +19,7 @@ services:
 
   onlyoffice-redis:
     container_name: onlyoffice-redis
-    image: redis
+    image: redis:${REDIS_VERSION:-latest}
     restart: always
     networks:
      - onlyoffice

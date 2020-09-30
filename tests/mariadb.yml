@@ -20,7 +20,7 @@ services:
 
   onlyoffice-mariadb:
     container_name: onlyoffice-mariadb
-    image: mariadb:10.5
+    image: mariadb:${MARIADB_VERSION:-10.5}
     environment:
       - MYSQL_DATABASE=${MYSQL_DATABASE:-onlyoffice}
       - MYSQL_USER=${MYSQL_USER:-onlyoffice}
