@@ -181,6 +181,10 @@ Below is the complete list of parameters that can be set using environment varia
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
 - **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
 - **USE_UNAUTHORIZED_STORAGE**: Set to `true`if using selfsigned certificates for your storage server e.g. Nextcloud. Defaults to `false`
+- **METRICS_ENABLED**: Specifies the enabling StatsD for ONLYOFFICE Document Server. Defaults to `false`.
+- **METRICS_HOST**: Defines StatsD listening host. Defaults to `localhost`.
+- **METRICS_PORT**: Defines StatsD listening port. Defaults to `8125`.
+- **METRICS_PREFIX**: Defines StatsD metrics prefix for backend services. Defaults to `ds.`.
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
