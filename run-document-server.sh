@@ -49,6 +49,9 @@ JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
+LETS_ENCRYPT_DOMAINS=${LETS_ENCRYPT_DOMAINS:-none}
+LETS_ENCRYPT_MAIL=${LETS_ENCRYPT_MAIL:-none}
+
 if [[ ${PRODUCT_NAME} == "documentserver" ]]; then
   REDIS_ENABLED=false
 else
@@ -418,6 +421,68 @@ update_logrotate_settings(){
   sed 's|\(^su\b\).*|\1 root root|' -i /etc/logrotate.conf
 }
 
+modify_conf_templated(){
+  sed -i '$ d' ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl
+  cat >> ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl <<END
+  location ~ /.well-known/acme-challenge {
+    root /var/snap/onlyoffice-ds/current/var/www/onlyoffice/Data/certs/;
+    allow all;
+  }
+}
+END
+
+  sed -i '$ d' ${NGINX_ONLYOFFICE_PATH}/ds-ssl.conf.tmpl
+  cat >> ${NGINX_ONLYOFFICE_PATH}/ds-ssl.conf.tmpl <<END
+  location ~ /.well-known/acme-challenge {
+    root /var/snap/onlyoffice-ds/current/var/www/onlyoffice/Data/certs/;
+    allow all;
+  }
+}
+END
+}
+
+letsencrypt(){
+  LETSENCRYPT_ROOT_DIR="/etc/letsencrypt/live";
+  ROOT_DIR="/var/www/onlyoffice/Data/certs";
+
+  #service nginx reload
+
+  _domains="";
+
+  IFS=' ' read -ra args <<< "$LETS_ENCRYPT_DOMAINS"
+
+  for i in "${args[@]}"
+  do
+    _domains="$_domains -d $i"
+  done
+
+  DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+  mkdir -p ${ROOT_DIR}
+
+  certbot certonly --expand --webroot -w ${ROOT_DIR} --noninteractive --agree-tos --email $LETS_ENCRYPT_MAIL $_domains;
+
+  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/fullchain.pem ${ROOT_DIR}/onlyoffice.crt
+  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/privkey.pem ${ROOT_DIR}/onlyoffice.key
+  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/chain.pem ${ROOT_DIR}/stapling.trusted.crt
+
+  cat > ${DIR}/letsencrypt_cron.sh <<END
+  certbot renew >> /var/log/le-renew.log
+  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/fullchain.pem ${ROOT_DIR}/onlyoffice.crt
+  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/privkey.pem ${ROOT_DIR}/onlyoffice.key
+  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/chain.pem ${ROOT_DIR}/stapling.trusted.crt
+  #openssl pkcs12 -export -out ${ROOT_DIR}/onlyoffice.pfx -inkey ${ROOT_DIR}/onlyoffice.key -in ${ROOT_DIR}/onlyoffice.crt -password pass:onlyoffice
+  #chown onlyoffice:onlyoffice ${ROOT_DIR}/onlyoffice.pfx
+  service nginx reload
+END
+
+  chmod a+x ${DIR}/letsencrypt_cron.sh
+
+  cat > /etc/cron.d/letsencrypt <<END
+  @weekly root ${DIR}/letsencrypt_cron.sh
+END
+}
+
 # create base folders
 for i in converter docservice spellchecker metrics; do
   mkdir -p "${DS_LOG_DIR}/$i"
@@ -515,6 +580,8 @@ if [ ${PG_NEW_CLUSTER} = "true" ]; then
   create_postgresql_tbl
 fi
 
+modify_conf_templated
+
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_db
   waiting_for_amqp
@@ -535,6 +602,12 @@ fi
 # nginx used as a proxy, and as data container status service.
 # it run in all cases.
 service nginx start
+
+if[ ${LETS_ENCRYPT_DOMAINS} != "none" -a ${LETS_ENCRYPT_MAIL} != "none" ]; then
+  if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
+    letsencrypt
+  fi
+fi
 
 # Regenerate the fonts list and the fonts thumbnails
 documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
