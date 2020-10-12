@@ -603,7 +603,7 @@ fi
 # it run in all cases.
 service nginx start
 
-if[ ${LETS_ENCRYPT_DOMAINS} != "none" -a ${LETS_ENCRYPT_MAIL} != "none" ]; then
+if [ ${LETS_ENCRYPT_DOMAINS} != "none" -a ${LETS_ENCRYPT_MAIL} != "none" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
     letsencrypt
   fi
