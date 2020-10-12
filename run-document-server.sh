@@ -445,8 +445,6 @@ letsencrypt(){
   LETSENCRYPT_ROOT_DIR="/etc/letsencrypt/live";
   ROOT_DIR="/var/www/onlyoffice/Data/certs";
 
-  #service nginx reload
-
   _domains="";
 
   IFS=' ' read -ra args <<< "$LETS_ENCRYPT_DOMAINS"
@@ -462,7 +460,7 @@ letsencrypt(){
 
   echo certbot certonly --expand --webroot -w ${ROOT_DIR} --noninteractive --agree-tos --email $LETS_ENCRYPT_MAIL $_domains > /var/log/le-start.log
 
-  certbot certonly --expand --webroot -w ${ROOT_DIR} --noninteractive --agree-tos --email $LETS_ENCRYPT_MAIL $_domains > /var/log/le-new.log
+  #certbot certonly --expand --webroot -w ${ROOT_DIR} --noninteractive --agree-tos --email $LETS_ENCRYPT_MAIL $_domains > /var/log/le-new.log
 
   cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/fullchain.pem ${ROOT_DIR}/onlyoffice.crt
   cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/privkey.pem ${ROOT_DIR}/onlyoffice.key
@@ -473,8 +471,6 @@ letsencrypt(){
   cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/fullchain.pem ${ROOT_DIR}/onlyoffice.crt
   cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/privkey.pem ${ROOT_DIR}/onlyoffice.key
   cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/chain.pem ${ROOT_DIR}/stapling.trusted.crt
-  #openssl pkcs12 -export -out ${ROOT_DIR}/onlyoffice.pfx -inkey ${ROOT_DIR}/onlyoffice.key -in ${ROOT_DIR}/onlyoffice.crt -password pass:onlyoffice
-  #chown onlyoffice:onlyoffice ${ROOT_DIR}/onlyoffice.pfx
   service nginx reload
 END
 
