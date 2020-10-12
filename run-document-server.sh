@@ -608,6 +608,8 @@ service nginx start
 if [ ${LETS_ENCRYPT_DOMAINS} != "none" -a ${LETS_ENCRYPT_MAIL} != "none" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
     letsencrypt
+    update_nginx_settings
+    service nginx restart
   fi
 fi
 

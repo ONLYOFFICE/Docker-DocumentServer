@@ -14,6 +14,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         adduser \
         apt-utils \
         bomstrip \
+        certbot \
         htop \
         libasound2 \
         libboost-regex-dev \

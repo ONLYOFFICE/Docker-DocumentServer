@@ -185,6 +185,8 @@ Below is the complete list of parameters that can be set using environment varia
 - **METRICS_HOST**: Defines StatsD listening host. Defaults to `localhost`.
 - **METRICS_PORT**: Defines StatsD listening port. Defaults to `8125`.
 - **METRICS_PREFIX**: Defines StatsD metrics prefix for backend services. Defaults to `ds.`.
+- **LETS_ENCRYPT_DOMAINS**: Defines LETS_ENCRYPT_DOMAINS.
+- **LETS_ENCRYPT_MAIL**: Defines LETS_ENCRYPT_MAIL.
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
