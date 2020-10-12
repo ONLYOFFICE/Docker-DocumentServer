@@ -425,7 +425,7 @@ modify_conf_templates(){
   sed -i '$ d' ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl
   cat >> ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl <<END
   location ~ /.well-known/acme-challenge {
-    root /var/snap/onlyoffice-ds/current/var/www/onlyoffice/Data/certs/;
+    root /var/www/onlyoffice/Data/certs/;
     allow all;
   }
 }
@@ -434,7 +434,7 @@ END
   sed -i '$ d' ${NGINX_ONLYOFFICE_PATH}/ds-ssl.conf.tmpl
   cat >> ${NGINX_ONLYOFFICE_PATH}/ds-ssl.conf.tmpl <<END
   location ~ /.well-known/acme-challenge {
-    root /var/snap/onlyoffice-ds/current/var/www/onlyoffice/Data/certs/;
+    root /var/www/onlyoffice/Data/certs/;
     allow all;
   }
 }
