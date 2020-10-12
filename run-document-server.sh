@@ -421,7 +421,7 @@ update_logrotate_settings(){
   sed 's|\(^su\b\).*|\1 root root|' -i /etc/logrotate.conf
 }
 
-modify_conf_templated(){
+modify_conf_templates(){
   sed -i '$ d' ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl
   cat >> ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl <<END
   location ~ /.well-known/acme-challenge {
@@ -460,7 +460,9 @@ letsencrypt(){
 
   mkdir -p ${ROOT_DIR}
 
-  certbot certonly --expand --webroot -w ${ROOT_DIR} --noninteractive --agree-tos --email $LETS_ENCRYPT_MAIL $_domains;
+  echo certbot certonly --expand --webroot -w ${ROOT_DIR} --noninteractive --agree-tos --email $LETS_ENCRYPT_MAIL $_domains > /var/log/le-start.log
+
+  certbot certonly --expand --webroot -w ${ROOT_DIR} --noninteractive --agree-tos --email $LETS_ENCRYPT_MAIL $_domains > /var/log/le-new.log
 
   cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/fullchain.pem ${ROOT_DIR}/onlyoffice.crt
   cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/privkey.pem ${ROOT_DIR}/onlyoffice.key
@@ -580,7 +582,7 @@ if [ ${PG_NEW_CLUSTER} = "true" ]; then
   create_postgresql_tbl
 fi
 
-modify_conf_templated
+modify_conf_templates
 
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_db
