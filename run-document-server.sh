@@ -358,6 +358,7 @@ update_welcome_page() {
 }
 
 update_nginx_settings(){
+  echo RFX update_nginx_settings() >> /var/log/le-test.log
   # Set up nginx
   sed 's/^worker_processes.*/'"worker_processes ${NGINX_WORKER_PROCESSES};"'/' -i ${NGINX_CONFIG_PATH}
   sed 's/worker_connections.*/'"worker_connections ${NGINX_WORKER_CONNECTIONS};"'/' -i ${NGINX_CONFIG_PATH}
@@ -365,6 +366,7 @@ update_nginx_settings(){
 
   # setup HTTPS
   if [ -f "${SSL_CERTIFICATE_PATH}" -a -f "${SSL_KEY_PATH}" ]; then
+    echo RFX ds-ssl.conf.tmpl >> /var/log/le-test.log
     cp -f ${NGINX_ONLYOFFICE_PATH}/ds-ssl.conf.tmpl ${NGINX_ONLYOFFICE_CONF}
 
     # configure nginx
@@ -393,6 +395,7 @@ update_nginx_settings(){
       sed '/max-age=/d' -i ${NGINX_ONLYOFFICE_CONF}
     fi
   else
+    echo RFX ds.conf.tmpl >> /var/log/le-test.log
     ln -sf ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl ${NGINX_ONLYOFFICE_CONF}
   fi
 
