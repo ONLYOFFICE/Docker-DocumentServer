@@ -49,7 +49,7 @@ JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
-LETS_ENCRYPT_DOMAINS=${LETS_ENCRYPT_DOMAINS:-none}
+LETS_ENCRYPT_DOMAIN=${LETS_ENCRYPT_DOMAIN:-none}
 LETS_ENCRYPT_MAIL=${LETS_ENCRYPT_MAIL:-none}
 
 if [[ ${PRODUCT_NAME} == "documentserver" ]]; then
@@ -445,32 +445,32 @@ letsencrypt(){
   LETSENCRYPT_ROOT_DIR="/etc/letsencrypt/live";
   ROOT_DIR="/var/www/onlyoffice/Data/certs";
 
-  _domains="";
+  #_domains="";
 
-  IFS=' ' read -ra args <<< "$LETS_ENCRYPT_DOMAINS"
+  #IFS=' ' read -ra args <<< "$LETS_ENCRYPT_DOMAIN"
 
-  for i in "${args[@]}"
-  do
-    _domains="$_domains -d $i"
-  done
+  #for i in "${args[@]}"
+  #do
+  #  _domains="$_domains -d $i"
+  #done
 
   DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
   mkdir -p ${ROOT_DIR}
 
-  echo certbot certonly --expand --webroot -w ${ROOT_DIR} --noninteractive --agree-tos --email $LETS_ENCRYPT_MAIL $_domains > /var/log/le-start.log
+  echo certbot certonly --expand --webroot -w ${ROOT_DIR} --noninteractive --agree-tos --email $LETS_ENCRYPT_MAIL -d $LETS_ENCRYPT_DOMAIN > /var/log/le-start.log
 
-  #certbot certonly --expand --webroot -w ${ROOT_DIR} --noninteractive --agree-tos --email $LETS_ENCRYPT_MAIL $_domains > /var/log/le-new.log
+  certbot certonly --expand --webroot -w ${ROOT_DIR} --noninteractive --agree-tos --email $LETS_ENCRYPT_MAIL -d $LETS_ENCRYPT_DOMAIN > /var/log/le-new.log
 
-  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/fullchain.pem ${ROOT_DIR}/onlyoffice.crt
-  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/privkey.pem ${ROOT_DIR}/onlyoffice.key
-  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/chain.pem ${ROOT_DIR}/stapling.trusted.crt
+  cp ${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/fullchain.pem ${ROOT_DIR}/onlyoffice.crt
+  cp ${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/privkey.pem ${ROOT_DIR}/onlyoffice.key
+  cp ${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/chain.pem ${ROOT_DIR}/stapling.trusted.crt
 
   cat > ${DIR}/letsencrypt_cron.sh <<END
   certbot renew >> /var/log/le-renew.log
-  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/fullchain.pem ${ROOT_DIR}/onlyoffice.crt
-  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/privkey.pem ${ROOT_DIR}/onlyoffice.key
-  cp ${LETSENCRYPT_ROOT_DIR}/${args[0]}/chain.pem ${ROOT_DIR}/stapling.trusted.crt
+  cp ${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/fullchain.pem ${ROOT_DIR}/onlyoffice.crt
+  cp ${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/privkey.pem ${ROOT_DIR}/onlyoffice.key
+  cp ${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/chain.pem ${ROOT_DIR}/stapling.trusted.crt
   service nginx reload
 END
 
@@ -578,7 +578,7 @@ if [ ${PG_NEW_CLUSTER} = "true" ]; then
   create_postgresql_tbl
 fi
 
-modify_conf_templates
+#modify_conf_templates
 
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_db
@@ -601,9 +601,10 @@ fi
 # it run in all cases.
 service nginx start
 
-if [ ${LETS_ENCRYPT_DOMAINS} != "none" -a ${LETS_ENCRYPT_MAIL} != "none" ]; then
+if [ ${LETS_ENCRYPT_DOMAIN} != "none" -a ${LETS_ENCRYPT_MAIL} != "none" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
-    letsencrypt
+    #letsencrypt
+    documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
     update_nginx_settings
     service nginx restart
   fi
