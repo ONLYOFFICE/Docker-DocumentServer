@@ -358,7 +358,6 @@ update_welcome_page() {
 }
 
 update_nginx_settings(){
-  echo RFX update_nginx_settings >> /var/log/le-test.log
   # Set up nginx
   sed 's/^worker_processes.*/'"worker_processes ${NGINX_WORKER_PROCESSES};"'/' -i ${NGINX_CONFIG_PATH}
   sed 's/worker_connections.*/'"worker_connections ${NGINX_WORKER_CONNECTIONS};"'/' -i ${NGINX_CONFIG_PATH}
@@ -366,7 +365,6 @@ update_nginx_settings(){
 
   # setup HTTPS
   if [ -f "${SSL_CERTIFICATE_PATH}" -a -f "${SSL_KEY_PATH}" ]; then
-    echo RFX ds-ssl.conf.tmpl ${SSL_CERTIFICATE_PATH} ${SSL_KEY_PATH} >> /var/log/le-test.log
     cp -f ${NGINX_ONLYOFFICE_PATH}/ds-ssl.conf.tmpl ${NGINX_ONLYOFFICE_CONF}
 
     # configure nginx
@@ -395,7 +393,6 @@ update_nginx_settings(){
       sed '/max-age=/d' -i ${NGINX_ONLYOFFICE_CONF}
     fi
   else
-    echo RFX ds.conf.tmpl ${SSL_CERTIFICATE_PATH} ${SSL_KEY_PATH} >> /var/log/le-test.log
     ln -sf ${NGINX_ONLYOFFICE_PATH}/ds.conf.tmpl ${NGINX_ONLYOFFICE_CONF}
   fi
 
@@ -521,8 +518,6 @@ if [ ${PG_NEW_CLUSTER} = "true" ]; then
   create_postgresql_tbl
 fi
 
-#modify_conf_templates
-
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_db
   waiting_for_amqp
@@ -546,7 +541,6 @@ service nginx start
 
 if [ ${LETS_ENCRYPT_DOMAIN} != "none" -a ${LETS_ENCRYPT_MAIL} != "none" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
-    #letsencrypt
     documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
     SSL_CERTIFICATE_PATH=${SSL_CERTIFICATES_DIR}/onlyoffice.crt
     SSL_KEY_PATH=${SSL_CERTIFICATES_DIR}/onlyoffice.key
