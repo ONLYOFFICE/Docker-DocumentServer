@@ -152,6 +152,13 @@ chmod 400 /app/onlyoffice/DocumentServer/data/certs/tls.key
 
 You are now just one step away from having our application secured.
 
+#### Using the automatically generated Let's Encrypt SSL Certificates
+
+        sudo docker run -i -t -d -p 443:443 \
+        -e LETS_ENCRYPT_DOMAIN=your_domain -e LETS_ENCRYPT_MAIL=your_mail  onlyoffice/documentserver
+
+If you want to get and extend Let's Encrypt SSL Certificates automatically just set LETS_ENCRYPT_DOMAIN and LETS_ENCRYPT_MAIL variables.
+
 #### Available Configuration Parameters
 
 *Please refer the docker run command options for the `--env-file` flag where you can specify all required environment variables in a single file. This will save you from writing a potentially long docker run command.*
