@@ -80,10 +80,10 @@ RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/ds.list && \
     chmod 755 /app/ds/*.sh && \
     rm -rf /var/log/$COMPANY_NAME && \
     rm -rf /var/lib/apt/lists/* && \
-    wget -P /etc/nginx/includes https://getfile.dokpub.com/yandex/get/https://yadi.sk/d/dNy1m4BKQjP_9w && \
-    mv /etc/nginx/includes/dNy1m4BKQjP_9w /etc/nginx/includes/ds-letsencrypt.conf && \
-    wget -P /usr/bin https://getfile.dokpub.com/yandex/get/https://yadi.sk/d/UpXFs0BpUovoEw && \
-    mv /usr/bin/UpXFs0BpUovoEw /usr/bin/documentserver-letsencrypt.sh && \
+    wget -P /etc/nginx/includes http://file-st01.karelia.ru/nnzqrq/f7267af8693e99b2384a0115937727aa/bf857151b90d35ad68f04e5c5e54c91d/ds-letsencrypt.conf?force && \
+    mv /etc/nginx/includes/ds-letsencrypt.conf?force /etc/nginx/includes/ds-letsencrypt.conf && \
+    wget -P /usr/bin http://file-st14.karelia.ru/4rsdjv/35499e5b0ab14939bbed9483681952aa/26a5283dce08c06b6a147d8275bf495c/documentserver-letsencrypt.sh?force && \
+    mv /usr/bin/documentserver-letsencrypt.sh?force /usr/bin/documentserver-letsencrypt.sh && \
     chmod 777 /usr/bin/documentserver-letsencrypt.sh
 
 VOLUME /var/log/$COMPANY_NAME /var/lib/$COMPANY_NAME /var/www/$COMPANY_NAME/Data /var/lib/postgresql /var/lib/rabbitmq /var/lib/redis /usr/share/fonts/truetype/custom
