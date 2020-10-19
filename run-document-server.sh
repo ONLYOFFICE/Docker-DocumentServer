@@ -542,10 +542,13 @@ service nginx start
 if [ ${LETS_ENCRYPT_DOMAIN} != "none" -a ${LETS_ENCRYPT_MAIL} != "none" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
     documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
-    SSL_CERTIFICATE_PATH=${SSL_CERTIFICATES_DIR}/onlyoffice.crt
-    SSL_KEY_PATH=${SSL_CERTIFICATES_DIR}/onlyoffice.key
-    update_nginx_settings
-    service nginx restart
+    LETSENCRYPT_ROOT_DIR="/etc/letsencrypt/live"
+    #SSL_CERTIFICATE_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/fullchain.pem
+    #SSL_KEY_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/privkey.pem
+    ln -sf ${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/fullchain.pem ${SSL_CERTIFICATES_DIR}/onlyoffice.crt
+    ln -sf ${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/privkey.pem ${SSL_CERTIFICATES_DIR}/onlyoffice.key
+    #update_nginx_settings
+    #service nginx restart
   fi
 fi
 
