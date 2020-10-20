@@ -187,7 +187,6 @@ Below is the complete list of parameters that can be set using environment varia
 - **METRICS_PORT**: Defines StatsD listening port. Defaults to `8125`.
 - **METRICS_PREFIX**: Defines StatsD metrics prefix for backend services. Defaults to `ds.`.
 
-
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
 ONLYOFFICE Document Server is a part of ONLYOFFICE Community Edition that comprises also Community Server and Mail Server. To install them, follow these easy steps:
