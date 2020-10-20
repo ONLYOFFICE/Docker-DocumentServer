@@ -55,6 +55,8 @@ JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
+GENERATE_FONTS=${GENERATE_FONTS:-true}
+
 if [[ ${PRODUCT_NAME} == "documentserver" ]]; then
   REDIS_ENABLED=false
 else
@@ -543,7 +545,9 @@ fi
 service nginx start
 
 # Regenerate the fonts list and the fonts thumbnails
-documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
+if [ "${GENERATE_FONTS}" == "true" ]; then
+  documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
+fi
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
 tail -f /var/log/${COMPANY_NAME}/**/*.log &
