@@ -49,9 +49,6 @@ JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
-LETS_ENCRYPT_DOMAIN=${LETS_ENCRYPT_DOMAIN:-none}
-LETS_ENCRYPT_MAIL=${LETS_ENCRYPT_MAIL:-none}
-
 if [[ ${PRODUCT_NAME} == "documentserver" ]]; then
   REDIS_ENABLED=false
 else
@@ -421,6 +418,11 @@ update_logrotate_settings(){
   sed 's|\(^su\b\).*|\1 root root|' -i /etc/logrotate.conf
 }
 
+if [ ${LETS_ENCRYPT_DOMAIN} != "" -a ${LETS_ENCRYPT_MAIL} != "" ]; then
+  SSL_CERTIFICATE_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/fullchain.pem
+  SSL_KEY_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/privkey.pem
+fi
+
 # create base folders
 for i in converter docservice spellchecker metrics; do
   mkdir -p "${DS_LOG_DIR}/$i"
@@ -539,13 +541,11 @@ fi
 # it run in all cases.
 service nginx start
 
-if [ ${LETS_ENCRYPT_DOMAIN} != "none" -a ${LETS_ENCRYPT_MAIL} != "none" ]; then
+if [ ${LETS_ENCRYPT_DOMAIN} != "" -a ${LETS_ENCRYPT_MAIL} != "" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
     documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
     LETSENCRYPT_ROOT_DIR="/etc/letsencrypt/live"
     mkdir -p ${SSL_CERTIFICATES_DIR}
-    ln -sf ${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/fullchain.pem ${SSL_CERTIFICATES_DIR}/onlyoffice.crt
-    ln -sf ${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/privkey.pem ${SSL_CERTIFICATES_DIR}/onlyoffice.key
   fi
 fi
 

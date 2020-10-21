@@ -17,8 +17,6 @@ services:
       - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
       - REDIS_SERVER_HOST=onlyoffice-redis
       - REDIS_SERVER_PORT=6379
-      - LETS_ENCRYPT_DOMAINS=none
-      - LETS_ENCRYPT_MAIL=none
       # Uncomment strings below to enable the JSON Web Token validation.
       #- JWT_ENABLED=true
       #- JWT_SECRET=secret
