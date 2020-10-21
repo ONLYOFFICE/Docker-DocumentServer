@@ -545,7 +545,6 @@ service nginx start
 if [ ${LETS_ENCRYPT_DOMAIN} != "" -a ${LETS_ENCRYPT_MAIL} != "" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
     documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
-    LETSENCRYPT_ROOT_DIR="/etc/letsencrypt/live"
   fi
 fi
 
