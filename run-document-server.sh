@@ -82,6 +82,12 @@ PG_NEW_CLUSTER=false
 RABBITMQ_DATA=/var/lib/rabbitmq
 REDIS_DATA=/var/lib/redis
 
+if [ ${LETS_ENCRYPT_DOMAIN} != "" -a ${LETS_ENCRYPT_MAIL} != "" ]; then
+  LETSENCRYPT_ROOT_DIR="/etc/letsencrypt/live"
+  SSL_CERTIFICATE_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/fullchain.pem
+  SSL_KEY_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/privkey.pem
+fi
+
 read_setting(){
   deprecated_var POSTGRESQL_SERVER_HOST DB_HOST
   deprecated_var POSTGRESQL_SERVER_PORT DB_PORT
@@ -543,6 +549,12 @@ fi
 # nginx used as a proxy, and as data container status service.
 # it run in all cases.
 service nginx start
+
+if [ ${LETS_ENCRYPT_DOMAIN} != "" -a ${LETS_ENCRYPT_MAIL} != "" ]; then
+  if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
+    documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
+  fi
+fi
 
 # Regenerate the fonts list and the fonts thumbnails
 if [ "${GENERATE_FONTS}" == "true" ]; then
