@@ -99,7 +99,14 @@ So you need to create and install the following files:
         /app/onlyoffice/DocumentServer/data/certs/tls.key
         /app/onlyoffice/DocumentServer/data/certs/tls.crt
 
-When using CA certified certificates, these files are provided to you by the CA. When using self-signed certificates you need to generate these files yourself. Skip the following section if you have CA certified SSL certificates (e.g. [Let's Encrypt](https://letsencrypt.org)).
+When using CA certified certificates (e.g [Let's encrypt](https://letsencrypt.org)), these files are provided to you by the CA. If you are using self-signed certificates you need to generate these files yourself (#generation-of-self-signed-certificates).
+
+#### Using the automatically generated Let's Encrypt SSL Certificates
+
+        sudo docker run -i -t -d -p 443:443 \
+        -e LETS_ENCRYPT_DOMAIN=your_domain -e LETS_ENCRYPT_MAIL=your_mail  onlyoffice/documentserver
+
+If you want to get and extend Let's Encrypt SSL Certificates automatically just set LETS_ENCRYPT_DOMAIN and LETS_ENCRYPT_MAIL variables.
 
 #### Generation of Self Signed Certificates
 
@@ -151,13 +158,6 @@ chmod 400 /app/onlyoffice/DocumentServer/data/certs/tls.key
 ```
 
 You are now just one step away from having our application secured.
-
-#### Using the automatically generated Let's Encrypt SSL Certificates
-
-        sudo docker run -i -t -d -p 443:443 \
-        -e LETS_ENCRYPT_DOMAIN=your_domain -e LETS_ENCRYPT_MAIL=your_mail  onlyoffice/documentserver
-
-If you want to get and extend Let's Encrypt SSL Certificates automatically just set LETS_ENCRYPT_DOMAIN and LETS_ENCRYPT_MAIL variables.
 
 #### Available Configuration Parameters
 
