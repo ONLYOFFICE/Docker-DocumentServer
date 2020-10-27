@@ -329,20 +329,12 @@ create_db_tbl() {
 }
 
 create_postgresql_tbl() {
-  CONNECTION_PARAMS="-h$DB_HOST -p$DB_PORT -U$DB_USER -w"
   if [ -n "$DB_PWD" ]; then
     export PGPASSWORD=$DB_PWD
   fi
 
-  PSQL="psql -q $CONNECTION_PARAMS"
-  CREATEDB="createdb $CONNECTION_PARAMS"
-
-  # Create db on remote server
-  if $PSQL -lt | cut -d\| -f 1 | grep -qw $DB_NAME | grep 0; then
-    $CREATEDB $DB_NAME
-  fi
-
-  $PSQL -d "$DB_NAME" -f "$APP_DIR/server/schema/postgresql/createdb.sql"
+  PSQL="psql -q -h$DB_HOST -p$DB_PORT -d$DB_NAME -U$DB_USER -w"
+  $PSQL -f "$APP_DIR/server/schema/postgresql/createdb.sql"
 }
 
 create_mysql_tbl() {
