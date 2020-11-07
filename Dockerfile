@@ -31,7 +31,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         mysql-client \
         nano \
         net-tools \
-        netcat \
+        netcat-openbsd \
         nginx-extras \
         postgresql \
         postgresql-client \
