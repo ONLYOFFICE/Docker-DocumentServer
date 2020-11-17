@@ -82,7 +82,7 @@ PG_NEW_CLUSTER=false
 RABBITMQ_DATA=/var/lib/rabbitmq
 REDIS_DATA=/var/lib/redis
 
-if [ ${LETS_ENCRYPT_DOMAIN} != "" -a ${LETS_ENCRYPT_MAIL} != "" ]; then
+if [ "${LETS_ENCRYPT_DOMAIN}" != "" -a "${LETS_ENCRYPT_MAIL}" != "" ]; then
   LETSENCRYPT_ROOT_DIR="/etc/letsencrypt/live"
   SSL_CERTIFICATE_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/fullchain.pem
   SSL_KEY_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/privkey.pem
@@ -542,7 +542,7 @@ fi
 # it run in all cases.
 service nginx start
 
-if [ ${LETS_ENCRYPT_DOMAIN} != "" -a ${LETS_ENCRYPT_MAIL} != "" ]; then
+if [ "${LETS_ENCRYPT_DOMAIN}" != "" -a "${LETS_ENCRYPT_MAIL}" != "" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
     documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
   fi
