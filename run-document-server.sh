@@ -1,5 +1,11 @@
 #!/bin/bash
 
+function clean_exit {
+  /usr/bin/documentserver-prepare4shutdown.sh
+}
+
+trap clean_exit SIGTERM
+
 # Define '**' behavior explicitly
 shopt -s globstar
 
@@ -49,6 +55,8 @@ JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
+GENERATE_FONTS=${GENERATE_FONTS:-true}
+
 if [[ ${PRODUCT_NAME} == "documentserver" ]]; then
   REDIS_ENABLED=false
 else
@@ -67,12 +75,17 @@ JSON_EXAMPLE="${JSON_BIN} -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
 LOCAL_SERVICES=()
 
 PG_ROOT=/var/lib/postgresql
-PG_VERSION=10
 PG_NAME=main
 PGDATA=${PG_ROOT}/${PG_VERSION}/${PG_NAME}
 PG_NEW_CLUSTER=false
 RABBITMQ_DATA=/var/lib/rabbitmq
 REDIS_DATA=/var/lib/redis
+
+if [ "${LETS_ENCRYPT_DOMAIN}" != "" -a "${LETS_ENCRYPT_MAIL}" != "" ]; then
+  LETSENCRYPT_ROOT_DIR="/etc/letsencrypt/live"
+  SSL_CERTIFICATE_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/fullchain.pem
+  SSL_KEY_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/privkey.pem
+fi
 
 read_setting(){
   deprecated_var POSTGRESQL_SERVER_HOST DB_HOST
@@ -315,20 +328,12 @@ create_db_tbl() {
 }
 
 create_postgresql_tbl() {
-  CONNECTION_PARAMS="-h$DB_HOST -p$DB_PORT -U$DB_USER -w"
   if [ -n "$DB_PWD" ]; then
     export PGPASSWORD=$DB_PWD
   fi
 
-  PSQL="psql -q $CONNECTION_PARAMS"
-  CREATEDB="createdb $CONNECTION_PARAMS"
-
-  # Create db on remote server
-  if $PSQL -lt | cut -d\| -f 1 | grep -qw $DB_NAME | grep 0; then
-    $CREATEDB $DB_NAME
-  fi
-
-  $PSQL -d "$DB_NAME" -f "$APP_DIR/server/schema/postgresql/createdb.sql"
+  PSQL="psql -q -h$DB_HOST -p$DB_PORT -d$DB_NAME -U$DB_USER -w"
+  $PSQL -f "$APP_DIR/server/schema/postgresql/createdb.sql"
 }
 
 create_mysql_tbl() {
@@ -536,8 +541,17 @@ fi
 # it run in all cases.
 service nginx start
 
+if [ "${LETS_ENCRYPT_DOMAIN}" != "" -a "${LETS_ENCRYPT_MAIL}" != "" ]; then
+  if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
+    documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
+  fi
+fi
+
 # Regenerate the fonts list and the fonts thumbnails
-documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
+if [ "${GENERATE_FONTS}" == "true" ]; then
+  documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
+fi
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
-tail -f /var/log/${COMPANY_NAME}/**/*.log
+tail -f /var/log/${COMPANY_NAME}/**/*.log &
+wait $!
