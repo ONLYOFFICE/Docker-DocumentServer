@@ -4,6 +4,8 @@ PRODUCT_NAME ?= DocumentServer
 PRODUCT_VERSION ?= 0.0.0
 BUILD_NUMBER ?= 0
 ONLYOFFICE_VALUE ?= onlyoffice
+S3_BUCKET ?= repo-doc-onlyoffice-com
+RELEASE_BRANCH ?= unstable
 
 COMPANY_NAME_LOW = $(shell echo $(COMPANY_NAME) | tr A-Z a-z)
 PRODUCT_NAME_LOW = $(shell echo $(PRODUCT_NAME) | tr A-Z a-z)
@@ -11,7 +13,7 @@ COMPANY_NAME_LOW_ESCAPED = $(subst -,,$(COMPANY_NAME_LOW))
 
 PACKAGE_VERSION := $(PRODUCT_VERSION)-$(BUILD_NUMBER)
 
-REPO_URL := "deb [trusted=yes] http://repo-doc-onlyoffice-com.s3.amazonaws.com/ubuntu/trusty/$(COMPANY_NAME_LOW)-$(PRODUCT_NAME_LOW)/$(GIT_BRANCH)/$(PACKAGE_VERSION)/ repo/"
+REPO_URL := "deb [arch=amd64] http://$(S3_BUCKET).s3.amazonaws.com/$(COMPANY_NAME_LOW)/repo-$(RELEASE_BRANCH)/ubuntu trusty main"
 
 UPDATE_LATEST := false
 
@@ -34,6 +36,8 @@ COLON := __colon__
 DOCKER_TARGETS := $(foreach TAG,$(DOCKER_TAGS),$(DOCKER_REPO)$(COLON)$(TAG))
 
 DOCKER_ARCH := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME_LOW)_$(PACKAGE_VERSION).tar.gz
+
+DOCKER_ARCH_URI := $(COMPANY_NAME_LOW)/$(RELEASE_BRANCH)/docker/$(notdir $(DOCKER_ARCH))
 
 .PHONY: all clean clean-docker deploy docker publish
 
@@ -67,7 +71,5 @@ deploy: $(DOCKER_TARGETS)
 		done;)
 
 publish: $(DOCKER_ARCH)
-	aws s3 cp \
-		$(DOCKER_ARCH) \
-		s3://repo-doc-onlyoffice-com.s3.amazonaws.com/docker/amd64/ \
-		--acl public-read
+	aws s3 cp --no-progress --acl public-read \
+		$(DOCKER_ARCH) s3://$(S3_BUCKET)/$(DOCKER_ARCH_URI)
