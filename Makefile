@@ -11,9 +11,9 @@ COMPANY_NAME_LOW = $(shell echo $(COMPANY_NAME) | tr A-Z a-z)
 PRODUCT_NAME_LOW = $(shell echo $(PRODUCT_NAME) | tr A-Z a-z)
 COMPANY_NAME_LOW_ESCAPED = $(subst -,,$(COMPANY_NAME_LOW))
 
+PACKAGE_NAME := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME_LOW)
 PACKAGE_VERSION := $(PRODUCT_VERSION)-$(BUILD_NUMBER)
-
-REPO_URL := "deb [arch=amd64] http://$(S3_BUCKET).s3.amazonaws.com/$(COMPANY_NAME_LOW)/repo-$(RELEASE_BRANCH)/ubuntu trusty main"
+PACKAGE_URL := http://$(S3_BUCKET).s3.amazonaws.com/$(COMPANY_NAME_LOW)/$(RELEASE_BRANCH)/ubuntu/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_amd64.deb
 
 UPDATE_LATEST := false
 
@@ -44,7 +44,7 @@ DOCKER_ARCH_URI := $(COMPANY_NAME_LOW)/$(RELEASE_BRANCH)/docker/$(notdir $(DOCKE
 $(DOCKER_TARGETS): $(DEB_REPO_DATA)
 
 	docker build \
-		--build-arg REPO_URL=$(REPO_URL) \
+		--build-arg PACKAGE_URL=$(PACKAGE_URL) \
 		--build-arg COMPANY_NAME=$(COMPANY_NAME_LOW) \
 		--build-arg PRODUCT_NAME=$(PRODUCT_NAME_LOW) \
 		--build-arg ONLYOFFICE_VALUE=$(ONLYOFFICE_VALUE) \
