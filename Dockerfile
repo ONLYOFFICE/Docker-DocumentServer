@@ -79,6 +79,7 @@ ENV COMPANY_NAME=$COMPANY_NAME \
 RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/ds.list && \
     apt-get -y update && \
     service postgresql start && \
+    echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections && \
     apt-get -yq install $COMPANY_NAME-$PRODUCT_NAME && \
     service postgresql stop && \
     service supervisor stop && \
