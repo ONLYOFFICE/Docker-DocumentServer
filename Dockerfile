@@ -73,7 +73,7 @@ ENV COMPANY_NAME=$COMPANY_NAME \
 RUN wget -q -P /tmp "$PACKAGE_URL" && \
     apt-get -y update && \
     service postgresql start && \
-    apt-get -yq --no-install-recommends install /tmp/$(basename "$PACKAGE_URL") && \
+    apt-get -yq install /tmp/$(basename "$PACKAGE_URL") && \
     service postgresql stop && \
     service supervisor stop && \
     chmod 755 /app/ds/*.sh && \
