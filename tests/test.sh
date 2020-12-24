@@ -36,7 +36,7 @@ fi
 # Run test environment
 docker-compose -p ds -f $config up -d
 
-wakeup_timeout=30
+wakeup_timeout=90
 
 # Get documentserver healthcheck status
 echo "Wait for service wake up"
