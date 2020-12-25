@@ -21,6 +21,10 @@
 
 ONLYOFFICE Document Server is an online office suite comprising viewers and editors for texts, spreadsheets and presentations, fully compatible with Office Open XML formats: .docx, .xlsx, .pptx and enabling collaborative editing in real time.
 
+Starting from version 6.0, Document Server is distributed as ONLYOFFICE Docs. It has [three editions](https://github.com/ONLYOFFICE/DocumentServer#onlyoffice-document-server-editions). With this image, you will install the free Community version. 
+
+ONLYOFFICE Docs can be used as a part of ONLYOFFICE Workspace or with third-party sync&share solutions (e.g. Nextcloud, ownCloud, Seafile) to enable collaborative editing within their interface.
+
 ## Functionality ##
 * ONLYOFFICE Document Editor
 * ONLYOFFICE Spreadsheet Editor
@@ -99,7 +103,14 @@ So you need to create and install the following files:
         /app/onlyoffice/DocumentServer/data/certs/tls.key
         /app/onlyoffice/DocumentServer/data/certs/tls.crt
 
-When using CA certified certificates, these files are provided to you by the CA. When using self-signed certificates you need to generate these files yourself. Skip the following section if you have CA certified SSL certificates (e.g. [Let's Encrypt](https://letsencrypt.org)).
+When using CA certified certificates (e.g [Let's encrypt](https://letsencrypt.org)), these files are provided to you by the CA. If you are using self-signed certificates you need to generate these files [yourself](#generation-of-self-signed-certificates).
+
+#### Using the automatically generated Let's Encrypt SSL Certificates
+
+        sudo docker run -i -t -d -p 443:443 \
+        -e LETS_ENCRYPT_DOMAIN=your_domain -e LETS_ENCRYPT_MAIL=your_mail  onlyoffice/documentserver
+
+If you want to get and extend Let's Encrypt SSL Certificates automatically just set LETS_ENCRYPT_DOMAIN and LETS_ENCRYPT_MAIL variables.
 
 #### Generation of Self Signed Certificates
 
@@ -181,10 +192,13 @@ Below is the complete list of parameters that can be set using environment varia
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
 - **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
 - **USE_UNAUTHORIZED_STORAGE**: Set to `true`if using selfsigned certificates for your storage server e.g. Nextcloud. Defaults to `false`
+- **GENERATE_FONTS**: When 'true' regenerates fonts list and the fonts thumbnails etc. at each start. Defaults to `true`
 - **METRICS_ENABLED**: Specifies the enabling StatsD for ONLYOFFICE Document Server. Defaults to `false`.
 - **METRICS_HOST**: Defines StatsD listening host. Defaults to `localhost`.
 - **METRICS_PORT**: Defines StatsD listening port. Defaults to `8125`.
 - **METRICS_PREFIX**: Defines StatsD metrics prefix for backend services. Defaults to `ds.`.
+- **LETS_ENCRYPT_DOMAIN**: Defines the domain for Let's Encrypt certificate.
+- **LETS_ENCRYPT_MAIL**: Defines the domain administator mail address for Let's Encrypt certificate.
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
