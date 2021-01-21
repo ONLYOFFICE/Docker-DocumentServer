@@ -1,0 +1,16 @@
+#!/bin/bash
+
+TAG="${SOURCE_BRANCH:1}"
+if [[ $TAG =~ ^[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}$ ]]; then
+  TAG=${TAG%.*}-${TAG##*.}
+  if [ ${TAG:0:8} = "99.99.99" ]; then
+    URL_FOLDER="unstable"
+  else
+    URL_FOLDER="testing"
+  fi
+  URL="https://repo-doc-onlyoffice-com.s3-eu-west-1.amazonaws.com/onlyoffice/${URL_FOLDER}/ubuntu/${COMPANY_NAME}-${PRODUCT_NAME}_${TAG}_amd64.deb"
+  docker build --build-arg PACKAGE_URL=$URL -f $DOCKERFILE_PATH -t $IMAGE_NAME .
+else 
+  echo Tag is not correct, Image will be built with default URL.
+  docker build -f $DOCKERFILE_PATH -t $IMAGE_NAME .
+fi
