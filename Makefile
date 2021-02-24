@@ -38,7 +38,7 @@ DOCKER_ARCH := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME_LOW)_$(PACKAGE_VERSION).tar.gz
 .PHONY: all clean clean-docker deploy docker publish
 
 $(DOCKER_TARGETS): $(DEB_REPO_DATA)
-
+	docker pull ubuntu:20.04
 	docker build \
 		--build-arg REPO_URL=$(REPO_URL) \
 		--build-arg COMPANY_NAME=$(COMPANY_NAME_LOW) \
