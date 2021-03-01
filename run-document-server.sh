@@ -570,7 +570,6 @@ if [ ${PG_NEW_CLUSTER} = "true" ]; then
 fi
 
 if [ "${IS_UPGRADE}" = "true" ]; then
-  waiting_for_db
   upgrade_db_tbl
 fi
 
