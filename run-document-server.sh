@@ -11,15 +11,30 @@ shopt -s globstar
 
 APP_DIR="/var/www/${COMPANY_NAME}/documentserver"
 DATA_DIR="/var/www/${COMPANY_NAME}/Data"
+PRIVATE_DATA_DIR="${DATA_DIR}/.private"
 LOG_DIR="/var/log/${COMPANY_NAME}"
 DS_LOG_DIR="${LOG_DIR}/documentserver"
 LIB_DIR="/var/lib/${COMPANY_NAME}"
 DS_LIB_DIR="${LIB_DIR}/documentserver"
 CONF_DIR="/etc/${COMPANY_NAME}/documentserver"
+IS_UPGRADE="false"
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
 ONLYOFFICE_DATA_CONTAINER_HOST=${ONLYOFFICE_DATA_CONTAINER_HOST:-localhost}
 ONLYOFFICE_DATA_CONTAINER_PORT=80
+
+RELEASE_DATE="$(stat -c="%y" ${APP_DIR}/server/DocService/docservice | sed -r 's/=([0-9]+)-([0-9]+)-([0-9]+) ([0-9:.+ ]+)/\1-\2-\3/')";
+if [ -f ${PRIVATE_DATA_DIR}/release_date ]; then
+  PREV_RELEASE_DATE=$(head -n 1 ${PRIVATE_DATA_DIR}/release_date)
+else
+  PREV_RELEASE_DATE="0"
+fi
+
+if [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ]; then
+  mkdir -p ${PRIVATE_DATA_DIR}
+  echo ${RELEASE_DATE} > ${PRIVATE_DATA_DIR}/release_date
+  IS_UPGRADE="true";
+fi
 
 SSL_CERTIFICATES_DIR="${DATA_DIR}/certs"
 if [[ -z $SSL_CERTIFICATE_PATH ]] && [[ -f ${SSL_CERTIFICATES_DIR}/onlyoffice.crt ]]; then
@@ -327,6 +342,39 @@ create_db_tbl() {
   esac
 }
 
+upgrade_db_tbl() {
+  case $DB_TYPE in
+    "postgres")
+      upgrade_postgresql_tbl
+    ;;
+    "mariadb"|"mysql")
+      upgrade_mysql_tbl
+    ;;
+  esac
+}
+
+upgrade_postgresql_tbl() {
+  if [ -n "$DB_PWD" ]; then
+    export PGPASSWORD=$DB_PWD
+  fi
+
+  PSQL="psql -q -h$DB_HOST -p$DB_PORT -d$DB_NAME -U$DB_USER -w"
+
+  for i in $(ls $APP_DIR/server/schema/postgresql/upgrade/upgrade*); do
+    echo "$PSQL -f ${i}" > /app/rfx-upgrade.txt
+    $PSQL -f "${i}";
+  done
+}
+
+upgrade_mysql_tbl() {
+  CONNECTION_PARAMS="-h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PWD -w"
+  MYSQL="mysql -q $CONNECTION_PARAMS"
+
+  for i in $(ls $APP_DIR/server/schema/mysql/upgrade/upgrade*); do
+    $MYSQL "$DB_NAME" < ${i} >/dev/null 2>&1;
+	done
+}
+
 create_postgresql_tbl() {
   if [ -n "$DB_PWD" ]; then
     export PGPASSWORD=$DB_PWD
@@ -460,6 +508,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     update_db_settings
     waiting_for_db
     create_db_tbl
+    IS_UPGRADE="false"
   else
     # change rights for postgres directory
     chown -R postgres:postgres ${PG_ROOT}
@@ -518,6 +567,12 @@ done
 if [ ${PG_NEW_CLUSTER} = "true" ]; then
   create_postgresql_db
   create_postgresql_tbl
+  IS_UPGRADE="false"
+fi
+
+if [ "${IS_UPGRADE}" = "true" ]; then
+  waiting_for_db
+  upgrade_db_tbl
 fi
 
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
