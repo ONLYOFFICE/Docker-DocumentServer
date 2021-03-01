@@ -361,7 +361,6 @@ upgrade_postgresql_tbl() {
   PSQL="psql -q -h$DB_HOST -p$DB_PORT -d$DB_NAME -U$DB_USER -w"
 
   for i in $(ls $APP_DIR/server/schema/postgresql/upgrade/upgrade*); do
-    echo "$PSQL -f ${i}" > /app/rfx-upgrade.txt
     $PSQL -f "${i}";
   done
 }
@@ -372,7 +371,7 @@ upgrade_mysql_tbl() {
 
   for i in $(ls $APP_DIR/server/schema/mysql/upgrade/upgrade*); do
     $MYSQL "$DB_NAME" < ${i} >/dev/null 2>&1;
-	done
+  done
 }
 
 create_postgresql_tbl() {
