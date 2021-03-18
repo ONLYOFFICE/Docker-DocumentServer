@@ -42,7 +42,7 @@ DOCKER_ARCH_URI := $(COMPANY_NAME_LOW)/$(RELEASE_BRANCH)/docker/$(notdir $(DOCKE
 .PHONY: all clean clean-docker deploy docker publish
 
 $(DOCKER_TARGETS): $(DEB_REPO_DATA)
-
+	docker pull ubuntu:20.04
 	docker build \
 		--build-arg PACKAGE_URL=$(PACKAGE_URL) \
 		--build-arg COMPANY_NAME=$(COMPANY_NAME_LOW) \
