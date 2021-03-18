@@ -103,6 +103,7 @@ read_setting(){
   METRICS_PREFIX="${METRICS_PREFIX:-.ds}"
 
   DB_HOST=${DB_HOST:-${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}}
+  DB_TYPE=${DB_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
   case $DB_TYPE in
     "postgres")
       DB_PORT=${DB_PORT:-"5432"}
@@ -121,7 +122,6 @@ read_setting(){
   DB_NAME=${DB_NAME:-${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}}
   DB_USER=${DB_USER:-${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}}
   DB_PWD=${DB_PWD:-${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}}
-  DB_TYPE=${DB_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
 
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
   AMQP_URI=${AMQP_URI:-${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}}
