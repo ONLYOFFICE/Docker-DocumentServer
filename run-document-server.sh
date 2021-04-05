@@ -505,7 +505,6 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     update_db_settings
     waiting_for_db
     create_db_tbl
-    IS_UPGRADE="false"
   else
     # change rights for postgres directory
     chown -R postgres:postgres ${PG_ROOT}
@@ -564,7 +563,6 @@ done
 if [ ${PG_NEW_CLUSTER} = "true" ]; then
   create_postgresql_db
   create_postgresql_tbl
-  IS_UPGRADE="false"
 fi
 
 if [ "${IS_UPGRADE}" = "true" ]; then
