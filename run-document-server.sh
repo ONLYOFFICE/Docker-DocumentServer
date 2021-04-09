@@ -12,6 +12,7 @@ shopt -s globstar
 APP_DIR="/var/www/${COMPANY_NAME}/documentserver"
 DATA_DIR="/var/www/${COMPANY_NAME}/Data"
 PRIVATE_DATA_DIR="${DATA_DIR}/.private"
+DS_RELEASE_DATE="${PRIVATE_DATA_DIR}/ds_release_date"
 LOG_DIR="/var/log/${COMPANY_NAME}"
 DS_LOG_DIR="${LOG_DIR}/documentserver"
 LIB_DIR="/var/lib/${COMPANY_NAME}"
@@ -24,15 +25,15 @@ ONLYOFFICE_DATA_CONTAINER_HOST=${ONLYOFFICE_DATA_CONTAINER_HOST:-localhost}
 ONLYOFFICE_DATA_CONTAINER_PORT=80
 
 RELEASE_DATE="$(stat -c="%y" ${APP_DIR}/server/DocService/docservice | sed -r 's/=([0-9]+)-([0-9]+)-([0-9]+) ([0-9:.+ ]+)/\1-\2-\3/')";
-if [ -f ${PRIVATE_DATA_DIR}/release_date ]; then
-  PREV_RELEASE_DATE=$(head -n 1 ${PRIVATE_DATA_DIR}/release_date)
+if [ -f ${DS_RELEASE_DATE} ]; then
+  PREV_RELEASE_DATE=$(head -n 1 ${DS_RELEASE_DATE})
 else
   PREV_RELEASE_DATE="0"
 fi
 
 if [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ]; then
   mkdir -p ${PRIVATE_DATA_DIR}
-  echo ${RELEASE_DATE} > ${PRIVATE_DATA_DIR}/release_date
+  echo ${RELEASE_DATE} > ${DS_RELEASE_DATE}
   IS_UPGRADE="true";
 fi
 
@@ -566,7 +567,9 @@ if [ ${PG_NEW_CLUSTER} = "true" ]; then
 fi
 
 if [ "${IS_UPGRADE}" = "true" ]; then
-  upgrade_db_tbl
+  if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
+    upgrade_db_tbl
+  fi
 fi
 
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
