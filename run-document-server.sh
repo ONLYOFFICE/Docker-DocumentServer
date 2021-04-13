@@ -32,9 +32,11 @@ else
 fi
 
 if [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ]; then
-  mkdir -p ${PRIVATE_DATA_DIR}
-  echo ${RELEASE_DATE} > ${DS_RELEASE_DATE}
-  IS_UPGRADE="true";
+  if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
+    mkdir -p ${PRIVATE_DATA_DIR}
+    echo ${RELEASE_DATE} > ${DS_RELEASE_DATE}
+    IS_UPGRADE="true";
+  fi
 fi
 
 SSL_CERTIFICATES_DIR="${DATA_DIR}/certs"
@@ -566,17 +568,15 @@ if [ ${PG_NEW_CLUSTER} = "true" ]; then
   create_postgresql_tbl
 fi
 
-if [ "${IS_UPGRADE}" = "true" ]; then
-  if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
-    upgrade_db_tbl
-  fi
-fi
-
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_db
   waiting_for_amqp
   if [ ${REDIS_ENABLED} = "true" ]; then
     waiting_for_redis
+  fi
+
+  if [ "${IS_UPGRADE}" = "true" ]; then
+    upgrade_db_tbl
   fi
 
   update_nginx_settings
