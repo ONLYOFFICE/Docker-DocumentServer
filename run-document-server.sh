@@ -34,7 +34,6 @@ fi
 if [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ]; then
   if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
     mkdir -p ${PRIVATE_DATA_DIR}
-    echo ${RELEASE_DATE} > ${DS_RELEASE_DATE}
     IS_UPGRADE="true";
   fi
 fi
@@ -577,6 +576,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
 
   if [ "${IS_UPGRADE}" = "true" ]; then
     upgrade_db_tbl
+    echo ${RELEASE_DATE} > ${DS_RELEASE_DATE}
   fi
 
   update_nginx_settings
