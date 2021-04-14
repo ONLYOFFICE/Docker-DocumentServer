@@ -469,6 +469,11 @@ update_logrotate_settings(){
   sed 's|\(^su\b\).*|\1 root root|' -i /etc/logrotate.conf
 }
 
+update_release_date(){
+  mkdir -p ${PRIVATE_DATA_DIR}
+  echo ${RELEASE_DATE} > ${DS_RELEASE_DATE}
+}
+
 # create base folders
 for i in converter docservice spellchecker metrics; do
   mkdir -p "${DS_LOG_DIR}/$i"
@@ -575,8 +580,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
 
   if [ "${IS_UPGRADE}" = "true" ]; then
     upgrade_db_tbl
-    mkdir -p ${PRIVATE_DATA_DIR}
-    echo ${RELEASE_DATE} > ${DS_RELEASE_DATE}
+    update_release_date
   fi
 
   update_nginx_settings
