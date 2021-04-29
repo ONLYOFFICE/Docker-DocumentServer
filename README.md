@@ -178,7 +178,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **DB_TYPE**: The database type. Supported values are `postgres`, `mariadb` or `mysql`. Defaults to `postgres`.
 - **DB_HOST**: The IP address or the name of the host where the database server is running.
 - **DB_PORT**: The database server port number.
-- **DB_NAME**: The name of a database to be created on the image startup.
+- **DB_NAME**: The name of a database to use. Should be existing on container startup.
 - **DB_USER**: The new user name with superuser permissions for the database account.
 - **DB_PWD**: The password set for the database account.
 - **AMQP_URI**: The [AMQP URI](https://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
