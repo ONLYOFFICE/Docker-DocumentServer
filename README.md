@@ -107,7 +107,7 @@ When using CA certified certificates (e.g [Let's encrypt](https://letsencrypt.or
 
 #### Using the automatically generated Let's Encrypt SSL Certificates
 
-        sudo docker run -i -t -d -p 443:443 \
+        sudo docker run -i -t -d -p 80:80 -p 443:443 \
         -e LETS_ENCRYPT_DOMAIN=your_domain -e LETS_ENCRYPT_MAIL=your_mail  onlyoffice/documentserver
 
 If you want to get and extend Let's Encrypt SSL Certificates automatically just set LETS_ENCRYPT_DOMAIN and LETS_ENCRYPT_MAIL variables.
