@@ -11,15 +11,31 @@ shopt -s globstar
 
 APP_DIR="/var/www/${COMPANY_NAME}/documentserver"
 DATA_DIR="/var/www/${COMPANY_NAME}/Data"
+PRIVATE_DATA_DIR="${DATA_DIR}/.private"
+DS_RELEASE_DATE="${PRIVATE_DATA_DIR}/ds_release_date"
 LOG_DIR="/var/log/${COMPANY_NAME}"
 DS_LOG_DIR="${LOG_DIR}/documentserver"
 LIB_DIR="/var/lib/${COMPANY_NAME}"
 DS_LIB_DIR="${LIB_DIR}/documentserver"
 CONF_DIR="/etc/${COMPANY_NAME}/documentserver"
+IS_UPGRADE="false"
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
 ONLYOFFICE_DATA_CONTAINER_HOST=${ONLYOFFICE_DATA_CONTAINER_HOST:-localhost}
 ONLYOFFICE_DATA_CONTAINER_PORT=80
+
+RELEASE_DATE="$(stat -c="%y" ${APP_DIR}/server/DocService/docservice | sed -r 's/=([0-9]+)-([0-9]+)-([0-9]+) ([0-9:.+ ]+)/\1-\2-\3/')";
+if [ -f ${DS_RELEASE_DATE} ]; then
+  PREV_RELEASE_DATE=$(head -n 1 ${DS_RELEASE_DATE})
+else
+  PREV_RELEASE_DATE="0"
+fi
+
+if [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ]; then
+  if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
+    IS_UPGRADE="true";
+  fi
+fi
 
 SSL_CERTIFICATES_DIR="${DATA_DIR}/certs"
 if [[ -z $SSL_CERTIFICATE_PATH ]] && [[ -f ${SSL_CERTIFICATES_DIR}/onlyoffice.crt ]]; then
@@ -103,6 +119,7 @@ read_setting(){
   METRICS_PREFIX="${METRICS_PREFIX:-.ds}"
 
   DB_HOST=${DB_HOST:-${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}}
+  DB_TYPE=${DB_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
   case $DB_TYPE in
     "postgres")
       DB_PORT=${DB_PORT:-"5432"}
@@ -121,7 +138,6 @@ read_setting(){
   DB_NAME=${DB_NAME:-${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}}
   DB_USER=${DB_USER:-${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}}
   DB_PWD=${DB_PWD:-${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}}
-  DB_TYPE=${DB_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
 
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
   AMQP_URI=${AMQP_URI:-${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}}
@@ -327,6 +343,36 @@ create_db_tbl() {
   esac
 }
 
+upgrade_db_tbl() {
+  case $DB_TYPE in
+    "postgres")
+      upgrade_postgresql_tbl
+    ;;
+    "mariadb"|"mysql")
+      upgrade_mysql_tbl
+    ;;
+  esac
+}
+
+upgrade_postgresql_tbl() {
+  if [ -n "$DB_PWD" ]; then
+    export PGPASSWORD=$DB_PWD
+  fi
+
+  PSQL="psql -q -h$DB_HOST -p$DB_PORT -d$DB_NAME -U$DB_USER -w"
+
+  $PSQL -f "$APP_DIR/server/schema/postgresql/removetbl.sql"
+  $PSQL -f "$APP_DIR/server/schema/postgresql/createdb.sql"
+}
+
+upgrade_mysql_tbl() {
+  CONNECTION_PARAMS="-h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PWD -w"
+  MYSQL="mysql -q $CONNECTION_PARAMS"
+
+  $MYSQL $DB_NAME < "$APP_DIR/server/schema/mysql/removetbl.sql" >/dev/null 2>&1
+  $MYSQL $DB_NAME < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
+}
+
 create_postgresql_tbl() {
   if [ -n "$DB_PWD" ]; then
     export PGPASSWORD=$DB_PWD
@@ -421,6 +467,11 @@ update_log_settings(){
 
 update_logrotate_settings(){
   sed 's|\(^su\b\).*|\1 root root|' -i /etc/logrotate.conf
+}
+
+update_release_date(){
+  mkdir -p ${PRIVATE_DATA_DIR}
+  echo ${RELEASE_DATE} > ${DS_RELEASE_DATE}
 }
 
 # create base folders
@@ -525,6 +576,11 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_amqp
   if [ ${REDIS_ENABLED} = "true" ]; then
     waiting_for_redis
+  fi
+
+  if [ "${IS_UPGRADE}" = "true" ]; then
+    upgrade_db_tbl
+    update_release_date
   fi
 
   update_nginx_settings
