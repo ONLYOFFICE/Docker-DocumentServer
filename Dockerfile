@@ -69,20 +69,21 @@ COPY run-document-server.sh /app/ds/run-document-server.sh
 
 EXPOSE 80 443
 
-ARG REPO_URL="deb http://download.onlyoffice.com/repo/debian squeeze main"
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_NAME=documentserver
+ARG PACKAGE_URL="http://download.onlyoffice.com/install/documentserver/linux/${COMPANY_NAME}-${PRODUCT_NAME}_amd64.deb"
 
 ENV COMPANY_NAME=$COMPANY_NAME \
     PRODUCT_NAME=$PRODUCT_NAME
 
-RUN echo "$REPO_URL" | tee /etc/apt/sources.list.d/ds.list && \
+RUN wget -q -P /tmp "$PACKAGE_URL" && \
     apt-get -y update && \
     service postgresql start && \
-    apt-get -yq install $COMPANY_NAME-$PRODUCT_NAME && \
+    apt-get -yq install /tmp/$(basename "$PACKAGE_URL") && \
     service postgresql stop && \
     service supervisor stop && \
     chmod 755 /app/ds/*.sh && \
+    rm -f /tmp/$(basename "$PACKAGE_URL") && \
     rm -rf /var/log/$COMPANY_NAME && \
     rm -rf /var/lib/apt/lists/*
 
