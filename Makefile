@@ -15,60 +15,53 @@ PACKAGE_NAME := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME_LOW)
 PACKAGE_VERSION := $(PRODUCT_VERSION)-$(BUILD_NUMBER)
 PACKAGE_URL := http://$(S3_BUCKET).s3.amazonaws.com/$(COMPANY_NAME_LOW)/$(RELEASE_BRANCH)/ubuntu/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_amd64.deb
 
-UPDATE_LATEST := false
-
-ifneq (,$(findstring develop,$(GIT_BRANCH)))
-DOCKER_TAG += $(subst -,.,$(PACKAGE_VERSION))
-DOCKER_TAGS += latest
-else ifneq (,$(findstring release,$(GIT_BRANCH)))
-DOCKER_TAG += $(subst -,.,$(PACKAGE_VERSION))
-else ifneq (,$(findstring hotfix,$(GIT_BRANCH)))
-DOCKER_TAG += $(subst -,.,$(PACKAGE_VERSION))
+ifeq ($(RELEASE_BRANCH),$(filter $(RELEASE_BRANCH),unstable testing))
+	DOCKER_TAG := $(subst -,.,$(PACKAGE_VERSION))
 else
-DOCKER_TAG += $(subst -,.,$(PACKAGE_VERSION))-$(subst /,-,$(GIT_BRANCH))
+	DOCKER_TAG := $(subst -,.,$(PACKAGE_VERSION))-$(subst /,-,$(GIT_BRANCH))
 endif
 
-DOCKER_TAGS += $(DOCKER_TAG)
-
-DOCKER_REPO = $(COMPANY_NAME_LOW_ESCAPED)/4testing-$(PRODUCT_NAME_LOW)
-
-COLON := __colon__
-DOCKER_TARGETS := $(foreach TAG,$(DOCKER_TAGS),$(DOCKER_REPO)$(COLON)$(TAG))
-
+DOCKER_IMAGE := $(subst -,,$(COMPANY_NAME_LOW))/4testing-$(PRODUCT_NAME_LOW)
+DOCKER_DUMMY := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME_LOW)__$(DOCKER_TAG).dummy
 DOCKER_ARCH := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME_LOW)_$(PACKAGE_VERSION).tar.gz
-
 DOCKER_ARCH_URI := $(COMPANY_NAME_LOW)/$(RELEASE_BRANCH)/docker/$(notdir $(DOCKER_ARCH))
 
-.PHONY: all clean clean-docker deploy docker publish
+.PHONY: all clean clean-docker image deploy docker publish
 
-$(DOCKER_TARGETS): $(DEB_REPO_DATA)
+$(DOCKER_DUMMY):
 	docker pull ubuntu:20.04
 	docker build \
 		--build-arg PACKAGE_URL=$(PACKAGE_URL) \
 		--build-arg COMPANY_NAME=$(COMPANY_NAME_LOW) \
 		--build-arg PRODUCT_NAME=$(PRODUCT_NAME_LOW) \
 		--build-arg ONLYOFFICE_VALUE=$(ONLYOFFICE_VALUE) \
-		-t $(subst $(COLON),:,$@) . &&\
-	mkdir -p $$(dirname $@) &&\
+		-t $(DOCKER_IMAGE):$(DOCKER_TAG) . && \
+	mkdir -p $$(dirname $@) && \
 	echo "Done" > $@
 
-$(DOCKER_ARCH): $(DOCKER_TARGETS)
-	docker save $(DOCKER_REPO):$(DOCKER_TAG) | \
+$(DOCKER_ARCH): $(DOCKER_DUMMY)
+	docker save $(DOCKER_IMAGE):$(DOCKER_TAG) | \
 		gzip > $@
 
-all: $(DOCKER_TARGETS)
+all: image
 
 clean:
-	rm -rfv $(DOCKER_TARGETS) $(DOCKER_ARCH)
+	rm -rfv *.dummy *.tar.gz
 		
 clean-docker:
 	docker rmi -f $$(docker images -q $(COMPANY_NAME_LOW)/*) || exit 0
 
-deploy: $(DOCKER_TARGETS)
-	$(foreach TARGET,$(DOCKER_TARGETS), \
-		for i in {1..3}; do \
-			docker push $(subst $(COLON),:,$(TARGET)) && break || sleep 1m; \
-		done;)
+image: $(DOCKER_DUMMY)
+
+deploy: $(DOCKER_DUMMY)
+	for i in {1..3}; do \
+		docker push $(DOCKER_IMAGE):$(DOCKER_TAG) && break || sleep 1m; \
+	done
+ifeq ($(RELEASE_BRANCH),unstable)
+	for i in {1..3}; do \
+		docker push $(DOCKER_IMAGE):latest && break || sleep 1m; \
+	done
+endif
 
 publish: $(DOCKER_ARCH)
 	aws s3 cp --no-progress --acl public-read \
