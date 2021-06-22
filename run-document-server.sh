@@ -475,7 +475,7 @@ update_release_date(){
 }
 
 # create base folders
-for i in converter docservice spellchecker metrics; do
+for i in converter docservice metrics; do
   mkdir -p "${DS_LOG_DIR}/$i"
 done
 
