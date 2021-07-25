@@ -6,6 +6,8 @@ ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=nonint
 ARG ONLYOFFICE_VALUE=onlyoffice
 
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
+    export http_proxy=http://newhome.picroup.com:1087 && \
+    export https_proxy=http://newhome.picroup.com:1087 && \
     apt-get -y update && \
     apt-get -yq install wget apt-transport-https gnupg locales && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 0x8320ca65cb2de8e5 && \

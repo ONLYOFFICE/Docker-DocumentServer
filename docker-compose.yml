@@ -3,7 +3,7 @@ services:
   onlyoffice-documentserver:
     build:
       context: .
-    container_name: onlyoffice-documentserver
+    container_name: office
     depends_on:
       - onlyoffice-postgresql
       - onlyoffice-rabbitmq
@@ -20,18 +20,23 @@ services:
       #- JWT_HEADER=Authorization
       #- JWT_IN_BODY=true
     ports:
-      - '80:80'
-      - '443:443'
+      - '40006:80'
     stdin_open: true
     restart: always
     stop_grace_period: 60s
     volumes:
-       - /var/www/onlyoffice/Data
-       - /var/log/onlyoffice
-       - /var/lib/onlyoffice/documentserver/App_Data/cache/files
-       - /var/www/onlyoffice/documentserver-example/public/files
-       - /usr/share/fonts
-       
+      - /var/www/onlyoffice/Data
+      - /var/log/onlyoffice
+      - /var/lib/onlyoffice/documentserver/App_Data/cache/files
+      - /var/www/onlyoffice/documentserver-example/public/files
+      - /usr/share/fonts
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.office.rule=Host(`office.jianzhi.group`)"
+      - "traefik.http.routers.office.entrypoints=websecure" 
+      - "traefik.http.routers.office.tls.certresolver=myresolver" 
+      - "traefik.http.services.office.loadbalancer.server.port=40006" 
+  
   onlyoffice-rabbitmq:
     container_name: onlyoffice-rabbitmq
     image: rabbitmq
