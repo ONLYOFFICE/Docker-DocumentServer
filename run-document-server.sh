@@ -71,6 +71,8 @@ JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
+WOPI_ENABLED=${WOPI_ENABLED:-false}
+
 GENERATE_FONTS=${GENERATE_FONTS:-true}
 
 if [[ ${PRODUCT_NAME} == "documentserver" ]]; then
@@ -312,6 +314,11 @@ update_ds_settings(){
   if [ "${USE_UNAUTHORIZED_STORAGE}" == "true" ]; then
     ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults===undefined)this.services.CoAuthoring.requestDefaults={}"
     ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults.rejectUnauthorized===undefined)this.services.CoAuthoring.requestDefaults.rejectUnauthorized=false"
+  fi
+
+  if [ "${WOPI_ENABLED}" == "true" ]; then
+    ${JSON} -I -e "if(this.wopi===undefined)this.wopi={}"
+    ${JSON} -I -e "this.wopi.enable = true"
   fi
 }
 
