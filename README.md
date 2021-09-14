@@ -332,7 +332,7 @@ SaaS version: [https://www.onlyoffice.com/cloud-office.aspx](https://www.onlyoff
 
 ## User Feedback and Support
 
-If you have any problems with or questions about this image, please visit our official forum to find answers to your questions: [dev.onlyoffice.org][1] or you can ask and answer ONLYOFFICE development questions on [Stack Overflow][2].
+If you have any problems with or questions about this image, please visit our official forum to find answers to your questions: [forum.onlyoffice.com][1] or you can ask and answer ONLYOFFICE development questions on [Stack Overflow][2].
 
-  [1]: https://dev.onlyoffice.org
+  [1]: https://forum.onlyoffice.com
   [2]: https://stackoverflow.com/questions/tagged/onlyoffice
