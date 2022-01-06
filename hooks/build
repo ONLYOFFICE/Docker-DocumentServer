@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sed -i '/trap clean_exit SIGTERM/s/^/#/' run-document-server.sh
+
+docker build -f $DOCKERFILE_PATH -t $IMAGE_NAME

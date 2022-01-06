@@ -1,0 +1,7 @@
+#!/bin/bash
+
+NEW_TAG=6.4.2
+NEW_IMAGE_NAME=$DOCKER_REPO:$NEW_TAG
+
+docker tag $IMAGE_NAME $NEW_IMAGE_NAME
+docker push $NEW_IMAGE_NAME
