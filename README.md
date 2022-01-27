@@ -245,7 +245,7 @@ sudo docker run --init --net onlyoffice --privileged -i -t -d --restart=always -
  onlyoffice/mailserver
 ```
 
-The additional parameters for mail server are available [here](https://github.com/ONLYOFFICE/Docker-CommunityServer/blob/master/docker-compose.yml#L75).
+The additional parameters for mail server are available [here](https://github.com/ONLYOFFICE/Docker-DocumentServer/blob/master/docker-compose.yml#L75).
 
 To learn more, refer to the [ONLYOFFICE Mail Server documentation](https://github.com/ONLYOFFICE/Docker-MailServer "ONLYOFFICE Mail Server documentation").
 
