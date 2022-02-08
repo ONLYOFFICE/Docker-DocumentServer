@@ -284,6 +284,7 @@ update_rabbitmq_setting(){
 }
 
 update_redis_settings(){
+  ${JSON} -I -e "if(this.services.CoAuthoring.redis===undefined)this.services.CoAuthoring.redis={};"
   ${JSON} -I -e "this.services.CoAuthoring.redis.host = '${REDIS_SERVER_HOST}'"
   ${JSON} -I -e "this.services.CoAuthoring.redis.port = '${REDIS_SERVER_PORT}'"
 }
