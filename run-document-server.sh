@@ -460,7 +460,7 @@ update_nginx_settings(){
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_CONF}
   fi
 
-  if [ -f "${NGINX_ONLYOFFICE_DOCSERVICE_CONF}" ]; then
+  if [ -f "${NGINX_ONLYOFFICE_PATH}/includes/ds-docservice.conf" ] && [ -f "${CONF_DIR}/default.json" ]; then
     sed "s/verysecretstring/${SECRET_STRING_MD5:-$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)}/" -i ${NGINX_ONLYOFFICE_PATH}/includes/ds-docservice.conf
     sed "s/verysecretstring/${SECRET_STRING_MD5:-$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)}/" -i ${CONF_DIR}/default.json
   fi
