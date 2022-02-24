@@ -461,8 +461,9 @@ update_nginx_settings(){
   fi
 
   if [ -f "${NGINX_ONLYOFFICE_PATH}/includes/ds-docservice.conf" ] && [ -f "${CONF_DIR}/default.json" ]; then
-    sed "s/verysecretstring/${SECRET_STRING_MD5:-$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)}/" -i ${NGINX_ONLYOFFICE_PATH}/includes/ds-docservice.conf
-    sed "s/verysecretstring/${SECRET_STRING_MD5:-$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)}/" -i ${CONF_DIR}/default.json
+    SECRET_STRING_MD5=${SECRET_STRING_MD5:-$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 20)}
+    sed "s/verysecretstring/${SECRET_STRING_MD5}/" -i ${NGINX_ONLYOFFICE_PATH}/includes/ds-docservice.conf
+    $JSON_BIN -I -q -f "${CONF_DIR}/default.json" -e "this.storage.fs.secretString = '$SECRET_STRING_MD5'"
   fi
 }
 
