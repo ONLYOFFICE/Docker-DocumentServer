@@ -6,7 +6,7 @@ RUN echo "deb http://deb.debian.org/debian bullseye main contrib non-free\ndeb h
 RUN mkdir /build
 RUN cd /build
 
-ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=12
+ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=13
 
 ARG ONLYOFFICE_VALUE=onlyoffice
 
@@ -66,7 +66,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service redis-server stop && \
     service rabbitmq-server stop && \
     service supervisor stop && \
-    service nginx stop && \
+    service nginx stop 
 
 RUN apt install qemu binfmt-support qemu-user-static -t bullseye-backports -y
 
