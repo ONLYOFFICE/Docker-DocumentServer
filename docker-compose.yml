@@ -24,7 +24,7 @@ services:
       - '443:443'
     stdin_open: true
     restart: always
-    stop_grace_period: 60s
+    stop_grace_period: 120s
     volumes:
        - /var/www/onlyoffice/Data
        - /var/log/onlyoffice
