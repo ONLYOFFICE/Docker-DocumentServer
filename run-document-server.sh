@@ -460,9 +460,7 @@ update_nginx_settings(){
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_CONF}
   fi
 
-  if [ -f "${NGINX_ONLYOFFICE_PATH}/includes/ds-docservice.conf" ] && [ -f "${CONF_DIR}/default.json" ]; then
-    bash /usr/bin/documentserver-update-securelink.sh
-  fi
+  bash documentserver-update-securelink.sh
 }
 
 update_supervisor_settings(){
