@@ -459,6 +459,8 @@ update_nginx_settings(){
   if [ -f "${NGINX_ONLYOFFICE_EXAMPLE_CONF}" ]; then
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_CONF}
   fi
+
+  documentserver-update-securelink.sh
 }
 
 update_supervisor_settings(){
