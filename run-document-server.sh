@@ -67,6 +67,14 @@ NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
 NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
 
 JWT_ENABLED=${JWT_ENABLED:-false}
+
+# validate user's vars before usinig in json
+if [ "${JWT_ENABLED}" == "true" ]; then
+  JWT_ENABLED="true"
+else
+  JWT_ENABLED="false"
+fi
+
 JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
@@ -290,28 +298,26 @@ update_redis_settings(){
 }
 
 update_ds_settings(){
-  if [ "${JWT_ENABLED}" == "true" ]; then
-    ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}"
-    ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.inbox = ${JWT_ENABLED}"
-    ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.outbox = ${JWT_ENABLED}"
+  ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}"
+  ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.inbox = ${JWT_ENABLED}"
+  ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.outbox = ${JWT_ENABLED}"
 
-    ${JSON} -I -e "this.services.CoAuthoring.secret.inbox.string = '${JWT_SECRET}'"
-    ${JSON} -I -e "this.services.CoAuthoring.secret.outbox.string = '${JWT_SECRET}'"
-    ${JSON} -I -e "this.services.CoAuthoring.secret.session.string = '${JWT_SECRET}'"
+  ${JSON} -I -e "this.services.CoAuthoring.secret.inbox.string = '${JWT_SECRET}'"
+  ${JSON} -I -e "this.services.CoAuthoring.secret.outbox.string = '${JWT_SECRET}'"
+  ${JSON} -I -e "this.services.CoAuthoring.secret.session.string = '${JWT_SECRET}'"
 
-    ${JSON} -I -e "this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'"
-    ${JSON} -I -e "this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'"
+  ${JSON} -I -e "this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'"
+  ${JSON} -I -e "this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'"
 
-    ${JSON} -I -e "this.services.CoAuthoring.token.inbox.inBody = ${JWT_IN_BODY}"
-    ${JSON} -I -e "this.services.CoAuthoring.token.outbox.inBody = ${JWT_IN_BODY}"
+  ${JSON} -I -e "this.services.CoAuthoring.token.inbox.inBody = ${JWT_IN_BODY}"
+  ${JSON} -I -e "this.services.CoAuthoring.token.outbox.inBody = ${JWT_IN_BODY}"
 
-    if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ] && [ "${JWT_ENABLED}" == "true" ]; then
-      ${JSON_EXAMPLE} -I -e "this.server.token.enable = ${JWT_ENABLED}"
-      ${JSON_EXAMPLE} -I -e "this.server.token.secret = '${JWT_SECRET}'"
-      ${JSON_EXAMPLE} -I -e "this.server.token.authorizationHeader = '${JWT_HEADER}'"
-    fi
+  if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ]; then
+    ${JSON_EXAMPLE} -I -e "this.server.token.enable = ${JWT_ENABLED}"
+    ${JSON_EXAMPLE} -I -e "this.server.token.secret = '${JWT_SECRET}'"
+    ${JSON_EXAMPLE} -I -e "this.server.token.authorizationHeader = '${JWT_HEADER}'"
   fi
-
+ 
   if [ "${USE_UNAUTHORIZED_STORAGE}" == "true" ]; then
     ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults===undefined)this.services.CoAuthoring.requestDefaults={}"
     ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults.rejectUnauthorized===undefined)this.services.CoAuthoring.requestDefaults.rejectUnauthorized=false"
