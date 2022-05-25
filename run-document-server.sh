@@ -67,14 +67,6 @@ NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
 NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
 
 JWT_ENABLED=${JWT_ENABLED:-false}
-
-# validate user's vars before usinig in json
-if [ "${JWT_ENABLED}" == "true" ]; then
-  JWT_ENABLED="true"
-else
-  JWT_ENABLED="false"
-fi
-
 JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
