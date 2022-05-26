@@ -298,9 +298,9 @@ update_redis_settings(){
 }
 
 update_ds_settings(){
-  ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = '${JWT_ENABLED}'"
-  ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.inbox = '${JWT_ENABLED}'"
-  ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.outbox = '${JWT_ENABLED}'"
+  ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}"
+  ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.inbox = ${JWT_ENABLED}"
+  ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.outbox = ${JWT_ENABLED}"
 
   ${JSON} -I -e "this.services.CoAuthoring.secret.inbox.string = '${JWT_SECRET}'"
   ${JSON} -I -e "this.services.CoAuthoring.secret.outbox.string = '${JWT_SECRET}'"
@@ -309,11 +309,11 @@ update_ds_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'"
   ${JSON} -I -e "this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'"
 
-  ${JSON} -I -e "this.services.CoAuthoring.token.inbox.inBody = '${JWT_IN_BODY}'"
-  ${JSON} -I -e "this.services.CoAuthoring.token.outbox.inBody = '${JWT_IN_BODY}'"
+  ${JSON} -I -e "this.services.CoAuthoring.token.inbox.inBody = ${JWT_IN_BODY}"
+  ${JSON} -I -e "this.services.CoAuthoring.token.outbox.inBody = ${JWT_IN_BODY}"
 
   if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ]; then
-    ${JSON_EXAMPLE} -I -e "this.server.token.enable = '${JWT_ENABLED}'"
+    ${JSON_EXAMPLE} -I -e "this.server.token.enable = ${JWT_ENABLED}"
     ${JSON_EXAMPLE} -I -e "this.server.token.secret = '${JWT_SECRET}'"
     ${JSON_EXAMPLE} -I -e "this.server.token.authorizationHeader = '${JWT_HEADER}'"
   fi
