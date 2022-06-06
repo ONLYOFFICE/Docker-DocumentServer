@@ -52,7 +52,7 @@ jobs:
                    -f docker-bake.hcl ${{ matrix.images }} \
                    --push ;
              else
-                echo "Image with tag $DOCKER_TAG do not presented on docker.hub >> build will not started >> exit with 0"
+                echo "FAILED: Image with tag $DOCKER_TAG do not presented on docker.hub >> build will not started >> exit with 0"
                 exit 0
              fi
         shell: bash

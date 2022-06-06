@@ -52,15 +52,16 @@ jobs:
                  echo "Have access to documentserver${{ matrix.edition }} arm64 arch"
                  echo "All architecture are available >> Build is starting."
                  DOCKER_TAG=$(echo ${{ steps.tag_name.outputs.SOURCE_TAG }} | sed 's/^.//' )
-                 PRODUCT_EDITION=${{ matrix.edition }} COMPANY_NAME=${{ env.COMPANY_NAME }}  PRODUCT_NAME=${{ env.PRODUCT_NAME }} \
-                    DOCKERFILE=Dockerfile PREFIX_NAME=4testing- TAG=$DOCKER_TAG \
+                 PRODUCT_EDITION=${{ matrix.edition }} COMPANY_NAME=${{ env.COMPANY_NAME }} \
+                    PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
+                    PREFIX_NAME=4testing- TAG=$DOCKER_TAG \
                     docker buildx bake \
                     -f docker-bake.hcl ${{ matrix.images }} \
                     --push
-                 echo "Build success >> exit with 0"
+                 echo "DONE: Build success >> exit with 0"
                  exit 0  
           else
-             echo "Have no access to some required architecture documentserver${{ matrix.edition }}  >> Build did't started >> Exit with 0."
+             echo "FAILED: Have no access to some required architecture documentserver${{ matrix.edition }}  >> Build did't started >> Exit with 0."
              exit 0
           fi
           fi
