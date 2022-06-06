@@ -30,6 +30,7 @@ target "documentserver" {
     args = {
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
         "PRODUCT_NAME": "${PRODUCT_NAME}"
+        "COMPANY_NAME": "${COMPANY_NAME}"
     }
 }
 
@@ -41,5 +42,6 @@ target "documentserver-stable" {
     args = {
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
         "PRODUCT_NAME": "${PRODUCT_NAME}"
+        "COMPANY_NAME": "${COMPANY_NAME}"
     }
 }
