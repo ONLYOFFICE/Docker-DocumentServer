@@ -39,15 +39,15 @@ jobs:
         run: |
           echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
 
-      - name: Build Community-Edition
+      - name: Build documentserver-stable
         run: |
           DOCKER_TAG=$(echo ${{ steps.tag_name.outputs.SOURCE_TAG }} | sed 's/^.//; s/-stable//')
           IMAGE_STATUS=$(docker manifest inspect ${{ env.COMPANY_NAME }}/4testing-${{ env.PRODUCT_NAME }}${{ matrix.edition }}:$DOCKER_TAG > /dev/null ; echo $?)
              if [[ "$IMAGE_STATUS" = "0" ]]; then
                 echo "Image present on docker.hub >> start build stable version"
                 echo "FROM ${{ env.COMPANY_NAME }}/4testing-${{ env.PRODUCT_NAME }}${{ matrix.edition }}:$DOCKER_TAG as ${{ env.PRODUCT_NAME }}-stable" >> Dockerfile.stable
-                PRODUCT_EDITION=${{ matrix.edition }} PRODUCT_NAME=${{ env.PRODUCT_NAME }} COMPANY_NAME=${{ env.COMPANY_NAME}} \
-                   DOCKERFILE=Dockerfile.stable TAG=$DOCKER_TAG \
+                PRODUCT_EDITION=${{ matrix.edition }} PRODUCT_NAME=${{ env.PRODUCT_NAME }} \
+                COMPANY_NAME=${{ env.COMPANY_NAME}} DOCKERFILE=Dockerfile.stable TAG=$DOCKER_TAG \
                    docker buildx bake \
                    -f docker-bake.hcl ${{ matrix.images }} \
                    --push ;

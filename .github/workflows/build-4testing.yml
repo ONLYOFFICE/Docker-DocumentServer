@@ -40,7 +40,7 @@ jobs:
         run: |
           echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
 
-      - name: Build multi-arch documentserver image
+      - name: Build documentserver-4testing
         run: |
           PACKAGE_URL=http://download.onlyoffice.com/install/documentserver/linux/onlyoffice-documentserver${{ matrix.edition }}_amd64.deb
           STATUS=$(curl -s -o /dev/null -w "%{http_code}\n" "$PACKAGE_URL")
