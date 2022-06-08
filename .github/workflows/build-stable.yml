@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        edition: ["", "-ee", "-de", "-ie"]
+        edition: ["", "-ee", "-de"]
         images: ["documentserver-stable"]
     steps:
       - name: Checkout code 
