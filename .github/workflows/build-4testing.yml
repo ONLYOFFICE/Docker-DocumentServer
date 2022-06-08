@@ -52,7 +52,7 @@ jobs:
                  if [[ "$STATUS" = "200" ]]; then
                  echo "Have access to documentserver${{ matrix.edition }} arm64 arch"
                  echo "All architecture are available >> Build is starting."
-                 sed -i "s|http:\/\/download.onlyoffice.com\/install\/documentserver\/linux\/\${COMPANY_NAME}-\${PRODUCT_NAME}\${PRODUCT_EDITION}|${{ secrets.REPO_URL }}${{ matrix.edition }}_$DOCKER_TAG|g" Dockerfile
+                 sed -i "s|http://download.onlyoffice.com/install/documentserver/linux/\${COMPANY_NAME}-\${PRODUCT_NAME}\${PRODUCT_EDITION}|${{ secrets.REPO_URL }}${{ matrix.edition }}_$DOCKER_TAG|g" Dockerfile
                  PRODUCT_EDITION=${{ matrix.edition }} COMPANY_NAME=${{ env.COMPANY_NAME }} \
                     PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
                     PREFIX_NAME=4testing- TAG=$DOCKER_TAG \
