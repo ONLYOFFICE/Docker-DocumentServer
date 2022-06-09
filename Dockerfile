@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:20.04 as documentserver
 LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=12
@@ -71,9 +71,11 @@ COPY run-document-server.sh /app/ds/run-document-server.sh
 
 EXPOSE 80 443
 
+ARG TARGETARCH
+ARG PRODUCT_EDITION=
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_NAME=documentserver
-ARG PACKAGE_URL="http://download.onlyoffice.com/install/documentserver/linux/${COMPANY_NAME}-${PRODUCT_NAME}_amd64.deb"
+ARG PACKAGE_URL="http://download.onlyoffice.com/install/documentserver/linux/${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}_$TARGETARCH.deb"
 
 ENV COMPANY_NAME=$COMPANY_NAME \
     PRODUCT_NAME=$PRODUCT_NAME
