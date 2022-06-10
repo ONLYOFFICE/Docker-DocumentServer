@@ -41,23 +41,23 @@ jobs:
 
       - name: Build documentserver-stable
         run: |
-          DOCKER_TAG=$(echo ${{ steps.tag_name.outputs.SOURCE_TAG }} | sed 's/^.//; s/-stable//')
-          SH_TAG1=$(echo ${DOCKER_TAG} | grep -o -P '^[\d]+\.[\d]+\.[\d]+')
-          SH_TAG2=$(echo ${DOCKER_TAG} | grep -o -P '^[\d]+\.[\d]+')
-          IMAGE_STATUS=$(docker manifest inspect ${{ env.COMPANY_NAME }}/4testing-${{ env.PRODUCT_NAME }}${{ matrix.edition }}:$DOCKER_TAG > /dev/null ; echo $?)
+          TAG=$(echo ${{ steps.tag_name.outputs.SOURCE_TAG }} | sed 's/^.//; s/-stable//')
+          SHORTER_TAG=$(echo ${TAG} | grep -o -P '^[\d]+\.[\d]+\.[\d]+')
+          SHORTEST_TAG=$(echo ${TAG} | grep -o -P '^[\d]+\.[\d]+')
+          IMAGE_STATUS=$(docker manifest inspect ${{ env.COMPANY_NAME }}/4testing-${{ env.PRODUCT_NAME }}${{ matrix.edition }}:$TAG > /dev/null ; echo $?)
              if [[ "$IMAGE_STATUS" = "0" ]]; then
                 echo "Image present on docker.hub >> start build stable version"
-                echo "FROM ${{ env.COMPANY_NAME }}/4testing-${{ env.PRODUCT_NAME }}${{ matrix.edition }}:$DOCKER_TAG as ${{ env.PRODUCT_NAME }}-stable" >> Dockerfile.stable
+                echo "FROM ${{ env.COMPANY_NAME }}/4testing-${{ env.PRODUCT_NAME }}${{ matrix.edition }}:$TAG as ${{ env.PRODUCT_NAME }}-stable" >> Dockerfile.stable
                 PRODUCT_EDITION=${{ matrix.edition }} PRODUCT_NAME=${{ env.PRODUCT_NAME }} \
                 COMPANY_NAME=${{ env.COMPANY_NAME}} DOCKERFILE=Dockerfile.stable \
-                   TAG=$DOCKER_TAG \ #x.x.x.x tag
-                   SH1_TAG=$SH_TAG1 \ #x.x.x tag
-                   SH2_TAG=$SH_TAG2 \  #x.x tag
+                   TAG=$TAG \
+                   SHORTER_TAG=$SHORTER_TAG \
+                   SHORTEST_TAG=$SHORTEST_TAG \
                    docker buildx bake \
                    -f docker-bake.hcl ${{ matrix.images }} \
                    --push ;
              else
-                echo "FAILED: Image with tag $DOCKER_TAG do not presented on docker.hub >> build will not started >> exit with 0"
+                echo "FAILED: Image with tag $TAG do not presented on docker.hub >> build will not started >> exit with 0"
                 exit 0
              fi
         shell: bash
