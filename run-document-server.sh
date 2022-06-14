@@ -83,7 +83,7 @@ WOPI_ENABLED=${WOPI_ENABLED:-false}
 
 GENERATE_FONTS=${GENERATE_FONTS:-true}
 
-if [[ ${PRODUCT_NAME} == "documentserver${PRODUCT_EDITION}" ]]; then
+if [[ ${PRODUCT_NAME}${PRODUCT_EDITION} == "documentserver" ]]; then
   REDIS_ENABLED=false
 else
   REDIS_ENABLED=true
