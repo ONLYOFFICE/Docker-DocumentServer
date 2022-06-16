@@ -18,6 +18,7 @@ DS_LOG_DIR="${LOG_DIR}/documentserver"
 LIB_DIR="/var/lib/${COMPANY_NAME}"
 DS_LIB_DIR="${LIB_DIR}/documentserver"
 CONF_DIR="/etc/${COMPANY_NAME}/documentserver"
+LOCAL_SSL_DIR="/etc/supervisor/conf.d"
 IS_UPGRADE="false"
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
@@ -165,6 +166,21 @@ deprecated_var() {
     echo "Variable $1 is deprecated. Use $2 instead."
   fi
 }
+
+update_local_ssl() {
+  if [[ -n ${NODE_OPTIONS} ]]; then
+    if [[ ${NODE_OPTIONS} == "--use-openssl-ca" ]]; then
+    RESULT=$(cat ${LOCAL_SSL_DIR}/ds-converter.conf | grep -e '--use-openssl-ca')
+      if [[ -z ${RESULT} ]]; then
+        for file in ${LOCAL_SSL_DIR}/ds-converter.conf ${LOCAL_SSL_DIR}/ds-docservice.conf
+          do
+          sed -i "s/environment.*/&\,NODE_OPTIONS=${NODE_OPTIONS}/g" $file
+        done
+      fi
+    fi
+  fi
+}
+
 
 parse_rabbitmq_url(){
   local amqp=$1
@@ -524,6 +540,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
   update_ds_settings
 
+  update_local_ssl
   # update settings by env variables
   if [ $DB_HOST != "localhost" ]; then
     update_db_settings
