@@ -37,7 +37,7 @@ if [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ]; then
   fi
 fi
 
-SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/documentserver"
+SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"
 mkdir -p ${SSL_CERTIFICATES_DIR}
 cp -f ${DATA_DIR}/certs/* ${SSL_CERTIFICATES_DIR}
 chmod 644 ${SSL_CERTIFICATES_DIR}/*.crt ${SSL_CERTIFICATES_DIR}/*.pem
