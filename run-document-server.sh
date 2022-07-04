@@ -169,16 +169,11 @@ deprecated_var() {
 
 update_local_ssl() {
   if [[ -n ${NODE_OPTIONS} ]]; then
-    if [[ ${NODE_OPTIONS} == "--use-openssl-ca" ]]; then
-    RESULT=$(cat ${LOCAL_SSL_DIR}/ds-converter.conf | grep -e '--use-openssl-ca')
-      if [[ -z ${RESULT} ]]; then
         for file in ${LOCAL_SSL_DIR}/ds-converter.conf ${LOCAL_SSL_DIR}/ds-docservice.conf
           do
           sed -i "s/environment.*/&\,NODE_OPTIONS=${NODE_OPTIONS}/g" $file
         done
       fi
-    fi
-  fi
 }
 
 
