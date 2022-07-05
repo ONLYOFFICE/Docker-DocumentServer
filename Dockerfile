@@ -1,7 +1,7 @@
-FROM ubuntu:20.04 as documentserver
+FROM ubuntu:22.04 as documentserver
 LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 
-ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=12
+ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=14
 
 ARG ONLYOFFICE_VALUE=onlyoffice
 
