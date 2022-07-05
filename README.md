@@ -201,7 +201,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **METRICS_PREFIX**: Defines StatsD metrics prefix for backend services. Defaults to `ds.`.
 - **LETS_ENCRYPT_DOMAIN**: Defines the domain for Let's Encrypt certificate.
 - **LETS_ENCRYPT_MAIL**: Defines the domain administator mail address for Let's Encrypt certificate.
-- **NODE_OPTIONS**: A space-separated list of command-line options. options... are interpreted before command-line options, so command-line options will override or compound after anything in options.... Node.js will exit with an error if an option that is not allowed in the environment is used, such as -p or a script file. [Avalivable value](https://nodejs.org/api/cli.html#node_optionsoptions).
+- **NODE_OPTIONS**: A space-separated list of command-line options. options... are interpreted before command-line options, so command-line options will override or compound after anything in options.... Node.js will exit with an error if an option that is not allowed in the environment is used, such as -p or a script file. [Avalivable values](https://nodejs.org/api/cli.html#node_optionsoptions).
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
