@@ -18,7 +18,7 @@ DS_LOG_DIR="${LOG_DIR}/documentserver"
 LIB_DIR="/var/lib/${COMPANY_NAME}"
 DS_LIB_DIR="${LIB_DIR}/documentserver"
 CONF_DIR="/etc/${COMPANY_NAME}/documentserver"
-LOCAL_SSL_DIR="/etc/supervisor/conf.d"
+SUPERVISOR_CONF_DIR="/etc/supervisor/conf.d"
 IS_UPGRADE="false"
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
@@ -169,11 +169,11 @@ deprecated_var() {
 
 update_local_ssl() {
   if [[ -n ${NODE_OPTIONS} ]]; then
-        for file in ${LOCAL_SSL_DIR}/ds-converter.conf ${LOCAL_SSL_DIR}/ds-docservice.conf
-          do
-          sed -i "s/environment.*/&\,NODE_OPTIONS=${NODE_OPTIONS}/g" $file
-        done
-      fi
+    for file in ${SUPERVISOR_CONF_DIR}/ds-converter.conf ${SUPERVISOR_CONF_DIR}/ds-docservice.conf
+      do
+      sed -i "s/environment.*/&\,NODE_OPTIONS=${NODE_OPTIONS}/g" $file
+    done
+  fi
 }
 
 
