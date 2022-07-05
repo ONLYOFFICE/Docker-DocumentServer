@@ -167,7 +167,7 @@ deprecated_var() {
   fi
 }
 
-update_local_ssl() {
+update_supervisor_config() {
   if [[ -n ${NODE_OPTIONS} ]]; then
     for file in ${SUPERVISOR_CONF_DIR}/ds-converter.conf ${SUPERVISOR_CONF_DIR}/ds-docservice.conf
       do
@@ -535,7 +535,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
   update_ds_settings
 
-  update_local_ssl
+  update_supervisor_config
   # update settings by env variables
   if [ $DB_HOST != "localhost" ]; then
     update_db_settings
