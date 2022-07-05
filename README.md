@@ -201,6 +201,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **METRICS_PREFIX**: Defines StatsD metrics prefix for backend services. Defaults to `ds.`.
 - **LETS_ENCRYPT_DOMAIN**: Defines the domain for Let's Encrypt certificate.
 - **LETS_ENCRYPT_MAIL**: Defines the domain administator mail address for Let's Encrypt certificate.
+- **NODE_OPTIONS**: Helps to use encryption in local networks when using your own certificate authorities. Avalivable value `--use-openssl-ca`
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
