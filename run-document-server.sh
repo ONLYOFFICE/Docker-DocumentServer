@@ -536,6 +536,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   update_ds_settings
 
   update_supervisor_config
+
   # update settings by env variables
   if [ $DB_HOST != "localhost" ]; then
     update_db_settings
