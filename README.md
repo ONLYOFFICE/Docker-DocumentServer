@@ -201,7 +201,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **METRICS_PREFIX**: Defines StatsD metrics prefix for backend services. Defaults to `ds.`.
 - **LETS_ENCRYPT_DOMAIN**: Defines the domain for Let's Encrypt certificate.
 - **LETS_ENCRYPT_MAIL**: Defines the domain administator mail address for Let's Encrypt certificate.
-- **NODE_OPTIONS**: Define the variables to start NodeJs processes like docservice and converter. Allows command line arguments to be provided through an environment variable. [All avalivable values](https://nodejs.org/api/cli.html#node_optionsoptions).
+- **NODE_OPTIONS**: Define the variables to start NodeJs processes like docservice and converter. Allows command line arguments to be provided through an environment variable. [All avalivable arguments](https://nodejs.org/api/cli.html#node_optionsoptions).
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
