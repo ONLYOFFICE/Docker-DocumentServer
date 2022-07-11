@@ -169,7 +169,7 @@ deprecated_var() {
 
 update_supervisor_config() {
   if [[ -n ${NODE_OPTIONS} ]]; then
-  RESULT=$(cat ./ds-converter.conf | grep -e 'NODE_OPTIONS')
+  RESULT=$(cat ${SUPERVISOR_CONF_DIR}/ds-converter.conf | grep -e 'NODE_OPTIONS')
     if [[ -z ${RESULT} ]]; then
     for file in ${SUPERVISOR_CONF_DIR}/ds-converter.conf ${SUPERVISOR_CONF_DIR}/ds-docservice.conf
       do
