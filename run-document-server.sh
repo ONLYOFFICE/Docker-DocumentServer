@@ -173,7 +173,7 @@ update_supervisor_config() {
     if [[ -z ${RESULT} ]]; then
     for file in ${SUPERVISOR_CONF_DIR}/ds-converter.conf ${SUPERVISOR_CONF_DIR}/ds-docservice.conf
       do
-      sed -i -e "s|environment.*|&\,NODE_OPTIONS=${NODE_OPTIONS}|g" $file &> /dev/null
+      sed -i "s|environment.*|&\,NODE_OPTIONS=${NODE_OPTIONS}|g" $file &> /dev/null
       sed -i 's/\r//g' $file &> /dev/null
     done
     fi
