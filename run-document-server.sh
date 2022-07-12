@@ -39,7 +39,7 @@ fi
 
 SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"
 mkdir -p ${SSL_CERTIFICATES_DIR}
-if [[ -f $DATA_DIR/certs ]]; then
+if [[ -d $DATA_DIR/certs ]]; then
   if [ "$(ls -A $DATA_DIR/certs)" ]; then
     cp -f ${DATA_DIR}/certs/* ${SSL_CERTIFICATES_DIR}
     chmod 644 ${SSL_CERTIFICATES_DIR}/*.crt ${SSL_CERTIFICATES_DIR}/*.pem
