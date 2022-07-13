@@ -37,7 +37,12 @@ if [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ]; then
   fi
 fi
 
-SSL_CERTIFICATES_DIR="${DATA_DIR}/certs"
+SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"
+mkdir -p ${SSL_CERTIFICATES_DIR}
+cp -f ${DATA_DIR}/certs/* ${SSL_CERTIFICATES_DIR}
+chmod 644 ${SSL_CERTIFICATES_DIR}/*.crt ${SSL_CERTIFICATES_DIR}/*.pem
+chmod 400 ${SSL_CERTIFICATES_DIR}/*.key
+
 if [[ -z $SSL_CERTIFICATE_PATH ]] && [[ -f ${SSL_CERTIFICATES_DIR}/${COMPANY_NAME}.crt ]]; then
   SSL_CERTIFICATE_PATH=${SSL_CERTIFICATES_DIR}/${COMPANY_NAME}.crt
 else
@@ -83,7 +88,7 @@ WOPI_ENABLED=${WOPI_ENABLED:-false}
 
 GENERATE_FONTS=${GENERATE_FONTS:-true}
 
-if [[ ${PRODUCT_NAME} == "documentserver" ]]; then
+if [[ ${PRODUCT_NAME}${PRODUCT_EDITION} == "documentserver" ]]; then
   REDIS_ENABLED=false
 else
   REDIS_ENABLED=true
@@ -468,6 +473,8 @@ update_nginx_settings(){
   if [ -f "${NGINX_ONLYOFFICE_EXAMPLE_CONF}" ]; then
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_CONF}
   fi
+
+  documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
 }
 
 update_supervisor_settings(){
@@ -503,7 +510,7 @@ for i in ${DS_LIB_DIR}/App_Data/cache/files ${DS_LIB_DIR}/App_Data/docbuilder ${
 done
 
 # change folder rights
-for i in ${LOG_DIR} ${LIB_DIR} ${DATA_DIR}; do
+for i in ${LOG_DIR} ${LIB_DIR}; do
   chown -R ds:ds "$i"
   chmod -R 755 "$i"
 done
