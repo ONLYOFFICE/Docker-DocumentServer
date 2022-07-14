@@ -75,26 +75,33 @@ jobs:
           fi
           ##### this setting up build platform ####
           if [[ "$AMD64" = "present" ]] && [[ "$ARM64" = "present" ]]; then
-            PLATFORM="linux/amd64,linux/arm64"
-            echo "Present arm64/amd64, build miltiarch"
+             PLATFORM="linux/amd64,linux/arm64"
+             echo "Present arm64/amd64, build miltiarch"
           fi
 
           if [[ "$AMD64" != "present" ]] && [[ "$ARM64" = "present" ]]; then
-            PLATFORM="linux/arm64"
-            echo "Present only arm64, build arm image"
+             PLATFORM="linux/arm64"
+             echo "Present only arm64, build arm image"
           fi
 
           if [[ "$AMD64" = "present" ]] && [[ "$ARM64" != "present" ]]; then
-            PLATFORM="linux/amd64"
-            echo "Present only amd64, build amd image"
+             PLATFORM="linux/amd64"
+             echo "Present only amd64, build amd image"
           fi
 
           if [[ "$AMD64" != "present" ]] && [[ "$ARM64" != "present" ]]; then
-            echo "FAILED: Build will not started requested architectures does not present"
-            exit 1
+             echo "FAILED: Build will not started requested architectures does not present"
+             exit 1
           fi
+          PRODUCT_EDITION=${{ matrix.edition }} COMPANY_NAME=${{ env.COMPANY_NAME }} \
+             PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
+             PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$PLATFORM \
+             docker buildx bake \
+             -f docker-bake.hcl ${{ matrix.images }} \
+             --print
 
           echo "Start build >>"
+
           PRODUCT_EDITION=${{ matrix.edition }} COMPANY_NAME=${{ env.COMPANY_NAME }} \
              PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
              PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$PLATFORM \
