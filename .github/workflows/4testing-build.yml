@@ -37,39 +37,70 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Get Tag Name
-        id: tag_name
+      - name: Get tag
         run: |
-          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Build 4testing
         run: |
-          DOCKER_TAG=$(echo ${{ steps.tag_name.outputs.SOURCE_TAG }} | sed 's/^.//' )
-          PACKAGE_VERSION=$(echo $DOCKER_TAG | sed  's/\./-/3')
-          PACKAGE_URL=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_amd64.deb
+          DOCKER_TAG=$(echo ${{ env.RELEASE_VERSION }} | sed 's/^.//' )
+          PACKAGE_VERSION=$( echo $DOCKER_TAG | sed -E 's/(.*)\./\1-/' )
+          if [[ ${{ env.RELEASE_VERSION }}  == v99.99* ]]; then
+             sed -i "s|http://download.onlyoffice.com/install/documentserver/linux/\${COMPANY_NAME}-\${PRODUCT_NAME}\${PRODUCT_EDITION}|${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_$PACKAGE_VERSION|g" Dockerfile
+             PACKAGE_URL=${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_amd64.deb
+          else 
+             sed -i "s|http://download.onlyoffice.com/install/documentserver/linux/\${COMPANY_NAME}-\${PRODUCT_NAME}\${PRODUCT_EDITION}|${{ secrets.REPO_URL }}${{ matrix.edition }}_$PACKAGE_VERSION|g" Dockerfile
+             PACKAGE_URL=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_amd64.deb
+          fi
           STATUS=$(curl -s -o /dev/null -w "%{http_code}\n" "$PACKAGE_URL")
           if [[ "$STATUS" = "200" ]]; then
              echo "Have access to documentserver${{ matrix.edition }} amd64 arch >> check arm64 access"
+             AMD64=present
           else 
-             echo "FAILED: Have no access to documentserver${{ matrix.edition }} amd64 arch"
-             exit 1
+             echo "ALARM: Have no access to documentserver${{ matrix.edition }} amd64"
+             AMD64=
           fi
-          PACKAGE_URL=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_arm64.deb
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}\n" "$PACKAGE_URL") 
+          if [[ ${{ env.RELEASE_VERSION }}  == v99.99* ]]; then
+             PACKAGE_URL=${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_arm64.deb
+          else
+             PACKAGE_URL=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_arm64.deb
+          fi
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}\n" "$PACKAGE_URL")
           if [[ "$STATUS" = "200" ]]; then
              echo "Have access to documentserver${{ matrix.edition }} arm64 arch"
-             echo "All architecture are available >> build is starting."
-             sed -i "s|http://download.onlyoffice.com/install/documentserver/linux/\${COMPANY_NAME}-\${PRODUCT_NAME}\${PRODUCT_EDITION}|${{ secrets.REPO_URL }}${{ matrix.edition }}_$PACKAGE_VERSION|g" Dockerfile
-             PRODUCT_EDITION=${{ matrix.edition }} COMPANY_NAME=${{ env.COMPANY_NAME }} \
-                PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
-                PREFIX_NAME=4testing- TAG=$DOCKER_TAG \
-                docker buildx bake \
-                -f docker-bake.hcl ${{ matrix.images }} \
-                --push
+             ARM64=present
+          else
+             echo "ALARM: Have no access to documentserver${{ matrix.edition }} arm64"
+             ARM64=
+          fi
+          ##### this setting up build platform ####
+          if [[ "$AMD64" = "present" ]] && [[ "$ARM64" = "present" ]]; then
+            PLATFORM="linux/amd64,linux/arm64"
+            echo "Present arm64/amd64, build miltiarch"
+          fi
+
+          if [[ "$AMD64" != "present" ]] && [[ "$ARM64" = "present" ]]; then
+            PLATFORM="linux/arm64"
+            echo "Present only arm64, build arm image"
+          fi
+
+          if [[ "$AMD64" = "present" ]] && [[ "$ARM64" != "present" ]]; then
+            PLATFORM="linux/amd64"
+            echo "Present only amd64, build amd image"
+          fi
+
+          if [[ "$AMD64" != "present" ]] && [[ "$ARM64" != "present" ]]; then
+            echo "FAILED: Build will not started requested architectures does not present"
+            exit 1
+          fi
+
+          echo "Start build >>"
+          PRODUCT_EDITION=${{ matrix.edition }} COMPANY_NAME=${{ env.COMPANY_NAME }} \
+             PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
+             PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$PLATFORM \
+             docker buildx bake \
+             -f docker-bake.hcl ${{ matrix.images }} \
+             --push
              echo "DONE: Build success >> exit with 0"
              exit 0  
-          else
-             echo "FAILED: Have no access to some required architecture documentserver${{ matrix.edition }} >> Exit with 0."
-             exit 1
-          fi
         shell: bash
