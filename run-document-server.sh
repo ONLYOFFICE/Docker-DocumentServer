@@ -39,19 +39,10 @@ fi
 
 SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"
 mkdir -p ${SSL_CERTIFICATES_DIR}
-if [[ -d ${DATA_DIR}/certs ]]; then
-   if [ -e ${DATA_DIR}/certs/*.crt ]; then
-     cp -f ${DATA_DIR}/certs/*.crt ${SSL_CERTIFICATES_DIR}
-     chmod 644 ${SSL_CERTIFICATES_DIR}/*.crt
-   fi
-   if [ -e ${DATA_DIR}/certs/*.pem ]; then
-     cp -f ${DATA_DIR}/certs/*.pem ${SSL_CERTIFICATES_DIR}
-     chmod 644 ${SSL_CERTIFICATES_DIR}/*.pem
-   fi
-   if [ -e ${DATA_DIR}/certs/*.key ]; then
-     cp -f ${DATA_DIR}/certs/*.key ${SSL_CERTIFICATES_DIR}
-     chmod 400 ${SSL_CERTIFICATES_DIR}/*.key
-   fi
+if [[ -d ${DATA_DIR}/certs ]] && [ -e ${DATA_DIR}/certs/*.crt ]; then
+  cp -f ${DATA_DIR}/certs/* ${SSL_CERTIFICATES_DIR}
+  chmod 644 ${SSL_CERTIFICATES_DIR}/*.crt ${SSL_CERTIFICATES_DIR}/*.pem
+  chmod 400 ${SSL_CERTIFICATES_DIR}/*.key
 fi
 
 if [[ -z $SSL_CERTIFICATE_PATH ]] && [[ -f ${SSL_CERTIFICATES_DIR}/${COMPANY_NAME}.crt ]]; then
