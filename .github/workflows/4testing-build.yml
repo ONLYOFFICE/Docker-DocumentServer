@@ -46,11 +46,11 @@ jobs:
           DOCKER_TAG=$(echo ${{ env.RELEASE_VERSION }} | sed 's/^.//' )
           PACKAGE_VERSION=$( echo $DOCKER_TAG | sed -E 's/(.*)\./\1-/' )
           if [[ ${{ env.RELEASE_VERSION }}  == v99.99* ]]; then
-             sed -i "s|http://download.onlyoffice.com/install/documentserver/linux/\${COMPANY_NAME}-\${PRODUCT_NAME}\${PRODUCT_EDITION}|${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_$PACKAGE_VERSION|g" Dockerfile
              PACKAGE_URL=${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_amd64.deb
+             URL_ARG=${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_TARGETARCH.deb
           else 
-             sed -i "s|http://download.onlyoffice.com/install/documentserver/linux/\${COMPANY_NAME}-\${PRODUCT_NAME}\${PRODUCT_EDITION}|${{ secrets.REPO_URL }}${{ matrix.edition }}_$PACKAGE_VERSION|g" Dockerfile
              PACKAGE_URL=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_amd64.deb
+             URL_ARG=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_TARGETARCH.deb
           fi
           STATUS=$(curl -s -o /dev/null -w "%{http_code}\n" "$PACKAGE_URL")
           if [[ "$STATUS" = "200" ]]; then
@@ -96,7 +96,7 @@ jobs:
           PRODUCT_EDITION=${{ matrix.edition }} COMPANY_NAME=${{ env.COMPANY_NAME }} \
              PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
              PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$PLATFORM \
-             docker buildx bake \
+             PACKAGE_URL=${URL_ARG} docker buildx bake \
              -f docker-bake.hcl ${{ matrix.images }} \
              --print
 
@@ -105,7 +105,7 @@ jobs:
           PRODUCT_EDITION=${{ matrix.edition }} COMPANY_NAME=${{ env.COMPANY_NAME }} \
              PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
              PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$PLATFORM \
-             docker buildx bake \
+             PACKAGE_URL=${URL_ARG} docker buildx bake \
              -f docker-bake.hcl ${{ matrix.images }} \
              --push
              echo "DONE: Build success >> exit with 0"

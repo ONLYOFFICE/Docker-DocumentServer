@@ -34,6 +34,10 @@ variable "PLATFORM" {
     default = ""
 }
 
+variable "PACKAGE_URL" {
+    default = ""
+}
+
 target "documentserver" {
     target = "documentserver"
     dockerfile= "${DOCKERFILE}"
@@ -43,6 +47,7 @@ target "documentserver" {
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
         "PRODUCT_NAME": "${PRODUCT_NAME}"
         "COMPANY_NAME": "${COMPANY_NAME}"
+        "PACKAGE_URL": "{PACKAGE_URL}"
         "PLATFORM": "${PLATFORM}"
     }
 }
