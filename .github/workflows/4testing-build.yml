@@ -44,12 +44,12 @@ jobs:
 
       - name: Build 4testing
         run: |
-          ### At this step build variable declaration ###
+          ### ➡ At this step build variable declaration ###
           DOCKER_TAG=$( echo ${{ env.RELEASE_VERSION }} | sed 's/^.//' )
           PACKAGE_VERSION=$( echo $DOCKER_TAG | sed -E 's/(.*)\./\1-/' )
           NODE_PLATFORMS=$( echo ${{ steps.buildx.outputs.platforms }} | sed 's/linux\///g' | sed 's/,/ /g' )
           echo "Start check avalivable build platforms >>"
-          ### In this loop we will check all avalivable documentserver architectures. After that all accessed arch will be added to build-platforms. ###
+          ### ➡ In this loop we will check all avalivable documentserver architectures. After that all accessed arch will be added to build-platforms. ###
           for ARCH in ${NODE_PLATFORMS}; do
             if [[ ${{ env.RELEASE_VERSION }} == v7.* ]] || [[ ${{ env.RELEASE_VERSION }} == v8.* ]] || [[ ${{ env.RELEASE_VERSION }} == v9.* ]] || [[ ${{ env.RELEASE_VERSION }} == v10.* ]]; then
               PACKAGE_URL_CHECK=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_${ARCH}.deb
@@ -68,13 +68,13 @@ jobs:
                echo "${ARCH} in not avalivable"
             fi
           done
-          ### At this step if there is no access to any platform and platform list is empty, build will exit with 1. ###  
+          ### ➡ At this step if there is no access to any platform and platform list is empty, build will exit with 1. ###  
           if [[ -z ${BUILD_PLATFORMS} ]]; then
              echo "Have no access to any platform >> exit with 1"
              exit 1
           fi
           echo "DONE: Check passed >> Build for platforms: ${BUILD_PLATFORMS}"
-          ### Preconfiguration for debugging with --print key ### 
+          ### ➡ Preconfiguration for debugging with --print key ### 
           PRODUCT_EDITION=${{ matrix.edition }} PACKAGE_URL=$PACKAGE_URL_BUILD \
             PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
             PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$BUILD_PLATFORMS \
@@ -82,7 +82,7 @@ jobs:
              -f docker-bake.hcl ${{ matrix.images }} \
              --print
           echo "Build is starting ... >>"
-          ### Build and push images at this step ### 
+          ### ➡ Build and push images at this step ### 
           PRODUCT_EDITION=${{ matrix.edition }} PACKAGE_URL=$PACKAGE_URL_BUILD \
             PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
             PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$BUILD_PLATFORMS \
