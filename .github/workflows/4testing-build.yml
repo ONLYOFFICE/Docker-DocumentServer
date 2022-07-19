@@ -29,6 +29,7 @@ jobs:
         uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v2
      
       - name: Login to Docker Hub
@@ -43,71 +44,51 @@ jobs:
 
       - name: Build 4testing
         run: |
-          DOCKER_TAG=$(echo ${{ env.RELEASE_VERSION }} | sed 's/^.//' )
+          ### At this step build variable declaration ###
+          DOCKER_TAG=$( echo ${{ env.RELEASE_VERSION }} | sed 's/^.//' )
           PACKAGE_VERSION=$( echo $DOCKER_TAG | sed -E 's/(.*)\./\1-/' )
-          if [[ ${{ env.RELEASE_VERSION }}  == v99.99* ]]; then
-             PACKAGE_URL=${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_amd64.deb
-             URL_ARG=${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_TARGETARCH.deb
-          else 
-             PACKAGE_URL=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_amd64.deb
-             URL_ARG=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_TARGETARCH.deb
-          fi
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}\n" "$PACKAGE_URL")
-          if [[ "$STATUS" = "200" ]]; then
-             echo "Have access to documentserver${{ matrix.edition }} amd64 arch >> check arm64 access"
-             AMD64=present
-          else 
-             echo "ALARM: Have no access to documentserver${{ matrix.edition }} amd64"
-             AMD64=
-          fi
-          if [[ ${{ env.RELEASE_VERSION }}  == v99.99* ]]; then
-             PACKAGE_URL=${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_arm64.deb
-          else
-             PACKAGE_URL=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_arm64.deb
-          fi
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}\n" "$PACKAGE_URL")
-          if [[ "$STATUS" = "200" ]]; then
-             echo "Have access to documentserver${{ matrix.edition }} arm64 arch"
-             ARM64=present
-          else
-             echo "ALARM: Have no access to documentserver${{ matrix.edition }} arm64"
-             ARM64=
-          fi
-          ##### this setting up build platform ####
-          if [[ "$AMD64" = "present" ]] && [[ "$ARM64" = "present" ]]; then
-             PLATFORM="linux/amd64,linux/arm64"
-             echo "Present arm64/amd64, build miltiarch"
-          fi
-
-          if [[ "$AMD64" != "present" ]] && [[ "$ARM64" = "present" ]]; then
-             PLATFORM="linux/arm64"
-             echo "Present only arm64, build arm image"
-          fi
-
-          if [[ "$AMD64" = "present" ]] && [[ "$ARM64" != "present" ]]; then
-             PLATFORM="linux/amd64"
-             echo "Present only amd64, build amd image"
-          fi
-
-          if [[ "$AMD64" != "present" ]] && [[ "$ARM64" != "present" ]]; then
-             echo "FAILED: Build will not started requested architectures does not present"
+          NODE_PLATFORMS=$( echo ${{ steps.buildx.outputs.platforms }} | sed 's/linux\///g' | sed 's/,/ /g' )
+          echo "Start check avalivable build platforms >>"
+          ### In this loop we will check all avalivable documentserver architectures. After that all accessed arch will be added to build-platforms. ###
+          for ARCH in ${NODE_PLATFORMS}; do
+            if [[ ${{ env.RELEASE_VERSION }} == v7.* ]] || [[ ${{ env.RELEASE_VERSION }} == v8.* ]] || [[ ${{ env.RELEASE_VERSION }} == v9.* ]] || [[ ${{ env.RELEASE_VERSION }} == v10.* ]]; then
+              PACKAGE_URL_CHECK=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_${ARCH}.deb
+              PACKAGE_URL_BUILD=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_TARGETARCH.deb
+            fi
+            if [[ ${{ env.RELEASE_VERSION }} == v99.* ]]; then
+              PACKAGE_URL_CHECK=${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_${ARCH}.deb
+              PACKAGE_URL_BUILD=${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_TARGETARCH.deb
+            fi
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}\n" "${PACKAGE_URL_CHECK}")
+            if [[ "$STATUS" = "200" ]]; then
+               echo "${ARCH} is avalivable >> set like one of build platforms"
+               PLATFORMS+=(linux/${ARCH},)
+               BUILD_PLATFORMS=$( echo ${PLATFORMS[@]} | sed 's/ //g' | sed 's/\(.*\),/\1/' )
+            else
+               echo "${ARCH} in not avalivable"
+            fi
+          done
+          ### At this step if there is no access to any platform and platform list is empty, build will exit with 1. ###  
+          if [[ -z ${BUILD_PLATFORMS} ]]; then
+             echo "Have no access to any platform >> exit with 1"
              exit 1
           fi
-          PRODUCT_EDITION=${{ matrix.edition }} COMPANY_NAME=${{ env.COMPANY_NAME }} \
-             PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
-             PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$PLATFORM \
-             PACKAGE_URL=${URL_ARG} docker buildx bake \
+          echo "DONE: Check passed >> Build for platforms: ${BUILD_PLATFORMS}"
+          ### Preconfiguration for debugging with --print key ### 
+          PRODUCT_EDITION=${{ matrix.edition }} PACKAGE_URL=$PACKAGE_URL_BUILD \
+            PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
+            PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$BUILD_PLATFORMS \
+            docker buildx bake \
              -f docker-bake.hcl ${{ matrix.images }} \
              --print
-
-          echo "Start build >>"
-
-          PRODUCT_EDITION=${{ matrix.edition }} COMPANY_NAME=${{ env.COMPANY_NAME }} \
-             PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
-             PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$PLATFORM \
-             PACKAGE_URL=${URL_ARG} docker buildx bake \
+          echo "Build is starting ... >>"
+          ### Build and push images at this step ### 
+          PRODUCT_EDITION=${{ matrix.edition }} PACKAGE_URL=$PACKAGE_URL_BUILD \
+            PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
+            PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$BUILD_PLATFORMS \
+            docker buildx bake \
              -f docker-bake.hcl ${{ matrix.images }} \
              --push
              echo "DONE: Build success >> exit with 0"
-             exit 0  
+             exit 0
         shell: bash
