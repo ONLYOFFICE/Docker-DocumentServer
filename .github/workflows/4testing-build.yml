@@ -52,7 +52,7 @@ jobs:
 
           ### ➡  In this loop we will check all avalivable documentserver architectures. After that all accessed arch will be added to build-platforms list. ###
           for ARCH in ${NODE_PLATFORMS}; do
-            if [[ ${{ env.RELEASE_VERSION }} == v7.* ]] || [[ ${{ env.RELEASE_VERSION }} == v8.* ]] || [[ ${{ env.RELEASE_VERSION }} == v9.* ]] || [[ ${{ env.RELEASE_VERSION }} == v10.* ]]; then
+            if [[ ${{ env.RELEASE_VERSION }} == v7.* ]] || [[ ${{ env.RELEASE_VERSION }} == v8.* ]] || [[ ${{ env.RELEASE_VERSION }} == v9.* ]]; then
               PACKAGE_URL_CHECK=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_${ARCH}.deb
               PACKAGE_URL_BUILD=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_TARGETARCH.deb
             fi
