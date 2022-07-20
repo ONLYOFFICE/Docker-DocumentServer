@@ -57,7 +57,6 @@ jobs:
               REPO_URL=${{ secrets.UNSTABLE_REPO_URL }}
             fi
             PACKAGE_URL_CHECK=${REPO_URL}${{ matrix.edition }}_"$PACKAGE_VERSION"_${ARCH}.deb
-            PACKAGE_URL_BUILD=${REPO_URL}${{ matrix.edition }}_"$PACKAGE_VERSION"_TARGETARCH.deb
             STATUS=$(curl -s -o /dev/null -w "%{http_code}\n" "${PACKAGE_URL_CHECK}")
             if [[ "$STATUS" = "200" ]]; then
               echo "${ARCH} is avalivable >> set like one of build platforms"
@@ -67,6 +66,7 @@ jobs:
               echo "${ARCH} in not avalivable"
             fi
           done
+          PACKAGE_URL_BUILD=$( echo ${PACKAGE_URL_CHECK} | sed -e "s/${PACKAGE_VERSION}_.*.deb/${PACKAGE_VERSION}_TARGETARCH.deb/g" )
 
           ### ➡  At this step if there is no access to any platform and platform list is empty, build will exit with 1. ###  
           if [[ -z ${BUILD_PLATFORMS} ]]; then
