@@ -52,49 +52,55 @@ jobs:
 
           ### ➡  In this loop we will check all avalivable documentserver architectures. After that all accessed arch will be added to build-platforms list. ###
           for ARCH in ${NODE_PLATFORMS}; do
-            if [[ ${{ env.RELEASE_VERSION }} == v7.* ]] || [[ ${{ env.RELEASE_VERSION }} == v8.* ]] || [[ ${{ env.RELEASE_VERSION }} == v9.* ]]; then
-              PACKAGE_URL_CHECK=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_${ARCH}.deb
-              PACKAGE_URL_BUILD=${{ secrets.REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_TARGETARCH.deb
-            fi
+            REPO_URL=${{ secrets.REPO_URL }} 
             if [[ ${{ env.RELEASE_VERSION }} == v99.* ]]; then
-              PACKAGE_URL_CHECK=${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_${ARCH}.deb
-              PACKAGE_URL_BUILD=${{ secrets.UNSTABLE_REPO_URL }}${{ matrix.edition }}_"$PACKAGE_VERSION"_TARGETARCH.deb
+              REPO_URL=${{ secrets.UNSTABLE_REPO_URL }}
             fi
+            PACKAGE_URL_CHECK=${REPO_URL}${{ matrix.edition }}_"$PACKAGE_VERSION"_${ARCH}.deb
+            PACKAGE_URL_BUILD=${REPO_URL}${{ matrix.edition }}_"$PACKAGE_VERSION"_TARGETARCH.deb
             STATUS=$(curl -s -o /dev/null -w "%{http_code}\n" "${PACKAGE_URL_CHECK}")
             if [[ "$STATUS" = "200" ]]; then
-               echo "${ARCH} is avalivable >> set like one of build platforms"
-               PLATFORMS+=(linux/${ARCH},)
-               BUILD_PLATFORMS=$( echo ${PLATFORMS[@]} | sed 's/ //g' | sed 's/\(.*\),/\1/' )
+              echo "${ARCH} is avalivable >> set like one of build platforms"
+              PLATFORMS+=(linux/${ARCH},)
+              BUILD_PLATFORMS=$( echo ${PLATFORMS[@]} | sed 's/ //g' | sed 's/\(.*\),/\1/' )
             else
-               echo "${ARCH} in not avalivable"
+              echo "${ARCH} in not avalivable"
             fi
           done
 
           ### ➡  At this step if there is no access to any platform and platform list is empty, build will exit with 1. ###  
           if [[ -z ${BUILD_PLATFORMS} ]]; then
-             echo "Have no access to any platform >> exit with 1"
-             exit 1
+            echo "Have no access to any platform >> exit with 1"
+            exit 1
           fi
           echo "DONE: Check passed >> Build for platforms: ${BUILD_PLATFORMS}"
 
           ### ➡  Preconfiguration for debugging with --print key ### 
-          PRODUCT_EDITION=${{ matrix.edition }} PACKAGE_URL=$PACKAGE_URL_BUILD \
-            PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
-            PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$BUILD_PLATFORMS \
-            COMPANY_NAME=${{ env.COMPANY_NAME }} \
+          PRODUCT_EDITION=${{ matrix.edition }} \
+          PACKAGE_URL=$PACKAGE_URL_BUILD \
+          PRODUCT_NAME=${{ env.PRODUCT_NAME }} \
+          DOCKERFILE=Dockerfile \
+          PREFIX_NAME=4testing- \
+          TAG=$DOCKER_TAG \
+          PLATFORM=$BUILD_PLATFORMS \
+          COMPANY_NAME=${{ env.COMPANY_NAME }} \
             docker buildx bake \
-             -f docker-bake.hcl ${{ matrix.images }} \
-             --print
+            -f docker-bake.hcl ${{ matrix.images }} \
+            --print
           echo "Build is starting ... >>"
 
           ### ➡  Build and push images at this step ### 
-          PRODUCT_EDITION=${{ matrix.edition }} PACKAGE_URL=$PACKAGE_URL_BUILD \
-            PRODUCT_NAME=${{ env.PRODUCT_NAME }} DOCKERFILE=Dockerfile \
-            PREFIX_NAME=4testing- TAG=$DOCKER_TAG PLATFORM=$BUILD_PLATFORMS \
-            COMPANY_NAME=${{ env.COMPANY_NAME }} \
+          PRODUCT_EDITION=${{ matrix.edition }} \
+          PACKAGE_URL=$PACKAGE_URL_BUILD \
+          PRODUCT_NAME=${{ env.PRODUCT_NAME }} \
+          DOCKERFILE=Dockerfile \
+          PREFIX_NAME=4testing- \
+          TAG=$DOCKER_TAG \
+          PLATFORM=$BUILD_PLATFORMS \
+          COMPANY_NAME=${{ env.COMPANY_NAME }} \
             docker buildx bake \
-             -f docker-bake.hcl ${{ matrix.images }} \
-             --push
-             echo "DONE: Build success >> exit with 0"
-             exit 0
+            -f docker-bake.hcl ${{ matrix.images }} \
+            --push
+          echo "DONE: Build success >> exit with 0"
+          exit 0
         shell: bash
