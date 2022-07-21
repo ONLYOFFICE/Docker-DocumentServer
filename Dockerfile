@@ -81,10 +81,7 @@ ENV COMPANY_NAME=$COMPANY_NAME \
     PRODUCT_NAME=$PRODUCT_NAME \
     PRODUCT_EDITION=$PRODUCT_EDITION
 
-RUN ARCH=$(uname -m)
-    if [ "${ARCH}" = "x86_64" ]; then ARCH=amd64; fi && \
-    if [ "${ARCH}" = "aarch64" ]; then ARCH=arm64; fi && \
-    PACKAGE_URL=$( echo ${PACKAGE_URL} | sed "s/TARGETARCH/"${ARCH}"/g") && \
+RUN PACKAGE_URL=$( echo ${PACKAGE_URL} | sed "s/TARGETARCH/"${TARGETARCH}"/g") && \
     wget -q -P /tmp "$PACKAGE_URL" && \
     apt-get -y update && \
     service postgresql start && \
