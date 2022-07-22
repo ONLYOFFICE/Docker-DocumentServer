@@ -500,7 +500,6 @@ update_logrotate_settings(){
   sed -i -e '/postrotate/,/endscript/ {//!d;/postrotate/a\        \if pgrep -x "nginx" >/dev/null;then \n \         \service nginx restart; \n \      \ fi' -e '}' /etc/logrotate.d/ds.conf
   sed -i ':a;N;$!ba;s/nginx/"supervisord"/3' /etc/logrotate.d/ds.conf
   sed -i ':a;N;$!ba;s/nginx/supervisor/3' /etc/logrotate.d/ds.conf
-
 }
 
 update_release_date(){
