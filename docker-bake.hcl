@@ -47,7 +47,7 @@ target "documentserver" {
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
         "PRODUCT_NAME": "${PRODUCT_NAME}"
         "COMPANY_NAME": "${COMPANY_NAME}"
-        "PACKAGE_URL": "{PACKAGE_URL}"
+        "PACKAGE_URL": "${PACKAGE_URL}"
         "PLATFORM": "${PLATFORM}"
     }
 }
