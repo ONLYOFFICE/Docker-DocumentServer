@@ -496,10 +496,11 @@ update_log_settings(){
 }
 
 update_logrotate_settings(){
+  local DS_LOGROTATE_CONF="/etc/logrotate.d/ds.conf"
   sed 's|\(^su\b\).*|\1 root root|' -i /etc/logrotate.conf
-  sed -i -e '/postrotate/,/endscript/ {//!d;/postrotate/a\        \if pgrep -x "nginx" >/dev/null;then \n \         \service nginx restart; \n \      \ fi' -e '}' /etc/logrotate.d/ds.conf
-  sed -i ':a;N;$!ba;s/nginx/"supervisord"/3' /etc/logrotate.d/ds.conf
-  sed -i ':a;N;$!ba;s/nginx/supervisor/3' /etc/logrotate.d/ds.conf
+  sed -i -e '/postrotate/,/endscript/ {//!d;/postrotate/a\        \if pgrep -x "nginx" >/dev/null;then \n \         \service nginx restart; \n \      \ fi' -e '}' ${DS_LOGROTATE_CONF}
+  sed -i ':a;N;$!ba;s/nginx/"supervisord"/4' ${DS_LOGROTATE_CONF}
+  sed -i ':a;N;$!ba;s/nginx/supervisor/4' ${DS_LOGROTATE_CONF}
 }
 
 update_release_date(){
