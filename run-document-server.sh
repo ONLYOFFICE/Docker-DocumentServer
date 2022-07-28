@@ -87,12 +87,12 @@ JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
-if [ -s ${SECRETS_PATH}/jwt_secret.txt ]; then
-  JWT_SECRET=$( cat ${SECRETS_PATH}/jwt_secret.txt )
+if [ -s ${SECRETS_PATH}/jwt_secret ]; then
+  JWT_SECRET=$( cat ${SECRETS_PATH}/jwt_secret )
 fi
 
-if [ -s ${SECRETS_PATH}/jwt_header.txt ]; then
-  JWT_HEADER=$( cat ${SECRETS_PATH}/jwt_header.txt ) 
+if [ -s ${SECRETS_PATH}/jwt_header ]; then
+  JWT_HEADER=$( cat ${SECRETS_PATH}/jwt_header ) 
 fi
 
 WOPI_ENABLED=${WOPI_ENABLED:-false}
@@ -264,13 +264,13 @@ update_db_settings(){
 
   # update db credentials if secrets present
   
-  if [ -s ${SECRETS_PATH}/db_username.txt ]; then
-    SECRET_DB_USER=$( cat ${SECRETS_PATH}/db_username.txt )
+  if [ -s ${SECRETS_PATH}/db_username ]; then
+    SECRET_DB_USER=$( cat ${SECRETS_PATH}/db_username )
     ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${SECRET_DB_USER}'"
   fi
 
-  if [ -s ${SECRETS_PATH}/db_password.txt ]; then
-    SECRET_DB_PWD=$( cat {SECRETS_PATH}/db_password.txt )
+  if [ -s ${SECRETS_PATH}/db_password ]; then
+    SECRET_DB_PWD=$( cat ${SECRETS_PATH}/db_password )
     ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${SECRET_DB_PWD}'"
   fi
 }
