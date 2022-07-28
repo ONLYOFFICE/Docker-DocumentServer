@@ -19,6 +19,7 @@ LIB_DIR="/var/lib/${COMPANY_NAME}"
 DS_LIB_DIR="${LIB_DIR}/documentserver"
 CONF_DIR="/etc/${COMPANY_NAME}/documentserver"
 IS_UPGRADE="false"
+SECRETS_PATH="/run/secrets/"
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
 ONLYOFFICE_DATA_CONTAINER_HOST=${ONLYOFFICE_DATA_CONTAINER_HOST:-localhost}
@@ -85,6 +86,14 @@ fi
 JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
+
+if [ -s ${SECRETS_PATH}/jwt_secret.txt ]; then
+  JWT_SECRET=$( cat ${SECRETS_PATH}/jwt_secret.txt )
+fi
+
+if [ -s ${SECRETS_PATH}/jwt_header.txt ]; then
+  JWT_HEADER=$( cat ${SECRETS_PATH}/jwt_header.txt ) 
+fi
 
 WOPI_ENABLED=${WOPI_ENABLED:-false}
 
@@ -252,6 +261,18 @@ update_db_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.sql.dbName = '${DB_NAME}'"
   ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${DB_USER}'"
   ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${DB_PWD}'"
+
+  # update db credentials if secrets present
+  
+  if [ -s ${SECRETS_PATH}/db_username.txt ]; then
+    SECRET_DB_USER=$( cat ${SECRETS_PATH}/db_username.txt )
+    ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${SECRET_DB_USER}'"
+  fi
+
+  if [ -s ${SECRETS_PATH}/db_password.txt ]; then
+    SECRET_DB_PWD=$( cat {SECRETS_PATH}/db_password.txt )
+    ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${SECRET_DB_PWD}'"
+  fi
 }
 
 update_rabbitmq_setting(){
