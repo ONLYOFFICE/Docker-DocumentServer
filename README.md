@@ -168,7 +168,7 @@ You are now just one step away from having our application secured.
 For manage sensitive data like database password/username you can use Docker secrets. If you want use secrets, you must start the Document Server like service with docker compose or docker swarm. According to [official docker documentation](https://docs.docker.com/engine/swarm/secrets/) secrets did not avalivable to standalone containers. To start using the secrets you need to go through a few simple steps: 
 
 **STEP 1**: 
-At first you need to iniciate docker swarm with command 
+At first you need to iniciate docker swarm with command:
 
 ```bash
 sudo docker swarm init 
@@ -200,7 +200,7 @@ sudo docker compose build
 ```
 
 **STEP 4**:
-After that when images was builded very important uncommented strings in docker-compose.yml with secrets thats you want to use. For more information check out docker-compose.yml
+After all when images was builded and secrets was created very important uncomment in docker-compose.yml file strings with secrets thats you want to use. For more information refer to the comments in docker-compose.yml
 
 **STEP 5**:
 Now Document Server is ready to deploy with secrets. For that run: 
