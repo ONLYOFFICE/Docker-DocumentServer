@@ -14,10 +14,13 @@ services:
       - DB_NAME=onlyoffice
       - DB_USER=onlyoffice
       - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
-      # Uncomment strings below to enable the JSON Web Token validation.
+      # Uncomment strings below to enable the JSON Web Token validation without secrets.
       #- JWT_ENABLED=true
       #- JWT_SECRET=secret
       #- JWT_HEADER=Authorization
+      # Uncomment two strings below to enable the JSON Web Token validation with secret
+      #- JWT_SECTER_FILE=/run/secrets/jwtSecret
+      #- JWT_HEADER_FILE=/run/secrets/jwtHeader
       #- JWT_IN_BODY=true
     ports:
       - '80:80'
@@ -32,10 +35,10 @@ services:
        - /var/www/onlyoffice/documentserver-example/public/files
        - /usr/share/fonts
     secrets:
-      - db_username
-      - db_password
-      - jwt_secret
-      - jwt_header
+      - dbUser
+      - dbPass
+      - jwtSecret
+      - jwtHeader
        
   onlyoffice-rabbitmq:
     container_name: onlyoffice-rabbitmq
@@ -51,28 +54,28 @@ services:
       - POSTGRES_DB=onlyoffice
       - POSTGRES_USER=onlyoffice
       - POSTGRES_HOST_AUTH_METHOD=trust
-      # NOTE: Comment line POSTGRES_HOST_AUTH_METHOD if you want use access with password.
+      # NOTE: Comment lines POSTGRES_HOST_AUTH_METHOD and POSTGRES_USER if you want use access with secrets.
       # Uncomment strings below for use database credentials from secrets. 
-      #- POSTGRES_USER_FILE=/run/secrets/db_username
-      #- POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+      #- POSTGRES_USER_FILE=/run/secrets/dbUser
+      #- POSTGRES_PASSWORD_FILE=/run/secrets/dbPass
     restart: always
     expose:
       - '5432'
     volumes:
       - postgresql_data:/var/lib/postgresql
     secrets:
-      - db_username
-      - db_password
+      - dbUser
+      - dbPass
 
 secrets:
-   db_username:
-     file: db_username.txt
-   db_password:
-     file: db_password.txt
-   jwt_secret:
-     file: jwt_secret.txt
-   jwt_header:
-     file: jwt_header.txt
+   dbUser:
+     external: true
+   dbPass:
+     external: true
+   jwtSecret:
+     external: true
+   jwtHeader:
+     external: true
 
 volumes:
   postgresql_data:

@@ -264,13 +264,13 @@ update_db_settings(){
 
   # update db credentials if secrets present
   
-  if [ -s ${SECRETS_PATH}/db_username ]; then
-    SECRET_DB_USER=$( cat ${SECRETS_PATH}/db_username )
+  if [ -s ${SECRETS_PATH}/dbUser ]; then
+    SECRET_DB_USER=$( cat ${SECRETS_PATH}/dbUser )
     ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${SECRET_DB_USER}'"
   fi
 
   if [ -s ${SECRETS_PATH}/db_password ]; then
-    SECRET_DB_PWD=$( cat ${SECRETS_PATH}/db_password )
+    SECRET_DB_PWD=$( cat ${SECRETS_PATH}/dbPass )
     ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${SECRET_DB_PWD}'"
   fi
 }
