@@ -19,8 +19,8 @@ services:
       #- JWT_IN_BODY=true
       #- JWT_SECRET=secret
       #- JWT_HEADER=Authorization
-      # ↑ Uncomment two upper strings to use secret and header without docker secrets.
-      # ↓ Or uncomment two strings below to use secret and header with docker secrets.
+      #  ↑ Uncomment two upper strings to use jwt_secret and jwt_header without docker secrets.
+      #  ↓ Or uncomment two strings below to use jwt_secret and jwt_header with docker secrets that you create.
       #- JWT_SECTER_FILE=/run/secrets/jwtSecret
       #- JWT_HEADER_FILE=/run/secrets/jwtHeader
     ports:
@@ -35,6 +35,7 @@ services:
        - /var/lib/onlyoffice/documentserver/App_Data/cache/files
        - /var/www/onlyoffice/documentserver-example/public/files
        - /usr/share/fonts
+   # ↓ If you use docker secrets, uncomment srtings below only with secrets that you will use in your installtion
    #secrets:
    #  - dbUser
    #  - dbPass
@@ -55,8 +56,8 @@ services:
       - POSTGRES_DB=onlyoffice
       - POSTGRES_USER=onlyoffice
       - POSTGRES_HOST_AUTH_METHOD=trust
-      # NOTE: Comment lines POSTGRES_HOST_AUTH_METHOD and POSTGRES_USER if you want use access with secrets.
-      # Uncomment two strings below for use database credentials from secrets. 
+ # NOTE: ↑ Comment two lines upper: POSTGRES_HOST_AUTH_METHOD and POSTGRES_USER and
+      #  ↓ Uncomment two strings below for use database credentials from secrets. 
       #- POSTGRES_USER_FILE=/run/secrets/dbUser
       #- POSTGRES_PASSWORD_FILE=/run/secrets/dbPass
     restart: always
@@ -64,10 +65,12 @@ services:
       - '5432'
     volumes:
       - postgresql_data:/var/lib/postgresql
+   #  ↓ If you use docker secrets, uncomment srtings below only with secrets that you will use in your installtion
    #secrets:
    #  - dbUser
    #  - dbPass
 
+#  ↓ If you use docker secrets, uncomment srtings below only with secrets that you will use in your installtion
 #secrets:
 #  dbUser:
 #    external: true
