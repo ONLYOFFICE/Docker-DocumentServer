@@ -87,11 +87,11 @@ JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
-if [ -n ${JWT_SECRET_FILE} ] || [ -s ${SECRETS_PATH}/jwtSecret ]; then
+if [[ -n ${JWT_SECRET_FILE} ]] && [[ -s ${SECRETS_PATH}/jwtSecret ]]; then
   JWT_SECRET=$( cat ${SECRETS_PATH}/jwtSecret )
 fi
 
-if [ -n ${JWT_HEADER_FILE} ] || [ -s ${SECRETS_PATH}/jwtHeader ]; then
+if [[ -n ${JWT_HEADER_FILE} ]] && [[ -s ${SECRETS_PATH}/jwtHeader ]]; then
   JWT_HEADER=$( cat ${SECRETS_PATH}/jwtHeader ) 
 fi
 

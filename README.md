@@ -171,7 +171,7 @@ For manage sensitive data like database password/username you can use Docker sec
 At first you need to iniciate docker swarm with command 
 
 ```bash
-docker swarm init 
+sudo docker swarm init 
 ```
 
 **STEP 2**:
@@ -179,21 +179,21 @@ Next step you need make secrets. DocumentServer support username/password for po
 If you want use secrets only for database access:
 
 ```bash
-printf "your_pass" | docker secret create dbPass -
-printf "your_user" | docker secret create dbUser -
+sudo printf "your_pass" | docker secret create dbPass -
+sudo printf "your_user" | docker secret create dbUser -
 ```
-To use serkets jwt run:
+If you want use JWT from secrets:
 
 ```bash
-printf "secret_value" | docker secret create jwtSecret -
-printf "secret_header" | docker secret create jwtHeader -
+sudo printf "secret_value" | docker secret create jwtSecret -
+sudo printf "secret_header" | docker secret create jwtHeader -
 ```
 
 **STEP 3**:
 After you make the secrets need build DocumentServer with command 
 
 ```bash
-docker compose build
+sudo docker compose build
 ```
 
 **STEP 4**:
@@ -203,13 +203,13 @@ After that when images is gonna be builded very important uncommented strings in
 Now DocumentServer is ready to deploy with secrets. For that run: 
 
 ```bash
-docker stack deploy --compose-file=docker-compose.yml documentserver-secrets
+sudo docker stack deploy --compose-file=docker-compose.yml documentserver-secrets
 ```
 
 Also you can run docker compose with the same config
 
 ```bash
-docker compose up -d 
+sudo docker compose up -d 
 ```
 
 #### Available Configuration Parameters
