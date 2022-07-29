@@ -175,40 +175,39 @@ sudo docker swarm init
 ```
 
 **STEP 2**:
-Next step you need make secrets. DocumentServer support username/password for postgresql access and jwt header/secret. 
-If you want use secrets only for database access:
+On the next step you need to make the secrets. DocumentServer support username/password for postgresql access and jwt header/secret. 
+If you want to use secrets only for database access run:
 
 ```bash
 sudo printf "your_pass" | docker secret create dbPass -
 sudo printf "your_user" | docker secret create dbUser -
 ```
-NOTE: after secrets dbPass and dbUser is gonna be configured, DocumentServer will be configured automaticly for use the same secrets for postgres access.
-
 If you want use JWT from secrets:
 
 ```bash
 sudo printf "secret_value" | docker secret create jwtSecret -
 sudo printf "secret_header" | docker secret create jwtHeader -
 ```
+NOTE: after secrets dbPass and dbUser is gonna be configured, DocumentServer will be configured automaticly for use the same secrets for postgres access.
 
 **STEP 3**:
-After you make the secrets need build DocumentServer with command 
+After you create the secrets you need to build the DocumentServer with command:
 
 ```bash
 sudo docker compose build
 ```
 
 **STEP 4**:
-After that when images is gonna be builded very important uncommented strings in docker-compose.yml with secrets thats you want to use. For more information check out docker-compose.yml
+After that when images was builded very important uncommented strings in docker-compose.yml with secrets thats you want to use. For more information check out docker-compose.yml
 
 **STEP 5**:
-Now DocumentServer is ready to deploy with secrets. For that run: 
+Now Document Server is ready to deploy with secrets. For that run: 
 
 ```bash
 sudo docker stack deploy --compose-file=docker-compose.yml documentserver-secrets
 ```
 
-Also you can run docker compose with the same config
+Also you can run Document Server in docker-compose mode with the same config
 
 ```bash
 sudo docker compose up -d 
@@ -256,10 +255,10 @@ Below is the complete list of parameters that can be set using environment varia
 
 Below list values avalivable only for compose/swarm mode.
 
-- **JWT_SECRET_FILE**:
-- **JWT_HEADER_FILE**:
-- **POSTGRES_USER_FILE**:
-- **POSTGRES_PASSWORD_FILE**:
+- **JWT_SECRET_FILE**: Specifies the path to the mounted file, the value from which will be used like JWT_Secret value. Default path that docker mounted secrets: `/run/secrets/jwtSecret`
+- **JWT_HEADER_FILE**: Specifies the path to the mounted file, the value from which will be used like JWT_Header value. Default path that docker mounted secrets: `/run/secrets/jwtHeader`
+- **POSTGRES_USER_FILE**: Default postgresql container value. Tells the database where to get the username value by set to db access. Default path: `run/secrets/dbUser`
+- **POSTGRES_PASSWORD_FILE**: Default postgresql container value. Tells the database where to get the password value by set to db access. Default path: `run/secrets/dbPass`
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
