@@ -87,11 +87,11 @@ JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
-if [[ -n ${JWT_SECRET_FILE} ]] && [[ -s ${SECRETS_PATH}/jwtSecret ]]; then
+if [ ${USE_SECRETS} == "true" ] && [ -s ${SECRETS_PATH}/jwtSecret ]; then
   JWT_SECRET=$( cat ${SECRETS_PATH}/jwtSecret )
 fi
 
-if [[ -n ${JWT_HEADER_FILE} ]] && [[ -s ${SECRETS_PATH}/jwtHeader ]]; then
+if [ ${USE_SECRETS} == "true" ] && [ -s ${SECRETS_PATH}/jwtHeader ]; then
   JWT_HEADER=$( cat ${SECRETS_PATH}/jwtHeader ) 
 fi
 
@@ -127,6 +127,17 @@ if [ "${LETS_ENCRYPT_DOMAIN}" != "" -a "${LETS_ENCRYPT_MAIL}" != "" ]; then
   LETSENCRYPT_ROOT_DIR="/etc/letsencrypt/live"
   SSL_CERTIFICATE_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/fullchain.pem
   SSL_KEY_PATH=${LETSENCRYPT_ROOT_DIR}/${LETS_ENCRYPT_DOMAIN}/privkey.pem
+fi
+
+# update db credentials if secrets was configure
+if [ "${USE_SECRETS}" == "true" ]; then
+  if [ -s ${SECRETS_PATH}/dbUser ]; then
+    DB_USER=$( cat ${SECRETS_PATH}/dbUser )
+  fi
+
+  if [ -s ${SECRETS_PATH}/dbPass ]; then
+    DB_PWD=$( cat ${SECRETS_PATH}/dbPass )
+  fi
 fi
 
 read_setting(){
@@ -261,18 +272,6 @@ update_db_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.sql.dbName = '${DB_NAME}'"
   ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${DB_USER}'"
   ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${DB_PWD}'"
-
-  # update db credentials if secrets present
-  
-  if [ -s ${SECRETS_PATH}/dbUser ]; then
-    SECRET_DB_USER=$( cat ${SECRETS_PATH}/dbUser )
-    ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${SECRET_DB_USER}'"
-  fi
-
-  if [ -s ${SECRETS_PATH}/db_password ]; then
-    SECRET_DB_PWD=$( cat ${SECRETS_PATH}/dbPass )
-    ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${SECRET_DB_PWD}'"
-  fi
 }
 
 update_rabbitmq_setting(){

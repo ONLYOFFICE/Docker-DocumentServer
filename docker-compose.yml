@@ -8,6 +8,7 @@ services:
       - onlyoffice-postgresql
       - onlyoffice-rabbitmq
     environment:
+      - USE_SECRETS=false
       - DB_TYPE=postgres
       - DB_HOST=onlyoffice-postgresql
       - DB_PORT=5432
