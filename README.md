@@ -163,6 +163,55 @@ chmod 400 /app/onlyoffice/DocumentServer/data/certs/tls.key
 
 You are now just one step away from having our application secured.
 
+### Running ONLYOFFICE Document Server using docker secrets
+
+For manage sensitive data like database password/username you can use Docker secrets. If you want use secrets, you must start the Document Server like service with docker compose or docker swarm. According to official docker documentation secrets did not avalivable to [standalone containers](https://docs.docker.com/engine/swarm/secrets/). To start using the secrets you need to go through a few simple steps: 
+
+**STEP 1**: 
+At first you need to iniciate docker swarm with command 
+
+```bash
+docker swarm init 
+```
+
+**STEP 2**:
+Next step you need make secrets. DocumentServer support username/password for postgresql access and jwt header/secret. 
+If you want use secrets only for database access:
+
+```bash
+printf "your_pass" | docker secret create dbPass -
+printf "your_user" | docker secret create dbUser -
+```
+To use serkets jwt run:
+
+```bash
+printf "secret_value" | docker secret create jwtSecret -
+printf "secret_header" | docker secret create jwtHeader -
+```
+
+**STEP 3**:
+After you make the secrets need build DocumentServer with command 
+
+```bash
+docker compose build
+```
+
+**STEP 4**:
+After that when images is gonna be builded very important uncommented strings in docker-compose.yml with secrets thats you want to use. For more information check out docker-compose.yml
+
+**STEP 5**:
+Now DocumentServer is ready to deploy with secrets. For that run: 
+
+```bash
+docker stack deploy --compose-file=docker-compose.yml documentserver-secrets
+```
+
+Also you can run docker compose with the same config
+
+```bash
+docker compose up -d 
+```
+
 #### Available Configuration Parameters
 
 *Please refer the docker run command options for the `--env-file` flag where you can specify all required environment variables in a single file. This will save you from writing a potentially long docker run command.*
