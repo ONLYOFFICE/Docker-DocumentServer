@@ -10,6 +10,7 @@
         + [Strengthening the Server Security](#strengthening-the-server-security)
         + [Installation of the SSL Certificates](#installation-of-the-ssl-certificates)
         + [Available Configuration Parameters](#available-configuration-parameters)
+    - [Running ONLYOFFICE Document Server using docker secrets](#running-onlyoffice-document-server-using-docker-secrets)
 * [Installing ONLYOFFICE Document Server integrated with Community and Mail Servers](#installing-onlyoffice-document-server-integrated-with-community-and-mail-servers)
 * [Issues](#issues)
     - [Docker Issues](#docker-issues)
