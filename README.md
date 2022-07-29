@@ -189,7 +189,7 @@ If you want to use JSON Web Token values from secrets create secrets with comman
 
 ```bash
 sudo printf "secret_value" | docker secret create jwtSecret -
-sudo printf "secret_header" | docker secret create jwtHeader -
+sudo printf "header_value" | docker secret create jwtHeader -
 ```
 
 **STEP 3**:
