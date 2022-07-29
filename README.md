@@ -176,19 +176,19 @@ sudo docker swarm init
 
 **STEP 2**:
 On the next step you need to make the secrets. DocumentServer support username/password for postgresql access and jwt header/secret. 
-If you want to use secrets only for database access run:
+If you want to use secrets for database access run command:
 
 ```bash
 sudo printf "your_pass" | docker secret create dbPass -
 sudo printf "your_user" | docker secret create dbUser -
 ```
-If you want use JWT from secrets:
+NOTE: After secrets dbPass and dbUser was configured, DocumentServer will be configured automaticly for use the same secrets for postgres access.
+If you want use JSON Web Token values from secrets run command: 
 
 ```bash
 sudo printf "secret_value" | docker secret create jwtSecret -
 sudo printf "secret_header" | docker secret create jwtHeader -
 ```
-NOTE: after secrets dbPass and dbUser is gonna be configured, DocumentServer will be configured automaticly for use the same secrets for postgres access.
 
 **STEP 3**:
 After you create the secrets you need to build the DocumentServer with command:
