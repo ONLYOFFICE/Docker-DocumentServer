@@ -87,12 +87,12 @@ JWT_SECRET=${JWT_SECRET:-secret}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
-if [ -s ${SECRETS_PATH}/jwt_secret ]; then
-  JWT_SECRET=$( cat ${SECRETS_PATH}/jwt_secret )
+if [ -n ${JWT_SECRET_FILE} ] || [ -s ${SECRETS_PATH}/jwtSecret ]; then
+  JWT_SECRET=$( cat ${SECRETS_PATH}/jwtSecret )
 fi
 
-if [ -s ${SECRETS_PATH}/jwt_header ]; then
-  JWT_HEADER=$( cat ${SECRETS_PATH}/jwt_header ) 
+if [ -n ${JWT_HEADER_FILE} ] || [ -s ${SECRETS_PATH}/jwtHeader ]; then
+  JWT_HEADER=$( cat ${SECRETS_PATH}/jwtHeader ) 
 fi
 
 WOPI_ENABLED=${WOPI_ENABLED:-false}
