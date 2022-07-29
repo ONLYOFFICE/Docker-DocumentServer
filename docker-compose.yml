@@ -8,7 +8,7 @@ services:
       - onlyoffice-postgresql
       - onlyoffice-rabbitmq
     environment:
-      - USE_SECRETS=false
+      - USE_SECRETS=false # ←  Set on "true" if you plan use secrets.
       - DB_TYPE=postgres
       - DB_HOST=onlyoffice-postgresql
       - DB_PORT=5432
