@@ -56,8 +56,8 @@ services:
       - POSTGRES_DB=onlyoffice
       - POSTGRES_USER=onlyoffice
       - POSTGRES_HOST_AUTH_METHOD=trust
- # NOTE: ↑ Comment two lines upper: POSTGRES_HOST_AUTH_METHOD and POSTGRES_USER and
-      #  ↓ Uncomment two strings below for use database credentials from secrets. 
+      #  ↑ Comment two lines upper: POSTGRES_HOST_AUTH_METHOD and POSTGRES_USER and
+      #  ↓ Uncomment two strings below for use database access values from secrets that you create. 
       #- POSTGRES_USER_FILE=/run/secrets/dbUser
       #- POSTGRES_PASSWORD_FILE=/run/secrets/dbPass
     restart: always
