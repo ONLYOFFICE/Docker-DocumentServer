@@ -165,7 +165,7 @@ You are now just one step away from having our application secured.
 
 ### Running ONLYOFFICE Document Server using docker secrets
 
-For manage sensitive data like database password/username you can use Docker secrets. If you want use secrets, you must start the Document Server like service with docker compose or docker swarm. According to official docker documentation secrets did not avalivable to [standalone containers](https://docs.docker.com/engine/swarm/secrets/). To start using the secrets you need to go through a few simple steps: 
+For manage sensitive data like database password/username you can use Docker secrets. If you want use secrets, you must start the Document Server like service with docker compose or docker swarm. According to [official docker documentation](https://docs.docker.com/engine/swarm/secrets/) secrets did not avalivable to standalone containers. To start using the secrets you need to go through a few simple steps: 
 
 **STEP 1**: 
 At first you need to iniciate docker swarm with command 
@@ -182,6 +182,8 @@ If you want use secrets only for database access:
 sudo printf "your_pass" | docker secret create dbPass -
 sudo printf "your_user" | docker secret create dbUser -
 ```
+NOTE: after secrets dbPass and dbUser is gonna be configured, DocumentServer will be configured automaticly for use the same secrets for postgres access.
+
 If you want use JWT from secrets:
 
 ```bash
@@ -251,6 +253,13 @@ Below is the complete list of parameters that can be set using environment varia
 - **METRICS_PREFIX**: Defines StatsD metrics prefix for backend services. Defaults to `ds.`.
 - **LETS_ENCRYPT_DOMAIN**: Defines the domain for Let's Encrypt certificate.
 - **LETS_ENCRYPT_MAIL**: Defines the domain administator mail address for Let's Encrypt certificate.
+
+Below list values avalivable only for compose/swarm mode.
+
+- **JWT_SECRET_FILE**:
+- **JWT_HEADER_FILE**:
+- **POSTGRES_USER_FILE**:
+- **POSTGRES_PASSWORD_FILE**:
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
