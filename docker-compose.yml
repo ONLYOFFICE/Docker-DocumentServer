@@ -19,8 +19,8 @@ services:
       #- JWT_IN_BODY=true
       #- JWT_SECRET=secret
       #- JWT_HEADER=Authorization
-      #  ↑ Uncomment two upper strings to use jwt_secret and jwt_header values by default withou docker secrets.
-      #  ↓ Or uncomment two strings below to use jwt_secret and jwt_header with values from docker secrets that you create.
+      #  ↑ Uncomment two upper strings to use jwt_secret and jwt_header values by default without docker secrets.
+      #  ↓ Or uncomment two strings below to use jwt_secret and jwt_header values from docker secrets that you create.
       #- JWT_SECTER_FILE=/run/secrets/jwtSecret
       #- JWT_HEADER_FILE=/run/secrets/jwtHeader
     ports:
