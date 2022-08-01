@@ -1,0 +1,20 @@
+FROM onlyoffice/documentserver:latest as onlyoffice/documentserver-non-example
+
+ARG COMPANY_NAME=onlyoffice
+ARG PRODUCT_NAME=documentserver
+ARG DS_SUPERVISOR_CONF=/etc/supervisor/conf.d/ds.conf
+ARG WELCOME_CONF_DIR=/etc/nginx/includes/0ds-welcome.conf
+
+### Remove all documentserver-example data ###
+
+RUN rm -rf /var/www/$COMPANY_NAME/$PRODUCT_NAME-example \
+    && rm -rf /etc/$COMPANY_NAME/$PRODUCT_NAME-example \
+    && rm -f $DS_SUPERVISOR_CONF \ 
+    && rm -f /etc/nginx/includes/ds-example.conf \
+    && echo "[group:ds]" >> $DS_SUPERVISOR_CONF \
+    && echo "programs=docservice,converter,metrics" >> $DS_SUPERVISOR_CONF \ 
+    && echo "location ~ ^(\/welcome\/.*)$ {" >> $WELCOME_CONF_DIR \
+    && echo "\  \expires 365d;" >> $WELCOME_CONF_DIR \
+    && echo "\  \root /var/www/$COMPANY_NAME/$PRODUCT_NAME/server/welcome/;" >> $WELCOME_CONF_DIR \
+    && echo "index index.html;" >> $WELCOME_CONF_DIR \ 
+    && echo "}" >> $WELCOME_CONF_DIR
