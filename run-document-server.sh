@@ -1,5 +1,7 @@
 #!/bin/bash
 
+umask 0022
+
 function clean_exit {
   /usr/bin/documentserver-prepare4shutdown.sh
 }
@@ -590,6 +592,8 @@ else
   
   update_welcome_page
 fi
+
+find /etc/${COMPANY_NAME} -exec chown ds:ds {} \;
 
 #start needed local services
 for i in ${LOCAL_SERVICES[@]}; do

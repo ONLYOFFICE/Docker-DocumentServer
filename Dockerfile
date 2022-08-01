@@ -91,8 +91,7 @@ RUN PACKAGE_URL=$( echo ${PACKAGE_URL} | sed "s/TARGETARCH/"${TARGETARCH}"/g") &
     chmod 755 /app/ds/*.sh && \
     rm -f /tmp/$(basename "$PACKAGE_URL") && \
     rm -rf /var/log/$COMPANY_NAME && \
-    rm -rf /var/lib/apt/lists/* && \
-    usermod -a -G root ds;
+    rm -rf /var/lib/apt/lists/*
 
 VOLUME /var/log/$COMPANY_NAME /var/lib/$COMPANY_NAME /var/www/$COMPANY_NAME/Data /var/lib/postgresql /var/lib/rabbitmq /var/lib/redis /usr/share/fonts/truetype/custom
 
