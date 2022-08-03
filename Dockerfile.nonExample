@@ -2,7 +2,7 @@
 ARG PRODUCT_EDITION=
 ARG TAG=
 
-FROM onlyoffice/documentserver${PRODUCT_EDITION}:latest as documentserver-nonexample
+FROM onlyoffice/documentserver${PRODUCT_EDITION}:${TAG} as documentserver-nonexample
 
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_NAME=documentserver
