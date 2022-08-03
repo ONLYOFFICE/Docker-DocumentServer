@@ -66,3 +66,17 @@ target "documentserver-stable" {
         "COMPANY_NAME": "${COMPANY_NAME}"
     }
 }
+
+target "documentserver-nonexample" {
+    tagret = "documentserver-nonexample"
+    dockerfile = Dockerfile.nonExample
+    tags = [ "docker.io/${COMPANY_NAME}/${PRODUCT_NAME}${PREFIX_NAME}${PRODUCT_EDITION}:${TAG}",
+             "docker.io/${COMPANY_NAME}/${PRODUCT_NAME}${PREFIX_NAME}${PRODUCT_EDITION}:latest"]
+    platforms = ["linux/amd64", "linux/arm64"]
+    args = {
+        "PRODUCT_NAME": "${PRODUCT_NAME}"
+        "COMPANY_NAME": "${COMPANY_NAME}"
+        "PRODUCT_EDITION": "${PRODUCT_EDITION}"
+        "TAG": "${TAG}"
+    } 
+}

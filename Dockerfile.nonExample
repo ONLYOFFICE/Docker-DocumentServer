@@ -1,6 +1,8 @@
+### Arguments only for FROM instruction ### 
 ARG PRODUCT_EDITION=
+ARG TAG=
 
-FROM onlyoffice/documentserver${PRODUCT_EDITION}:latest as onlyoffice/documentserver${PRODUCT_EDITION}-nonExample
+FROM onlyoffice/documentserver${PRODUCT_EDITION}:latest as documentserver-nonexample
 
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_NAME=documentserver
