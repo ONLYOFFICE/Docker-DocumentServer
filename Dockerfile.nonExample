@@ -1,6 +1,6 @@
 ### Arguments only for FROM instruction ### 
 ARG PRODUCT_EDITION=
-ARG TAG=
+ARG TAG=latest
 
 FROM onlyoffice/documentserver${PRODUCT_EDITION}:${TAG} as documentserver-nonexample
 
