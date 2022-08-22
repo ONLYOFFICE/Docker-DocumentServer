@@ -73,7 +73,7 @@ NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
 NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
 
-JWT_ENABLED=${JWT_ENABLED:-false}
+JWT_ENABLED=${JWT_ENABLED:-true}
 
 # validate user's vars before usinig in json
 if [ "${JWT_ENABLED}" == "true" ]; then
@@ -82,7 +82,7 @@ else
   JWT_ENABLED="false"
 fi
 
-JWT_SECRET=${JWT_SECRET:-secret}
+JWT_SECRET=${JWT_SECRET:-$(pwgen -s 20)}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
