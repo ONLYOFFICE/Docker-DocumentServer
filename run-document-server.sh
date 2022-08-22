@@ -73,7 +73,7 @@ NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
 NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
 
-JWT_ENABLED=${JWT_ENABLED:-false}
+JWT_ENABLED=${JWT_ENABLED:-true}
 
 # validate user's vars before usinig in json
 if [ "${JWT_ENABLED}" == "true" ]; then
@@ -82,9 +82,10 @@ else
   JWT_ENABLED="false"
 fi
 
-JWT_SECRET=${JWT_SECRET:-secret}
+JWT_SECRET=${JWT_SECRET:-$(pwgen -s 20)}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
+JWT_MESSAGE="Since v7.2.0 we've enabled JWT with random key by default. You can lookup this key in ${ONLYOFFICE_DEFAULT_CONFIG} in services.CoAuthoring.secret param or enabled your custom JWT key with JWT_ENABLED|JWT_SECRET docker env"
 
 WOPI_ENABLED=${WOPI_ENABLED:-false}
 
@@ -641,3 +642,5 @@ documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
 tail -f /var/log/${COMPANY_NAME}/**/*.log &
 wait $!
+
+echo "${JWT_MESSAGE}" 
