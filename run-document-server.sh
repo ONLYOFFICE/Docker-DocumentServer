@@ -82,7 +82,7 @@ else
   JWT_ENABLED="false"
 fi
 
-[ -z $JWT_SECRET ] && JWT_MESSAGE="JWT is enabled by default. A random secret is generated automatically. Run the command 'docker exec $(sudo docker ps -q) sudo documentserver-jwt-status.sh' to get information about JWT."
+[ -z $JWT_SECRET ] && JWT_MESSAGE="JWT is enabled by default. A random secret is generated automatically. Run the command 'docker exec $(cut -c9-20 < /proc/1/cpuset) sudo documentserver-jwt-status.sh' to get information about JWT."
 
 JWT_SECRET=${JWT_SECRET:-$(pwgen -s 20)}
 JWT_HEADER=${JWT_HEADER:-Authorization}
@@ -641,7 +641,7 @@ if [ "${GENERATE_FONTS}" == "true" ]; then
 fi
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
+echo "${JWT_MESSAGE}" 
+
 tail -f /var/log/${COMPANY_NAME}/**/*.log &
 wait $!
-
-echo "${JWT_MESSAGE}" 
