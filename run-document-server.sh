@@ -85,7 +85,7 @@ fi
 JWT_SECRET=${JWT_SECRET:-$(pwgen -s 20)}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
-JWT_MESSAGE="JWT is enabled by default. A random secret is generated automatically. Run the command 'docker exec $(sudo docker ps -q) sudo documentserver-jwt-status.sh' to get information about JWT."
+[ -z $JWT_SECRET ] && JWT_MESSAGE="JWT is enabled by default. A random secret is generated automatically. Run the command 'docker exec $(sudo docker ps -q) sudo documentserver-jwt-status.sh' to get information about JWT."
 WOPI_ENABLED=${WOPI_ENABLED:-false}
 
 GENERATE_FONTS=${GENERATE_FONTS:-true}
