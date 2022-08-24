@@ -86,7 +86,7 @@ jobs:
           TAG=$DOCKER_TAG \
           PLATFORM=$BUILD_PLATFORMS \
           COMPANY_NAME=${{ env.COMPANY_NAME }} \
-          DEVELOP_BUILD=$DEVELOP_BUILD \ ### If value $DEVELOP_BUILD is present add another tag for develop build
+          DEVELOP_BUILD=$DEVELOP_BUILD \
             docker buildx bake \
             -f docker-bake.hcl ${{ matrix.images }} \
             --push
