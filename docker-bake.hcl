@@ -38,10 +38,17 @@ variable "PACKAGE_URL" {
     default = ""
 }
 
+variable "DEVELOP_BUILD" {
+    default = ""
+}
+
 target "documentserver" {
     target = "documentserver"
     dockerfile= "${DOCKERFILE}"
-    tags = ["docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}"]
+    tags = [
+           "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
+           notequal("",DEVELOP_BUILD) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
+           ]
     platforms = ["${PLATFORM}"]
     args = {
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
