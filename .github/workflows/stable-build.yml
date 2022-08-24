@@ -103,7 +103,6 @@ jobs:
            PRODUCT_EDITION=${{ matrix.edition }} \
            PRODUCT_NAME=${{ env.PRODUCT_NAME }} \
            COMPANY_NAME=${{ env.COMPANY_NAME }} \
-           PREFIX_NAME=-non.example \
            TAG=$TAG \
            docker buildx bake \
            -f docker-bake.hcl ${{ matrix.images }} \
