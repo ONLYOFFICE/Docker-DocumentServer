@@ -73,7 +73,7 @@ NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
 NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
 
-JWT_ENABLED=${JWT_ENABLED:-false}
+JWT_ENABLED=${JWT_ENABLED:-true}
 
 # validate user's vars before usinig in json
 if [ "${JWT_ENABLED}" == "true" ]; then
@@ -82,7 +82,9 @@ else
   JWT_ENABLED="false"
 fi
 
-JWT_SECRET=${JWT_SECRET:-secret}
+[ -z $JWT_SECRET ] && JWT_MESSAGE="JWT is enabled by default. A random secret is generated automatically. Run the command 'docker exec $(cut -c9-20 < /proc/1/cpuset) sudo documentserver-jwt-status.sh' to get information about JWT."
+
+JWT_SECRET=${JWT_SECRET:-$(pwgen -s 20)}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
@@ -638,6 +640,8 @@ if [ "${GENERATE_FONTS}" == "true" ]; then
   documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
 fi
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
+
+echo "${JWT_MESSAGE}" 
 
 tail -f /var/log/${COMPANY_NAME}/**/*.log &
 wait $!

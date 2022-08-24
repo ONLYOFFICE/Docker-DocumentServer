@@ -55,6 +55,7 @@ jobs:
             REPO_URL=${{ secrets.REPO_URL }} 
             if [[ ${{ env.RELEASE_VERSION }} == v99.* ]]; then
               REPO_URL=${{ secrets.UNSTABLE_REPO_URL }}
+              DEVELOP_BUILD=true
             fi
             PACKAGE_URL_CHECK=${REPO_URL}${{ matrix.edition }}_"$PACKAGE_VERSION"_${ARCH}.deb
             STATUS=$(curl -s -o /dev/null -w "%{http_code}\n" "${PACKAGE_URL_CHECK}")
@@ -63,7 +64,7 @@ jobs:
               PLATFORMS+=(linux/${ARCH},)
               BUILD_PLATFORMS=$( echo ${PLATFORMS[@]} | sed 's/ //g' | sed 's/\(.*\),/\1/' )
             else
-              echo "${ARCH} in not avalivable"
+              echo "Х ${ARCH} in not avalivable"
             fi
           done
           PACKAGE_URL_BUILD=$( echo ${PACKAGE_URL_CHECK} | sed -e "s/${PACKAGE_VERSION}_.*.deb/${PACKAGE_VERSION}_TARGETARCH.deb/g" )
@@ -85,6 +86,7 @@ jobs:
           TAG=$DOCKER_TAG \
           PLATFORM=$BUILD_PLATFORMS \
           COMPANY_NAME=${{ env.COMPANY_NAME }} \
+          DEVELOP_BUILD=$DEVELOP_BUILD \ ### If value $DEVELOP_BUILD is present add another tag for develop build
             docker buildx bake \
             -f docker-bake.hcl ${{ matrix.images }} \
             --push
