@@ -100,11 +100,10 @@ jobs:
       - name: build image
         run: |
            TAG=$(echo ${{ steps.tag_name.outputs.SOURCE_TAG }} | sed 's/^.//; s/-stable//')
-           SHORTER_TAG=$(echo ${TAG} | grep -o -P '^[\d]+\.[\d]+\.[\d]+')
            PRODUCT_EDITION=${{ matrix.edition }} \
            PRODUCT_NAME=${{ env.PRODUCT_NAME }} \
            COMPANY_NAME=${{ env.COMPANY_NAME }} \
-           TAG=$SHORTER_TAG \
+           TAG=$TAG \
            docker buildx bake \
            -f docker-bake.hcl ${{ matrix.images }} \
            --push
