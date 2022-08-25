@@ -1,13 +1,19 @@
 ### Arguments avavlivable only for FROM instruction ### 
-ARG PRODUCT_EDITION=
 ARG TAG=latest
+ARG COMPANY_NAME=onlyoffice
+ARG PRODUCT_EDITION=
 
-FROM onlyoffice/documentserver${PRODUCT_EDITION}:${TAG} as documentserver-nonexample
+### Build main-release ###
+
+FROM ${COMPANY_NAME}/4testing-documentserver${PRODUCT_EDITION}:${TAG} as documentserver-stable
+
+### Build nonexample ###
+ 
+FROM ${COMPANY_NAME}/documentserver${PRODUCT_EDITION}:${TAG} as documentserver-nonexample
 
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_NAME=documentserver
 ARG DS_SUPERVISOR_CONF=/etc/supervisor/conf.d/ds.conf
-ARG WELCOME_CONF_DIR=/etc/nginx/includes/0ds-welcome.conf
 
 ### Remove all documentserver-example data ###
 

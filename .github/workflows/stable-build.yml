@@ -49,9 +49,9 @@ jobs:
           IMAGE_STATUS=$(docker manifest inspect ${{ env.COMPANY_NAME }}/4testing-${{ env.PRODUCT_NAME }}${{ matrix.edition }}:$TAG > /dev/null ; echo $?)
              if [[ "$IMAGE_STATUS" = "0" ]]; then
                 echo "Image present on docker.hub >> start build stable version"
-                echo "FROM ${{ env.COMPANY_NAME }}/4testing-${{ env.PRODUCT_NAME }}${{ matrix.edition }}:$TAG as ${{ env.PRODUCT_NAME }}-stable" >> Dockerfile.stable
-                PRODUCT_EDITION=${{ matrix.edition }} PRODUCT_NAME=${{ env.PRODUCT_NAME }} \
-                COMPANY_NAME=${{ env.COMPANY_NAME}} DOCKERFILE=Dockerfile.stable \
+                PRODUCT_EDITION=${{ matrix.edition }} \
+                PRODUCT_NAME=${{ env.PRODUCT_NAME }} \
+                COMPANY_NAME=${{ env.COMPANY_NAME}} \
                    TAG=$TAG \
                    SHORTER_TAG=$SHORTER_TAG \
                    SHORTEST_TAG=$SHORTEST_TAG \
