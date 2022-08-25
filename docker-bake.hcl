@@ -54,13 +54,14 @@ target "documentserver" {
 
 target "documentserver-stable" {
     target = "documentserver-stable"
-    dockerfile= "${DOCKERFILE}"
+    dockerfile= "Dockerfile.production"
     tags = ["docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
             "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTER_TAG}",
             "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTEST_TAG}",
             "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest"]
     platforms = ["linux/amd64", "linux/arm64"]
     args = {
+        "TAG": "${TAG}"
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
         "PRODUCT_NAME": "${PRODUCT_NAME}"
         "COMPANY_NAME": "${COMPANY_NAME}"
@@ -69,7 +70,7 @@ target "documentserver-stable" {
 
 target "documentserver-nonexample" {
     target = "documentserver-nonexample"
-    dockerfile = "Dockerfile.nonexample"
+    dockerfile = "Dockerfile.production"
     tags = [ "docker.io/${COMPANY_NAME}/${PRODUCT_NAME}${PREFIX_NAME}${PRODUCT_EDITION}:${TAG}-nonexample" ]
     platforms = ["linux/amd64", "linux/arm64"]
     args = {
