@@ -61,15 +61,29 @@ target "documentserver" {
 
 target "documentserver-stable" {
     target = "documentserver-stable"
-    dockerfile= "${DOCKERFILE}"
+    dockerfile= "Dockerfile.production"
     tags = ["docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
             "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTER_TAG}",
             "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTEST_TAG}",
             "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest"]
     platforms = ["linux/amd64", "linux/arm64"]
     args = {
-        "PRODUCT_EDITION": "${PRODUCT_EDITION}"
-        "PRODUCT_NAME": "${PRODUCT_NAME}"
+        "TAG": "${TAG}"
         "COMPANY_NAME": "${COMPANY_NAME}"
+        "PRODUCT_NAME": "${PRODUCT_NAME}"
+        "PRODUCT_EDITION": "${PRODUCT_EDITION}"
     }
+}
+
+target "documentserver-nonexample" {
+    target = "documentserver-nonexample"
+    dockerfile = "Dockerfile.production"
+    tags = [ "docker.io/${COMPANY_NAME}/${PRODUCT_NAME}${PREFIX_NAME}${PRODUCT_EDITION}:${TAG}-nonexample" ]
+    platforms = ["linux/amd64", "linux/arm64"]
+    args = {
+        "TAG": "${TAG}"
+        "COMPANY_NAME": "${COMPANY_NAME}"
+        "PRODUCT_NAME": "${PRODUCT_NAME}"
+        "PRODUCT_EDITION": "${PRODUCT_EDITION}"
+    } 
 }
