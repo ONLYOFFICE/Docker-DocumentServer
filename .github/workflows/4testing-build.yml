@@ -15,12 +15,11 @@ jobs:
   build:
     name: "Build image: DocumentServer${{ matrix.edition }}"
     runs-on: ubuntu-latest
-    continue-on-error: ${{ matrix.condition }}
     strategy:
+      fail-fast: false
       matrix:
         images: ["documentserver"]
         edition: ["", "-ee", "-de"]
-        condition: [true]
     steps:
       - name: Checkout code 
         uses: actions/checkout@v3
