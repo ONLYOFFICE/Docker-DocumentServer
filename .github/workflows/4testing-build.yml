@@ -80,10 +80,10 @@ jobs:
           ### == >> Set exit code for action
           if [ ${BUILD_PLATFORMS} == ${EXPECTED_PLATFORMS} ]; then
             EXIT_CODE=0
-            echo ">> Build expected platforms"
+            echo "OK: Build platforms is expected"
           else
             EXIT_CODE=1
-            echo ">> Build unexpected platforms" 
+            echo "WARNING: Build platforms is unexpected action is gonna be marked as Failed" 
           fi
 
           ### ==>> Build and push images at this step ### 
