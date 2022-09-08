@@ -47,6 +47,7 @@ jobs:
           DOCKER_TAG=$( echo ${{ env.RELEASE_VERSION }} | sed 's/^.//' )
           PACKAGE_VERSION=$( echo $DOCKER_TAG | sed -E 's/(.*)\./\1-/' )
           NODE_PLATFORMS=$( echo ${{ steps.buildx.outputs.platforms }} | sed 's/linux\///g' | sed 's/,/ /g' )
+          EXPECTED_PLATFORMS="linux/amd64,linux/arm64"
           echo "Start check avalivable build platforms >>"
 
           ### ==>> In this loop we will check all avalivable documentserver architectures. After that all accessed arch will be added to build-platforms list. ###
@@ -66,6 +67,11 @@ jobs:
               echo "Х ${ARCH} in not avalivable"
             fi
           done
+          if [ ${BUILD_PLATFORMS} == ${EXPECTED_PLATFORMS} ]; then
+            EXIT_CODE=0
+          else
+            EXIT_CODE=1
+          fi
           PACKAGE_URL_BUILD=$( echo ${PACKAGE_URL_CHECK} | sed -e "s/${PACKAGE_VERSION}_.*.deb/${PACKAGE_VERSION}_TARGETARCH.deb/g" )
 
           ### ==>> At this step if there is no access to any platform and platform list is empty, build will exit with 1. ###  
@@ -90,5 +96,5 @@ jobs:
             -f docker-bake.hcl ${{ matrix.images }} \
             --push
           echo "DONE: Build success >> exit with 0"
-          exit 0
+          exit ${EXIT_CODE}
         shell: bash
