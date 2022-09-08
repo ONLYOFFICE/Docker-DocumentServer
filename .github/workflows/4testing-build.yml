@@ -67,11 +67,6 @@ jobs:
               echo "Х ${ARCH} in not avalivable"
             fi
           done
-          if [ ${BUILD_PLATFORMS} == ${EXPECTED_PLATFORMS} ]; then
-            EXIT_CODE=0
-          else
-            EXIT_CODE=1
-          fi
           PACKAGE_URL_BUILD=$( echo ${PACKAGE_URL_CHECK} | sed -e "s/${PACKAGE_VERSION}_.*.deb/${PACKAGE_VERSION}_TARGETARCH.deb/g" )
 
           ### ==>> At this step if there is no access to any platform and platform list is empty, build will exit with 1. ###  
@@ -81,6 +76,15 @@ jobs:
           fi
           echo "DONE: Check passed >> Build for platforms: ${BUILD_PLATFORMS}"
           echo "Build is starting ... >>"
+
+          ### == >> Set exit code for action
+          if [ ${BUILD_PLATFORMS} == ${EXPECTED_PLATFORMS} ]; then
+            EXIT_CODE=0
+            echo ">> Build expected platforms"
+          else
+            EXIT_CODE=1
+            echo ">> Build unexpected platforms" 
+          fi
 
           ### ==>> Build and push images at this step ### 
           PRODUCT_EDITION=${{ matrix.edition }} \
@@ -95,6 +99,6 @@ jobs:
             docker buildx bake \
             -f docker-bake.hcl ${{ matrix.images }} \
             --push
-          echo "DONE: Build success >> exit with 0"
+          echo "DONE: Build success >> exit with ${EXIT_CODE}"
           exit ${EXIT_CODE}
         shell: bash
