@@ -61,7 +61,7 @@ target "documentserver" {
 
 target "documentserver-stable" {
     target = "documentserver-stable"
-    dockerfile= "Dockerfile.production"
+    dockerfile = "production.dockerfile"
     tags = ["docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
             "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTER_TAG}",
             "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTEST_TAG}",
