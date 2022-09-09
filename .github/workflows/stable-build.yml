@@ -44,7 +44,7 @@ jobs:
           VERSION=${{ github.event.inputs.tag }}
           PRODUCT_EDITION=${{ matrix.edition }}
           TESTING_IMAGE=${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}
-          if docker manifest inspect ${TESTING_IMAGE}:${VERSION} >> /dev/null; then
+          if docker manifest inspect ${TESTING_IMAGE}:${VERSION} > /dev/null; then
             echo "Image present on docker.hub >> start build stable version"
             export PRODUCT_EDITION
             export TAG=${VERSION}
