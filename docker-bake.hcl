@@ -44,7 +44,7 @@ variable "DEVELOP_BUILD" {
 
 target "documentserver" {
     target = "documentserver"
-    dockerfile= "${DOCKERFILE}"
+    dockerfile = "${DOCKERFILE}"
     tags = [
            "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
            notequal("",DEVELOP_BUILD) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
