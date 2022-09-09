@@ -2,9 +2,12 @@
 name: Multi-arch build stable
 
 on:
-  push:
-    tags:
-      - "v*-stable"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag for release (ex. 1.2.3.45)'
+        type: string
+        required: true
 
 env:
   COMPANY_NAME: "onlyoffice"
@@ -35,37 +38,28 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Get Tag Name
-        id: tag_name
-        run: |
-          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
-
       - name: Build documentserver-release
         run: |
-          TAG=$(echo ${{ steps.tag_name.outputs.SOURCE_TAG }} | sed 's/^.//; s/-stable//')
-          SHORTER_TAG=$(echo ${TAG} | grep -o -P '^[\d]+\.[\d]+\.[\d]+')
-          SHORTEST_TAG=$(echo ${TAG} | grep -o -P '^[\d]+\.[\d]+')
-          IMAGE_STATUS=$(docker manifest inspect ${{ env.COMPANY_NAME }}/4testing-${{ env.PRODUCT_NAME }}${{ matrix.edition }}:$TAG > /dev/null ; echo $?)
-             if [[ "$IMAGE_STATUS" = "0" ]]; then
-                echo "Image present on docker.hub >> start build stable version"
-                PRODUCT_EDITION=${{ matrix.edition }} \
-                PRODUCT_NAME=${{ env.PRODUCT_NAME }} \
-                COMPANY_NAME=${{ env.COMPANY_NAME}} \
-                   TAG=$TAG \
-                   SHORTER_TAG=$SHORTER_TAG \
-                   SHORTEST_TAG=$SHORTEST_TAG \
-                   docker buildx bake \
-                   -f docker-bake.hcl ${{ matrix.images }} \
-                   --push 
-                echo "DONE: Build success >> exit with 0"
-                exit 0
-             else
-                echo "FAILED: Image with tag $TAG do not presented on docker.hub >> build will not started >> exit with 1"
-                exit 1
-             fi
+          set -eux
+          VERSION=${{ github.event.inputs.tag }}
+          PRODUCT_EDITION=${{ matrix.edition }}
+          TESTING_IMAGE=${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}
+          if docker manifest inspect ${TESTING_IMAGE}:${VERSION} >> /dev/null; then
+            echo "Image present on docker.hub >> start build stable version"
+            export PRODUCT_EDITION
+            export TAG=${VERSION}
+            export SHORTER_TAG=${VERSION%.*}
+            export SHORTEST_TAG=${VERSION%.*.*}
+            docker buildx bake -f docker-bake.hcl ${{ matrix.images }} --push
+            echo "DONE: Build success >> exit with 0"
+            exit 0
+          else
+            echo "FAILED: Image with tag ${VERSION} do not presented on docker.hub >> build will not started >> exit with 1"
+            exit 1
+          fi
         shell: bash
 
-  build-nonExample:
+  build-nonexample:
     name: "Release image: DocumentServer${{ matrix.edition }}-nonExample"
     runs-on: ubuntu-latest
     needs: [build]
@@ -91,19 +85,10 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Get Tag Name
-        id: tag_name
-        run: |
-          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
-
       - name: build image
         run: |
-           TAG=$(echo ${{ steps.tag_name.outputs.SOURCE_TAG }} | sed 's/^.//; s/-stable//')
-           PRODUCT_EDITION=${{ matrix.edition }} \
-           PRODUCT_NAME=${{ env.PRODUCT_NAME }} \
-           COMPANY_NAME=${{ env.COMPANY_NAME }} \
-           TAG=$TAG \
-           docker buildx bake \
-           -f docker-bake.hcl ${{ matrix.images }} \
-           --push
+          set -eux
+          export PRODUCT_EDITION=${{ matrix.edition }}
+          export TAG=${{ github.event.inputs.tag }}
+          docker buildx bake -f docker-bake.hcl ${{ matrix.images }} --push
         shell: bash
