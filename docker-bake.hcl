@@ -44,7 +44,7 @@ variable "DEVELOP_BUILD" {
 
 target "documentserver" {
     target = "documentserver"
-    dockerfile= "${DOCKERFILE}"
+    dockerfile = "${DOCKERFILE}"
     tags = [
            "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
            notequal("",DEVELOP_BUILD) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
@@ -61,11 +61,12 @@ target "documentserver" {
 
 target "documentserver-stable" {
     target = "documentserver-stable"
-    dockerfile= "Dockerfile.production"
+    dockerfile = "production.dockerfile"
     tags = ["docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
             "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTER_TAG}",
             "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTEST_TAG}",
-            "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest"]
+            "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest",
+            equal("-ee",PRODUCT_EDITION) ? "docker.io/${COMPANY_NAME}4enterprise/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}": "",]
     platforms = ["linux/amd64", "linux/arm64"]
     args = {
         "TAG": "${TAG}"
@@ -77,7 +78,7 @@ target "documentserver-stable" {
 
 target "documentserver-nonexample" {
     target = "documentserver-nonexample"
-    dockerfile = "Dockerfile.production"
+    dockerfile = "production.dockerfile"
     tags = [ "docker.io/${COMPANY_NAME}/${PRODUCT_NAME}${PREFIX_NAME}${PRODUCT_EDITION}:${TAG}-nonexample" ]
     platforms = ["linux/amd64", "linux/arm64"]
     args = {
