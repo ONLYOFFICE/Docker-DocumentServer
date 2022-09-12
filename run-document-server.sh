@@ -553,6 +553,16 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     LOCAL_SERVICES+=("rabbitmq-server")
     # allow Rabbitmq startup after container kill
     rm -rf /var/run/rabbitmq
+
+    # Apply user-defined emptyfiles limit if set.
+    # See https://github.com/ONLYOFFICE/Docker-DocumentServer/issues/491.
+    if [ -n "${RABBITMQ_EMPTYFILES_LIMIT:-}" ]; then
+        echo "Applying custom emptyfiles limit"
+        {
+            head -n -1 /etc/default/rabbitmq-server
+            echo "ulimit -n ${RABBITMQ_EMPTYFILES_LIMIT}"
+        } | tee /etc/default/rabbitmq-server
+    fi
   fi
 
   if [ ${REDIS_ENABLED} = "true" ]; then

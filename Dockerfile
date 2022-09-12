@@ -5,6 +5,10 @@ ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=nonint
 
 ARG ONLYOFFICE_VALUE=onlyoffice
 
+RUN echo "# Enforce emptyfiles ulimit for rabbitmq to work around https://github.com/ONLYOFFICE/Docker-DocumentServer/issues/491" \
+        | tee -a /etc/default/rabbitmq-server && \
+    echo "ulimit -n 65536" | tee -a /etc/default/rabbitmq-server
+
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get -y update && \
     apt-get -yq install wget apt-transport-https gnupg locales && \
@@ -13,7 +17,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     chmod 644 /etc/apt/trusted.gpg.d/onlyoffice.gpg && \
     locale-gen en_US.UTF-8 && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
-    apt-get -yq install \
+    apt-get -yq -o Dpkg::Options::="--force-confold" install \
         adduser \
         apt-utils \
         bomstrip \
