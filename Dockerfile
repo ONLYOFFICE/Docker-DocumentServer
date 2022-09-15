@@ -71,25 +71,26 @@ COPY run-document-server.sh /app/ds/run-document-server.sh
 
 EXPOSE 80 443
 
-ARG TARGETARCH
-ARG PRODUCT_EDITION=
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_NAME=documentserver
-ARG PACKAGE_URL="http://download.onlyoffice.com/install/documentserver/linux/${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}_$TARGETARCH.deb"
+ARG PRODUCT_EDITION=
+ARG PACKAGE_VERSION=1.0.0-1
+ARG TARGETARCH
+ARG PACKAGE_BASEURL="http://download.onlyoffice.com/install/documentserver/linux"
+ARG PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}_${PACKAGE_VERSION}_${TARGETARCH}.deb"
 
 ENV COMPANY_NAME=$COMPANY_NAME \
     PRODUCT_NAME=$PRODUCT_NAME \
     PRODUCT_EDITION=$PRODUCT_EDITION
 
-RUN PACKAGE_URL=$( echo ${PACKAGE_URL} | sed "s/TARGETARCH/"${TARGETARCH}"/g") && \
-    wget -q -P /tmp "$PACKAGE_URL" && \
+RUN wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
     apt-get -y update && \
     service postgresql start && \
-    apt-get -yq install /tmp/$(basename "$PACKAGE_URL") && \
+    apt-get -yq install /tmp/$PACKAGE_FILE && \
     service postgresql stop && \
     service supervisor stop && \
     chmod 755 /app/ds/*.sh && \
-    rm -f /tmp/$(basename "$PACKAGE_URL") && \
+    rm -f /tmp/$PACKAGE_FILE && \
     rm -rf /var/log/$COMPANY_NAME && \
     rm -rf /var/lib/apt/lists/*
 
