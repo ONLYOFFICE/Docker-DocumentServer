@@ -1,0 +1,139 @@
+### This workflow setup instance then build and push images ###
+name: 4testing multiarch-build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build:
+        description: 'Build number (ex. 45)'
+        type: string
+        required: true
+      amd64:
+        type: boolean
+        description: 'Build AMD64'
+        default: true
+      arm64:
+        type: boolean
+        description: 'Build ARM64'
+        default: true
+      community:
+        type: boolean
+        description: 'Build Community Edition'
+        default: true
+      enterprise:
+        type: boolean
+        description: 'Build Enterprise Edition'
+        default: true
+      developer:
+        type: boolean
+        description: 'Build Developer Edition'
+        default: true
+
+env: 
+  COMPANY_NAME: "onlyoffice"
+  PRODUCT_NAME: "documentserver"
+      
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - id: matrix
+        run: |
+          set -ex
+
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          if ! [[ $BRANCH_NAME == develop || $BRANCH_NAME =~ hotfix || $BRANCH_NAME =~ release ]]; then
+            echo "Wrong branch."
+            exit 1
+          fi
+
+          [ ${{ github.event.inputs.amd64 }} = true ] && PLATFORMS+=("amd64")
+          [ ${{ github.event.inputs.arm64 }} = true ] && PLATFORMS+=("arm64")
+          if [ -z ${PLATFORMS} ]; then
+            echo "None of the platforms are selected."
+            exit 1
+          fi
+
+          [ ${{ github.event.inputs.community }} = true ] && EDITIONS+=("community")
+          [ ${{ github.event.inputs.enterprise }} = true ] && EDITIONS+=("enterprise")
+          [ ${{ github.event.inputs.developer }} = true ] && EDITIONS+=("developer")
+          if [ -z ${EDITIONS} ]; then
+            echo "None of the editions are selected."
+            exit 1
+          fi
+          echo "::set-output name=editions::$(jq -n -c --arg s "${EDITIONS[*]}" '($s|split(" "))')"
+    outputs:
+      editions: ${{ steps.matrix.outputs.editions }}
+
+  build:
+    name: "Build ${{ matrix.image }}-${{ matrix.edition }}"
+    runs-on: ubuntu-latest
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["documentserver"]
+        edition: ${{ fromJSON(needs.prepare.outputs.editions) }}
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+     
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build 4testing
+        run: |
+          set -eux
+
+          ### ==>> At this step build variable declaration ###
+
+          case ${{ matrix.edition }} in
+            community)
+              PRODUCT_EDITION=""
+              ;;
+            enterprise)
+              PRODUCT_EDITION="-ee"
+              ;;
+            developer)
+              PRODUCT_EDITION="-de"
+              ;;
+          esac
+
+          [ ${{ github.event.inputs.amd64 }} = true ] && PLATFORMS+=("amd64")
+          [ ${{ github.event.inputs.arm64 }} = true ] && PLATFORMS+=("arm64")
+          PLATFORM=$(echo ${PLATFORMS[*]/#/linux/} | tr ' ' ',')
+
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          if [ $BRANCH_NAME = develop ]; then
+            RELEASE_BRANCH=unstable
+            PRODUCT_VERSION=99.99.99
+          elif [[ $BRANCH_NAME =~ hotfix || $BRANCH_NAME =~ release ]]; then
+            RELEASE_BRANCH=testing
+            PRODUCT_VERSION=${BRANCH_NAME#*/v}
+          fi
+          BUILD_NUMBER=${{ github.event.inputs.build }}
+
+          export PRODUCT_EDITION
+          export PACKAGE_VERSION=${PRODUCT_VERSION}-${BUILD_NUMBER}
+          export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}/${RELEASE_BRANCH}/ubuntu
+          export RELEASE_BRANCH
+          export PLATFORM
+          export DOCKERFILE=Dockerfile
+          export PREFIX_NAME=4testing-
+          export TAG=${PRODUCT_VERSION}.${BUILD_NUMBER}
+
+          ### ==>> Build and push images at this step ###
+
+          docker buildx bake -f docker-bake.hcl ${{ matrix.image }} --push
+          echo "DONE: Build success"
+        shell: bash
