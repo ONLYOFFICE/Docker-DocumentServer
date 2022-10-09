@@ -83,7 +83,10 @@ ENV COMPANY_NAME=$COMPANY_NAME \
     PRODUCT_NAME=$PRODUCT_NAME \
     PRODUCT_EDITION=$PRODUCT_EDITION
 
-RUN wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
+RUN if [ -z ${PACKAGE_VERSION ] ; then PACKAGE_FILE=${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}_TARGETARCH.deb ; fi && \
+    if [ $(uname -m) = x86_64 ] ; then ARCH=amd64 ; else ARCH=arm64 ; fi && \
+    PACKAGE_FILE=$(echo ${PACKAGE_FILE} | sed "s/TARGETARCH/${ARCH}/g") && \
+    wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
     apt-get -y update && \
     service postgresql start && \
     apt-get -yq install /tmp/$PACKAGE_FILE && \
