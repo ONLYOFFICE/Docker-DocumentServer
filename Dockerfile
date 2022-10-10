@@ -75,16 +75,14 @@ ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_NAME=documentserver
 ARG PRODUCT_EDITION=
 ARG PACKAGE_VERSION=
+ARG TARGETARCH
 ARG PACKAGE_BASEURL="http://download.onlyoffice.com/install/documentserver/linux"
-ARG PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}_${PACKAGE_VERSION}_TARGETARCH.deb"
 
 ENV COMPANY_NAME=$COMPANY_NAME \
     PRODUCT_NAME=$PRODUCT_NAME \
     PRODUCT_EDITION=$PRODUCT_EDITION
 
-RUN if [ -z ${PACKAGE_VERSION} ] ; then PACKAGE_FILE=${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}_TARGETARCH.deb ; fi && \
-    if [ $(uname -m) = x86_64 ] ; then ARCH=amd64 ; else ARCH=arm64 ; fi && \
-    PACKAGE_FILE=$(echo ${PACKAGE_FILE} | sed "s/TARGETARCH/${ARCH}/g") && \
+RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
     wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
     apt-get -y update && \
     service postgresql start && \
