@@ -1,0 +1,94 @@
+### This workflow setup instance then build and push images ###
+name: Multi-arch build stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag for release (ex. 1.2.3.45)'
+        type: string
+        required: true
+
+env:
+  COMPANY_NAME: "onlyoffice"
+  PRODUCT_NAME: "documentserver" 
+
+jobs:
+  build:
+    name: "Release image: DocumentServer${{ matrix.edition }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        images: ["documentserver-stable"]
+        edition: ["", "-ee", "-de"]
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+     
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build documentserver-release
+        run: |
+          set -eux
+          VERSION=${{ github.event.inputs.tag }}
+          PRODUCT_EDITION=${{ matrix.edition }}
+          TESTING_IMAGE=${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}
+          if docker manifest inspect ${TESTING_IMAGE}:${VERSION} > /dev/null; then
+            echo "Image present on docker.hub >> start build stable version"
+            export PRODUCT_EDITION
+            export TAG=${VERSION}
+            export SHORTER_TAG=${VERSION%.*}
+            export SHORTEST_TAG=${VERSION%.*.*}
+            docker buildx bake -f docker-bake.hcl ${{ matrix.images }} --push
+            echo "DONE: Build success >> exit with 0"
+            exit 0
+          else
+            echo "FAILED: Image with tag ${VERSION} do not presented on docker.hub >> build will not started >> exit with 1"
+            exit 1
+          fi
+        shell: bash
+
+  build-nonexample:
+    name: "Release image: DocumentServer${{ matrix.edition }}-nonExample"
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: always()
+    strategy:
+      fail-fast: false
+      matrix:
+        images: ["documentserver-nonexample"]
+        edition: ["", "-ee", "-de"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: build image
+        run: |
+          set -eux
+          export PRODUCT_EDITION=${{ matrix.edition }}
+          export TAG=${{ github.event.inputs.tag }}
+          docker buildx bake -f docker-bake.hcl ${{ matrix.images }} --push
+        shell: bash
