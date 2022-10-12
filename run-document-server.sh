@@ -1,5 +1,7 @@
 #!/bin/bash
 
+umask 0022
+
 function clean_exit {
   /usr/bin/documentserver-prepare4shutdown.sh
 }
@@ -82,7 +84,7 @@ else
   JWT_ENABLED="false"
 fi
 
-[ -z $JWT_SECRET ] && JWT_MESSAGE="JWT is enabled by default. A random secret is generated automatically. Run the command 'docker exec $(cut -c9-20 < /proc/1/cpuset) sudo documentserver-jwt-status.sh' to get information about JWT."
+[ -z $JWT_SECRET ] && JWT_MESSAGE='JWT is enabled by default. A random secret is generated automatically. Run the command "docker exec $(sudo docker ps -q) sudo documentserver-jwt-status.sh" to get information about JWT.'
 
 JWT_SECRET=${JWT_SECRET:-$(pwgen -s 20)}
 JWT_HEADER=${JWT_HEADER:-Authorization}
@@ -424,12 +426,15 @@ update_welcome_page() {
   WELCOME_PAGE="${APP_DIR}-example/welcome/docker.html"
   if [[ -e $WELCOME_PAGE ]]; then
     DOCKER_CONTAINER_ID=$(basename $(cat /proc/1/cpuset))
+    (( ${#DOCKER_CONTAINER_ID} < 12 )) && DOCKER_CONTAINER_ID=$(hostname)
     if (( ${#DOCKER_CONTAINER_ID} >= 12 )); then
       if [[ -x $(command -v docker) ]]; then
         DOCKER_CONTAINER_NAME=$(docker inspect --format="{{.Name}}" $DOCKER_CONTAINER_ID)
         sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_NAME#/}"'/' -i $WELCOME_PAGE
+        JWT_MESSAGE=$(echo $JWT_MESSAGE | sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_NAME#/}"'/')
       else
         sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_ID::12}"'/' -i $WELCOME_PAGE
+        JWT_MESSAGE=$(echo $JWT_MESSAGE | sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_ID::12}"'/')
       fi
     fi
   fi
@@ -592,6 +597,8 @@ else
   
   update_welcome_page
 fi
+
+find /etc/${COMPANY_NAME} -exec chown ds:ds {} \;
 
 #start needed local services
 for i in ${LOCAL_SERVICES[@]}; do
