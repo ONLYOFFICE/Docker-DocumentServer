@@ -55,7 +55,7 @@ target "documentserver" {
     dockerfile = "${DOCKERFILE}"
     tags = [
            "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
-           equal("testing",RELEASE_BRANCH) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
+           equal("unstable",RELEASE_BRANCH) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
            ]
     platforms = ["${PLATFORM}"]
     args = {
