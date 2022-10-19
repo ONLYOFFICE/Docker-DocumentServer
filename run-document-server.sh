@@ -8,6 +8,23 @@ function clean_exit {
 
 trap clean_exit SIGTERM
 
+function file_env {
+        local var="$1"
+        local fileVar="${var}_FILE"
+        local def="${2:-}"
+        if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
+                echo "Both $var and $fileVar are set; $fileVar takes precedence"
+        fi
+        local val="$def"
+        if [ "${!fileVar:-}" ]; then
+                val="$(< "${!fileVar}")"
+        elif [ "${!var:-}" ]; then
+                val="${!var}"
+        fi
+        export "$var"="$val"
+        unset "$fileVar"
+}
+
 # Define '**' behavior explicitly
 shopt -s globstar
 
@@ -84,9 +101,10 @@ else
   JWT_ENABLED="false"
 fi
 
-[ -z $JWT_SECRET ] && JWT_MESSAGE='JWT is enabled by default. A random secret is generated automatically. Run the command "docker exec $(sudo docker ps -q) sudo documentserver-jwt-status.sh" to get information about JWT.'
+[ -z "$JWT_SECRET" ] && [ -z "$JWT_SECRET_FILE" ] && JWT_MESSAGE='JWT is enabled by default. A random secret is generated automatically. Run the command "docker exec $(sudo docker ps -q) sudo documentserver-jwt-status.sh" to get information about JWT.'
 
-JWT_SECRET=${JWT_SECRET:-$(pwgen -s 20)}
+file_env JWT_SECRET
+[ -z "$JWT_SECRET" ] && JWT_SECRET=$(pwgen -s 20)
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
@@ -158,7 +176,7 @@ read_setting(){
   esac
   DB_NAME=${DB_NAME:-${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}}
   DB_USER=${DB_USER:-${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}}
-  DB_PWD=${DB_PWD:-${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}}
+  file_env DB_PWD ${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}
 
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
   AMQP_URI=${AMQP_URI:-${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}}
@@ -488,6 +506,7 @@ update_nginx_settings(){
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_CONF}
   fi
 
+  file_env SECURE_LINK_SECRET
   documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
 }
 
