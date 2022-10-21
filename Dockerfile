@@ -86,6 +86,7 @@ ENV COMPANY_NAME=$COMPANY_NAME \
 RUN wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
     apt-get -y update && \
     service postgresql start && \
+    export DOCKER_INSTALLATION=1 && \
     apt-get -yq install /tmp/$PACKAGE_FILE && \
     service postgresql stop && \
     service supervisor stop && \
