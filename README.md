@@ -25,6 +25,8 @@ Starting from version 6.0, Document Server is distributed as ONLYOFFICE Docs. It
 
 ONLYOFFICE Docs can be used as a part of ONLYOFFICE Workspace or with third-party sync&share solutions (e.g. Nextcloud, ownCloud, Seafile) to enable collaborative editing within their interface.
 
+***Important*** Please update `docker-enginge` to latest version (`20.10.21` as of writing this doc) before using it. We use `ubuntu:22.04` as base image and it older versions of docker have compatibility problems with it
+
 ## Functionality ##
 * ONLYOFFICE Document Editor
 * ONLYOFFICE Spreadsheet Editor
