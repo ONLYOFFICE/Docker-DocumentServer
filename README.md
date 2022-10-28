@@ -182,7 +182,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **DB_PORT**: The database server port number.
 - **DB_NAME**: The name of a database to use. Should be existing on container startup.
 - **DB_USER**: The new user name with superuser permissions for the database account.
-- **DB_PWD**: The password set for the database account.
+- **DB_PWD[_FILE]**: The password set for the database account.
 - **AMQP_URI**: The [AMQP URI](https://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
 - **AMQP_TYPE**: The message broker type. Supported values are `rabbitmq` or `activemq`. Defaults to `rabbitmq`.
 - **REDIS_SERVER_HOST**: The IP address or the name of the host where the Redis server is running.
@@ -190,9 +190,9 @@ Below is the complete list of parameters that can be set using environment varia
 - **REDIS_SERVER_PASS**: The Redis server password. The password is not set by default.
 - **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
 - **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process.
-- **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](http://nginx.org/ru/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.
+- **SECURE_LINK_SECRET[_FILE]**: Defines secret for the nginx config directive [secure_link_md5](http://nginx.org/ru/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.
 - **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `false`.
-- **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to `secret`.
+- **JWT_SECRET[_FILE]**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to `secret`.
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
 - **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
 - **WOPI_ENABLED**: Specifies the enabling the wopi handlers. Defaults to `false`.
@@ -204,6 +204,8 @@ Below is the complete list of parameters that can be set using environment varia
 - **METRICS_PREFIX**: Defines StatsD metrics prefix for backend services. Defaults to `ds.`.
 - **LETS_ENCRYPT_DOMAIN**: Defines the domain for Let's Encrypt certificate.
 - **LETS_ENCRYPT_MAIL**: Defines the domain administator mail address for Let's Encrypt certificate.
+
+Parameters ending in **[_FILE]** can alternatively be given as a path to a file from which the value is read to faciliate using docker secrets for sensitive information. If the parameter is specified both as **PARAM** and **PARAM_FILE**, the latter takes precedence.
 
 ## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
 
