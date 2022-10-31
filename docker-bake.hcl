@@ -50,6 +50,18 @@ variable "RELEASE_BRANCH" {
     default = ""
 }
 
+### ↓ Variables for UCS build ↓
+
+variable "BASE_IMAGE" {
+    default     = ""
+}
+
+variable "PG_VERSION" {
+    default     = ""
+}
+
+### ↑ Variables for UCS build ↑
+
 target "documentserver" {
     target = "documentserver"
     dockerfile = "${DOCKERFILE}"
@@ -82,6 +94,24 @@ target "documentserver-stable" {
         "COMPANY_NAME": "${COMPANY_NAME}"
         "PRODUCT_NAME": "${PRODUCT_NAME}"
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
+    }
+}
+
+target "documentserver-ucs" {
+    target = "documentserver"
+    dockerfile = "${DOCKERFILE}"
+    tags = [
+           "docker.io/${COMPANY_NAME}/${PRODUCT_NAME}${PRODUCT_EDITION}-ucs:${TAG}"
+           ]
+    platforms = ["linux/amd64", "linux/arm64"]
+    args = {
+        "PRODUCT_EDITION": "${PRODUCT_EDITION}"
+        "PRODUCT_NAME": "${PRODUCT_NAME}"
+        "COMPANY_NAME": "${COMPANY_NAME}"
+        "PACKAGE_VERSION": "${PACKAGE_VERSION}"
+        "PACKAGE_BASEURL": "${PACKAGE_BASEURL}"
+        "BASE_IMAGE": "${BASE_IMAGE}"
+        "PG_VERSION": "${PG_VERSION}"
     }
 }
 
