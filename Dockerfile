@@ -1,7 +1,11 @@
-FROM ubuntu:22.04 as documentserver
+ARG BASE_IMAGE=ubuntu:22.04
+
+FROM ${BASE_IMAGE} as documentserver
 LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 
-ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=14
+ARG PG_VERSION=14
+
+ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=${PG_VERSION}
 
 ARG ONLYOFFICE_VALUE=onlyoffice
 
