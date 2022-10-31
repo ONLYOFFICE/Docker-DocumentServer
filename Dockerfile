@@ -4,6 +4,7 @@ FROM ${BASE_IMAGE} as documentserver
 LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 
 ARG PG_VERSION=14
+ARG RABBIT_VERSION=3.10
 
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=${PG_VERSION}
 
@@ -11,13 +12,17 @@ ARG ONLYOFFICE_VALUE=onlyoffice
 
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get -y update && \
-    apt-get -yq install wget apt-transport-https gnupg locales && \
+    apt-get -yq install wget apt-transport-https gnupg locales lsb-release && \
     mkdir -p $HOME/.gnupg && \
     gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/onlyoffice.gpg --keyserver keyserver.ubuntu.com --recv-keys 0x8320ca65cb2de8e5 && \
     chmod 644 /etc/apt/trusted.gpg.d/onlyoffice.gpg && \
     locale-gen en_US.UTF-8 && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
     wget -O - https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash && \
+    if [ $(lsb_release -cs) = focal ]; then wget https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb && \
+    dpkg -i erlang-solutions_2.0_all.deb && \
+    RABBIT_VERSION=3.8 && \
+    apt-get update -y; fi && \
     apt-get -yq install \
         adduser \
         apt-utils \
@@ -46,7 +51,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         postgresql \
         postgresql-client \
         pwgen \
-        rabbitmq-server=3.10* \
+        rabbitmq-server=${RABBIT_VERSION}* \
         redis-server \
         software-properties-common \
         sudo \
