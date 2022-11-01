@@ -19,10 +19,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     locale-gen en_US.UTF-8 && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
     wget -O - https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash && \
-    if [ $(lsb_release -cs) = focal ]; then wget https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb && \
-    dpkg -i erlang-solutions_2.0_all.deb && \
-    RABBIT_VERSION=3.8 && \
-    apt-get update -y; fi && \
+    if [ $(lsb_release -cs) = focal ]; then RABBIT_VERSION=3.8.11-1; fi && \
     apt-get -yq install \
         adduser \
         apt-utils \
