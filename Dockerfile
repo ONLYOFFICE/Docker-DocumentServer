@@ -18,7 +18,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     locale-gen en_US.UTF-8 && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
     wget -O - https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash && \
-    if [ $(lsb_release -cs) = focal ]; then RABBIT_VERSION=3.8.11-1; else RABBIT_VERSION=3.10 ; fi && \
+    if [ $(lsb_release -cs) = focal ]; then RABBITMQ_VERSION=3.8.11-1; else RABBITMQ_VERSION=3.10 ; fi && \
     apt-get -yq install \
         adduser \
         apt-utils \
@@ -47,7 +47,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         postgresql \
         postgresql-client \
         pwgen \
-        rabbitmq-server=${RABBIT_VERSION}* \
+        rabbitmq-server=${RABBITMQ_VERSION}* \
         redis-server \
         software-properties-common \
         sudo \
