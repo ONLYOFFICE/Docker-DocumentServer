@@ -89,7 +89,7 @@ ENV COMPANY_NAME=$COMPANY_NAME \
 ## PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
 ##    wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
 ##    rm -f /tmp/onlyoffice-documentserver*.deb && \
-RUN    wget -q -P /tmp "https://github.com/thomisus/server/releases/download/7.2.1.1/onlyoffice-documentserver_7.2.1-1~thomisus_amd64.deb" && \
+RUN    wget -q -P /tmp "https://github.com/thomisus/server/releases/download/7.2.1.1/onlyoffice-documentserver_7.2.1-1.thomisus_amd64.deb" && \
     apt-get -y update && \
     service postgresql start && \
     apt-get -yq install /tmp/onlyoffice-documentserver_7.2.1-1.thomisus_amd64.deb && \
