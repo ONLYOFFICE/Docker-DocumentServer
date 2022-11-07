@@ -1,3 +1,11 @@
+This build of onlyoffice community edition ( documentserver ) has connections limits increased to 9999 ( instead of default 20 ).
+All credits to www.btactic.com that made this blog post https://www.btactic.com/build-onlyoffice-from-source-code-2022/?lang=en#
+
+It is intended to be NOT production ready ( use at your own risk ). 
+If you want a production ready release, contact Ascensio System https://www.onlyoffice.com/contacts.aspx and buy an Enterprise license to support development.
+
+
+
 * [Overview](#overview)
 * [Functionality](#functionality)
 * [Recommended System Requirements](#recommended-system-requirements)
