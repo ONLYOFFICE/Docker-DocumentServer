@@ -195,6 +195,9 @@ Below is the complete list of parameters that can be set using environment varia
 - **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to random value.
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
 - **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
+- **FORCESAVE_ENABLE**: Whether to activate [forcesaving](https://api.onlyoffice.com/editors/save#forcesave) on the ONLYOFFICE Document Server. Defaults to `false`.
+- **FORCESAVE_INTERVAL**: Which interval to choose for forcesaving. Defaults to `5m`.
+- **FORCESAVE_STEP**: Which step to choose for forcesaving. Defaults to `5m`.
 - **WOPI_ENABLED**: Specifies the enabling the wopi handlers. Defaults to `false`.
 - **USE_UNAUTHORIZED_STORAGE**: Set to `true`if using selfsigned certificates for your storage server e.g. Nextcloud. Defaults to `false`
 - **GENERATE_FONTS**: When 'true' regenerates fonts list and the fonts thumbnails etc. at each start. Defaults to `true`
