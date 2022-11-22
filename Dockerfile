@@ -4,6 +4,8 @@ FROM ${BASE_IMAGE} as documentserver
 LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 
 ARG PG_VERSION=14
+ARG OOU_VERSION_MAJOR=7.2.1
+ARG OOU_VERSION_MINOR=3
 
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=${PG_VERSION}
 
@@ -89,14 +91,14 @@ ENV COMPANY_NAME=$COMPANY_NAME \
 ## PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
 ##    wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
 ##    rm -f /tmp/onlyoffice-documentserver*.deb && \
-RUN    wget -q -P /tmp "https://github.com/thomisus/server/releases/download/7.2.1.2/onlyoffice-documentserver_7.2.1-2.oou_amd64.deb" && \
+RUN    wget -q -P /tmp "https://github.com/thomisus/server/releases/download/${OOU_VERSION_MAJOR}.${OOU_VERSION_MINOR}/onlyoffice-documentserver_${OOU_VERSION_MAJOR}-${OOU_VERSION_MINOR}.oou_amd64.deb" && \
     apt-get -y update && \
     service postgresql start && \
-    apt-get -yq install /tmp/onlyoffice-documentserver_7.2.1-2.oou_amd64.deb && \
+    apt-get -yq install /tmp/onlyoffice-documentserver_${OOU_VERSION_MAJOR}-${OOU_VERSION_MINOR}.oou_amd64.deb && \
     service postgresql stop && \
     service supervisor stop && \
     chmod 755 /app/ds/*.sh && \
-    rm -f /tmp/onlyoffice-documentserver_7.2.1-2.oou_amd64.deb && \
+    rm -f /tmp/onlyoffice-documentserver_${OOU_VERSION_MAJOR}-${OOU_VERSION_MINOR}.oou_amd64.deb && \
     rm -rf /var/log/$COMPANY_NAME && \
     rm -rf /var/lib/apt/lists/*
 
