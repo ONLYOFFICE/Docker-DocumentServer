@@ -5,7 +5,7 @@ LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 
 ARG PG_VERSION=14
 ARG OOU_VERSION_MAJOR=7.2.1
-ARG OOU_BUILD=3
+ARG OOU_BUILD=4
 
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=${PG_VERSION}
 
