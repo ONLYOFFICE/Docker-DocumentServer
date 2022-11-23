@@ -1,5 +1,7 @@
 #!/bin/bash
 
+/bin/bash -c "sed -i 's/isSupportEditFeature=function(){return!1}/isSupportEditFeature=function(){return 1}/g'  /var/www/onlyoffice/documentserver/web-apps/apps/*/mobile/dist/js/app.js;"
+
 umask 0022
 
 function clean_exit {
