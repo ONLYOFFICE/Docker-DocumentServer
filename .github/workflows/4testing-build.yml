@@ -115,18 +115,18 @@ jobs:
 
           BRANCH_NAME=${GITHUB_REF#refs/heads/}
           if [ $BRANCH_NAME = develop ]; then
-            RELEASE_BRANCH=unstable
+            BUILD_CHANNEL=nightly
             PRODUCT_VERSION=99.99.99
           elif [[ $BRANCH_NAME =~ hotfix || $BRANCH_NAME =~ release ]]; then
-            RELEASE_BRANCH=testing
+            BUILD_CHANNEL=test
             PRODUCT_VERSION=${BRANCH_NAME#*/v}
           fi
           BUILD_NUMBER=${{ github.event.inputs.build }}
 
           export PRODUCT_EDITION
-          export PACKAGE_VERSION=${PRODUCT_VERSION}-${BUILD_NUMBER}
-          export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}/${RELEASE_BRANCH}/ubuntu
-          export RELEASE_BRANCH
+          export PACKAGE_VERSION=${PRODUCT_VERSION}-${BUILD_NUMBER}~stretch
+          export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}/${BUILD_CHANNEL}
+          export BUILD_CHANNEL
           export PLATFORM
           export DOCKERFILE=Dockerfile
           export PREFIX_NAME=4testing-
