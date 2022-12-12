@@ -46,7 +46,7 @@ variable "PACKAGE_FILE" {
     default = ""
 }
 
-variable "RELEASE_BRANCH" {
+variable "BUILD_CHANNEL" {
     default = ""
 }
 
@@ -55,7 +55,7 @@ target "documentserver" {
     dockerfile = "${DOCKERFILE}"
     tags = [
            "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
-           equal("unstable",RELEASE_BRANCH) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
+           equal("nightly",BUILD_CHANNEL) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
            ]
     platforms = ["${PLATFORM}"]
     args = {
