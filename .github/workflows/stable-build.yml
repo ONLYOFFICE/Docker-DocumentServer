@@ -120,7 +120,7 @@ jobs:
         run: |
            set -eux
            export PRODUCT_EDITION=${{ matrix.edition }}
-           export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}/testing/ubuntu
+           export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL_OLD }}/testing/ubuntu
            export DOCKERFILE=Dockerfile
            export BASE_IMAGE=ubuntu:20.04
            export PG_VERSION=12

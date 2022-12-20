@@ -125,7 +125,7 @@ jobs:
 
           export PRODUCT_EDITION
           export PACKAGE_VERSION=${PRODUCT_VERSION}-${BUILD_NUMBER}
-          export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}/${RELEASE_BRANCH}/ubuntu
+          export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL_OLD }}/${RELEASE_BRANCH}/ubuntu
           export RELEASE_BRANCH
           export PLATFORM
           export DOCKERFILE=Dockerfile
