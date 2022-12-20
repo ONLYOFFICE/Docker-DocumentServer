@@ -1,7 +1,11 @@
-FROM ubuntu:22.04 as documentserver
+ARG BASE_IMAGE=ubuntu:22.04
+
+FROM ${BASE_IMAGE} as documentserver
 LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 
-ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=14
+ARG PG_VERSION=14
+
+ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=${PG_VERSION}
 
 ARG ONLYOFFICE_VALUE=onlyoffice
 
@@ -13,6 +17,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     chmod 644 /etc/apt/trusted.gpg.d/onlyoffice.gpg && \
     locale-gen en_US.UTF-8 && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
+    wget -O - https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash && \
     apt-get -yq install \
         adduser \
         apt-utils \
@@ -41,7 +46,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         postgresql \
         postgresql-client \
         pwgen \
-        rabbitmq-server \
+        rabbitmq-server=3.10* \
         redis-server \
         software-properties-common \
         sudo \
