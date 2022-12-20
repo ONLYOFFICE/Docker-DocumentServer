@@ -73,7 +73,8 @@ NGINX_ONLYOFFICE_EXAMPLE_CONF="${NGINX_ONLYOFFICE_EXAMPLE_PATH}/includes/ds-exam
 
 NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
-NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
+# Limiting the maximum number of simultaneous connections due to possible memory shortage
+[ $(ulimit -n) -gt 1048576 ] && NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-1048576} || NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
 
 JWT_ENABLED=${JWT_ENABLED:-true}
 
@@ -199,7 +200,7 @@ parse_rabbitmq_url(){
   # extract the host
   local hostport="$(echo ${url/$userpass@/} | cut -d/ -f1)"
   # by request - try to extract the port
-  local port="$(echo $hostport | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
+  local port="$(echo $hostport | grep : | sed -r 's_^.*:+|/.*$__g')"
 
   local host
   if [ -n "$port" ]; then
