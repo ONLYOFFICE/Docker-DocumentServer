@@ -149,6 +149,9 @@ read_setting(){
     "mariadb"|"mysql")
       DB_PORT=${DB_PORT:-"3306"}
       ;;
+    "dameng")
+      DB_PORT=${DB_PORT:-"5236"}
+      ;;
     "")
       DB_PORT=${DB_PORT:-${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}}
       ;;
@@ -371,6 +374,10 @@ create_db_tbl() {
     "mariadb"|"mysql")
       create_mysql_tbl
     ;;
+    "dameng")
+      create_dameng_tbl
+    ;;
+
   esac
 }
 
@@ -411,6 +418,16 @@ create_postgresql_tbl() {
 
   PSQL="psql -q -h$DB_HOST -p$DB_PORT -d$DB_NAME -U$DB_USER -w"
   $PSQL -f "$APP_DIR/server/schema/postgresql/createdb.sql"
+}
+
+create_dameng_tbl() {
+  DM8_USER=SYSDBA
+  DM8_PASS=SYSDBA001
+
+  (cd /opt/dmdbms/bin/ && ./disql $DM8_USER/$DM8_PASS@$DB_HOST:$DB_PORT -e "create user "onlyoffice" identified by "onlyoffice" password_policy 0;")
+
+  # Create db on remote server
+  (cd /opt/dmdbms/bin/ && ./disql $DM8_USER/$DM8_PASS@$DB_HOST:$DB_PORT \`$APP_DIR/server/schema/dameng/createdb.sql)
 }
 
 create_mysql_tbl() {
