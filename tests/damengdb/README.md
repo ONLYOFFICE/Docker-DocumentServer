@@ -19,3 +19,5 @@ The first deployment of the stand requires the execution of ***two scripts*** to
 After db image and disql binary is ready, you cant deploy stand with flexible develop-build number with simple command: 
 	
 	BUILD=<build-number-from-develop> docker compose up -d
+
+Note: The build number must be set each time the stand is deployed with compose up.
