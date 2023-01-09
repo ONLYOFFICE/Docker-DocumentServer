@@ -2,9 +2,9 @@
 
 ### How it works
 
-#### Only on the first run:
+#### ⚠ Only on the first run:
 
-The first deployment of the stand requires the execution of scripts to prepare the environment.
+The first deployment of the stand requires the execution of ***two scripts*** to prepare the environment.
 
 ***First:*** It is necessary to obtain an image of the dameng db database. To do this, run the script:
 	
