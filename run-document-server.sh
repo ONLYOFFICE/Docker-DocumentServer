@@ -427,6 +427,7 @@ create_dameng_tbl() {
   (cd /opt/dmdbms/bin/ && ./disql $DM8_USER/$DM8_PASS@$DB_HOST:$DB_PORT -e "create user "onlyoffice" identified by "onlyoffice" password_policy 0;")
 
   # Create db on remote server
+  echo "EXIT" | tee -a $APP_DIR/server/schema/dameng/createdb.sql
   (cd /opt/dmdbms/bin/ && ./disql $DM8_USER/$DM8_PASS@$DB_HOST:$DB_PORT \`$APP_DIR/server/schema/dameng/createdb.sql)
 }
 
