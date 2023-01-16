@@ -42,7 +42,7 @@ services:
 
   onlyoffice-dameng:
     container_name: onlyoffice-dameng
-    image: danilaworker/damengdb:8.2.1
+    image: danilaworker/damengdb:8.1.2
     environment:
       - PAGE_SIZE=16
       - LD_LIBRARY_PATH=/opt/dmdbms/bin
