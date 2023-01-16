@@ -26,12 +26,12 @@ services:
     stop_grace_period: 60s
     volumes:
        - ../../run-document-server.sh:/app/ds/run-document-server.sh
-       - ./bin:/opt/dmdbms/bin/
        - /var/www/onlyoffice/Data
        - /var/log/onlyoffice
        - /var/lib/onlyoffice/documentserver/App_Data/cache/files
        - /var/www/onlyoffice/documentserver-example/public/files
        - /usr/share/fonts
+       - disql:/opt/dmdbms/bin/
        
   onlyoffice-rabbitmq:
     container_name: onlyoffice-rabbitmq
@@ -42,7 +42,7 @@ services:
 
   onlyoffice-dameng:
     container_name: onlyoffice-dameng
-    image: dm8_single:v8.1.2.128_ent_x86_64_ctm_pack4
+    image: danilaworker/damengdb:8.2.1
     environment:
       - PAGE_SIZE=16
       - LD_LIBRARY_PATH=/opt/dmdbms/bin
@@ -51,7 +51,9 @@ services:
     expose:
       - '5236'
     volumes:
+      - disql:/opt/dmdbms/bin/
       - dameng_data:/opt/dmdbms/data
 
 volumes:
   dameng_data:
+  disql:
