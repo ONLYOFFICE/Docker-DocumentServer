@@ -44,8 +44,6 @@ jobs:
           VERSION=${{ github.event.inputs.tag }}
           PRODUCT_EDITION=${{ matrix.edition }}
           TESTING_IMAGE=${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}
-          if docker manifest inspect ${TESTING_IMAGE}:${VERSION} > /dev/null; then
-            echo "Image present on docker.hub >> start build stable version"
             export PRODUCT_EDITION
             export TAG=${VERSION}
             export SHORTER_TAG=${VERSION%.*}
@@ -53,10 +51,6 @@ jobs:
             docker buildx bake -f docker-bake.hcl ${{ matrix.images }} --push
             echo "DONE: Build success >> exit with 0"
             exit 0
-          else
-            echo "FAILED: Image with tag ${VERSION} do not presented on docker.hub >> build will not started >> exit with 1"
-            exit 1
-          fi
         shell: bash
 
   build-nonexample:
