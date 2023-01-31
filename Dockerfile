@@ -18,7 +18,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     locale-gen en_US.UTF-8 && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
     wget -O - https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash && \
-    if [ $(lsb_release -cs) = focal ]; then RABBITMQ_VERSION=3.8.11-1; else RABBITMQ_VERSION=3.10 ; fi && \
+    if [ $(lsb_release -cs) = focal ]; then RABBITMQ_VERSION=3.8.11-1; else RABBITMQ_VERSION=3.9 ; fi && \
     apt-get -yq install \
         adduser \
         apt-utils \
@@ -86,7 +86,8 @@ ARG PACKAGE_BASEURL="http://download.onlyoffice.com/install/documentserver/linux
 
 ENV COMPANY_NAME=$COMPANY_NAME \
     PRODUCT_NAME=$PRODUCT_NAME \
-    PRODUCT_EDITION=$PRODUCT_EDITION
+    PRODUCT_EDITION=$PRODUCT_EDITION \
+    DS_DOCKER_INSTALLATION=true
 
 RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
     wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \

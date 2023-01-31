@@ -1,39 +1,36 @@
 COMPANY_NAME ?= ONLYOFFICE
 GIT_BRANCH ?= develop
-PRODUCT_NAME ?= DocumentServer
+PRODUCT_NAME ?= documentserver
 PRODUCT_EDITION ?= 
 PRODUCT_VERSION ?= 0.0.0
 BUILD_NUMBER ?= 0
+BUILD_CHANNEL ?= nightly
 ONLYOFFICE_VALUE ?= onlyoffice
-S3_BUCKET ?= repo-doc-onlyoffice-com
-RELEASE_BRANCH ?= unstable
 
 COMPANY_NAME_LOW = $(shell echo $(COMPANY_NAME) | tr A-Z a-z)
-PRODUCT_NAME_LOW = $(shell echo $(PRODUCT_NAME) | tr A-Z a-z)
-COMPANY_NAME_LOW_ESCAPED = $(subst -,,$(COMPANY_NAME_LOW))
+COMPANY_NAME_ESC = $(subst -,,$(COMPANY_NAME_LOW))
 
-PACKAGE_NAME := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME_LOW)$(PRODUCT_EDITION)
-PACKAGE_VERSION := $(PRODUCT_VERSION)-$(BUILD_NUMBER)
-PACKAGE_BASEURL := https://s3.eu-west-1.amazonaws.com/$(S3_BUCKET)/$(COMPANY_NAME_LOW)/$(RELEASE_BRANCH)/ubuntu
+PACKAGE_NAME := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME)$(PRODUCT_EDITION)
+PACKAGE_VERSION ?= $(PRODUCT_VERSION)-$(BUILD_NUMBER)~stretch
+PACKAGE_BASEURL ?= https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/server/linux/debian/$(BUILD_CHANNEL)
 
-ifeq ($(RELEASE_BRANCH),$(filter $(RELEASE_BRANCH),unstable testing))
-	DOCKER_TAG := $(subst -,.,$(PACKAGE_VERSION))
+ifeq ($(BUILD_CHANNEL),$(filter $(BUILD_CHANNEL),nightly test))
+	DOCKER_TAG := $(PRODUCT_VERSION).$(BUILD_NUMBER)
 else
-	DOCKER_TAG := $(subst -,.,$(PACKAGE_VERSION))-$(subst /,-,$(GIT_BRANCH))
+	DOCKER_TAG := $(PRODUCT_VERSION).$(BUILD_NUMBER)-$(subst /,-,$(GIT_BRANCH))
 endif
 
-DOCKER_IMAGE := $(subst -,,$(COMPANY_NAME_LOW))/4testing-$(PRODUCT_NAME_LOW)$(PRODUCT_EDITION)
-DOCKER_DUMMY := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME_LOW)$(PRODUCT_EDITION)__$(DOCKER_TAG).dummy
-DOCKER_ARCH := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME_LOW)_$(PACKAGE_VERSION).tar.gz
-DOCKER_ARCH_URI := $(COMPANY_NAME_LOW)/$(RELEASE_BRANCH)/docker/$(notdir $(DOCKER_ARCH))
+DOCKER_IMAGE := $(COMPANY_NAME_ESC)/4testing-$(PRODUCT_NAME)$(PRODUCT_EDITION)
+DOCKER_DUMMY := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME)$(PRODUCT_EDITION)__$(DOCKER_TAG).dummy
+DOCKER_ARCH := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME)_$(DOCKER_TAG).tar.gz
 
-.PHONY: all clean clean-docker image deploy docker publish
+.PHONY: all clean clean-docker image deploy docker
 
 $(DOCKER_DUMMY):
-	docker pull ubuntu:20.04
+	docker pull ubuntu:22.04
 	docker build \
 		--build-arg COMPANY_NAME=$(COMPANY_NAME_LOW) \
-		--build-arg PRODUCT_NAME=$(PRODUCT_NAME_LOW) \
+		--build-arg PRODUCT_NAME=$(PRODUCT_NAME) \
 		--build-arg PRODUCT_EDITION=$(PRODUCT_EDITION) \
 		--build-arg PACKAGE_VERSION=$(PACKAGE_VERSION) \
 		--build-arg PACKAGE_BASEURL=$(PACKAGE_BASEURL) \
@@ -61,13 +58,9 @@ deploy: $(DOCKER_DUMMY)
 	for i in {1..3}; do \
 		docker push $(DOCKER_IMAGE):$(DOCKER_TAG) && break || sleep 1m; \
 	done
-ifeq ($(RELEASE_BRANCH),unstable)
+ifeq ($(BUILD_CHANNEL),nightly)
 	docker tag $(DOCKER_IMAGE):$(DOCKER_TAG) $(DOCKER_IMAGE):latest
 	for i in {1..3}; do \
 		docker push $(DOCKER_IMAGE):latest && break || sleep 1m; \
 	done
 endif
-
-publish: $(DOCKER_ARCH)
-	aws s3 cp --no-progress --acl public-read \
-		$(DOCKER_ARCH) s3://$(S3_BUCKET)/$(DOCKER_ARCH_URI)
