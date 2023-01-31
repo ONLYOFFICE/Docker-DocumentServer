@@ -114,11 +114,11 @@ jobs:
         run: |
            set -eux
            export PRODUCT_EDITION=${{ matrix.edition }}
-           export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL_OLD }}/testing/ubuntu
+           export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}/test
            export DOCKERFILE=Dockerfile
            export BASE_IMAGE=ubuntu:20.04
            export PG_VERSION=12
            export TAG=${{ github.event.inputs.tag }}
-           export PACKAGE_VERSION=$( echo ${TAG} |  sed -E 's/(.*)\./\1-/')
+           export PACKAGE_VERSION=$( echo ${TAG} |  sed -E 's/(.*)\./\1-/')~stretch
            docker buildx bake -f docker-bake.hcl documentserver-ucs --push
         shell: bash
