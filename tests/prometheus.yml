@@ -1,0 +1,46 @@
+version: '2.1'
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    build:
+      context: ../.
+    depends_on:
+      - onlyoffice-statsd-exporter
+    environment:
+      - METRICS_ENABLED=${METRICS_ENABLED:-true}
+      - METRICS_HOST=${METRICS_HOST:-onlyoffice-statsd-exporter}
+      - METRICS_PORT=${METRICS_PORT:-9125}
+      - METRICS_PREFIX=${METRICS_PREFIX:-ds.}
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+
+  onlyoffice-statsd-exporter:
+    container_name: onlyoffice-statsd-exporter
+    image: prom/statsd-exporter
+    command: --statsd.event-flush-interval=30000ms
+    ports:
+      - '9102:9102'
+      - '9125:9125/tcp'
+      - '9125:9125/udp'
+
+  onlyoffice-prometheus:
+    container_name: onlyoffice-prometheus
+    image: prom/prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus/prometheus-scrape/statsd-exporter.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    container_name: onlyoffice-grafana
+    image: bitnami/grafana
+    ports:
+      - '3000:3000'
+    environment:
+      - 'GF_SECURITY_ADMIN_PASSWORD=G0pGE4'
+    volumes:
+      - ./prometheus/grafana/conf/prometheus.yml:/opt/bitnami/grafana/conf/provisioning/datasources/prometheus.yml
+      - ./prometheus/grafana/conf/default-provider.yaml:/opt/bitnami/grafana/conf/provisioning/dashboards/default-provider.yaml
+      - ./prometheus/grafana/dashboards:/opt/bitnami/grafana/dashboards
