@@ -499,7 +499,7 @@ update_supervisor_settings(){
   # Copy modified supervisor config
   cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
   sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf
-  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf etc/supervisor/conf.d/
+  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf /etc/supervisor/conf.d/
 }
 
 update_log_settings(){
