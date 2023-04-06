@@ -358,9 +358,8 @@ create_postgresql_cluster(){
 }
 
 create_postgresql_db(){
-  sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
   sudo -u postgres psql -c "CREATE USER $DB_USER WITH password '"$DB_PWD"';"
-  sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE $DB_NAME TO $DB_USER;"
+  sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
 }
 
 create_db_tbl() {
