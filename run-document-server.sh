@@ -497,6 +497,7 @@ update_supervisor_settings(){
   cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisor /etc/init.d/
   # Copy modified supervisor config
   cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+  sed "s_\(password =\).*_\1 $(pwgen -s 20)_" -i /etc/supervisor/supervisord.conf
   sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf
   cp ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf etc/supervisor/conf.d/
 }
