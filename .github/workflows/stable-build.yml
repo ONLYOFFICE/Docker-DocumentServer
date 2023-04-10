@@ -9,7 +9,7 @@ on:
         type: string
         required: true
       pull_tag:
-        description: 'Tag pulled 4testin image (optional)(ex. 1.2.3.45)'
+        description: 'Tag for pulled 4testing image (optional)(ex. 1.2.3.45)'
         type: string
         required: false
 
