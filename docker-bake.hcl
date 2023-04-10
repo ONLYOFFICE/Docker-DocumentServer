@@ -2,6 +2,10 @@ variable "TAG" {
     default = ""
 }
 
+variable "PULL_TAG" {
+    default = ""
+}
+
 variable "SHORTER_TAG" {
     default = ""
 }
@@ -91,6 +95,7 @@ target "documentserver-stable" {
     platforms = ["linux/amd64", "linux/arm64"]
     args = {
         "TAG": "${TAG}"
+        "PULL_TAG": "${PULL_TAG}"
         "COMPANY_NAME": "${COMPANY_NAME}"
         "PRODUCT_NAME": "${PRODUCT_NAME}"
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"

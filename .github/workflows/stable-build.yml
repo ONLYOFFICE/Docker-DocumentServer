@@ -5,9 +5,13 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag for release (ex. 1.2.3.45)'
+        description: 'Tag for release image(ex. 1.2.3.45)'
         type: string
         required: true
+      pull_tag:
+        description: 'Tag pulled 4testin image (optional)(ex. 1.2.3.45)'
+        type: string
+        required: false
 
 env:
   COMPANY_NAME: "onlyoffice"
@@ -42,8 +46,13 @@ jobs:
         run: |
           set -eux
           VERSION=${{ github.event.inputs.tag }}
+          PULL_TAG=${{ github.event.inputs.pull_tag }}
           PRODUCT_EDITION=${{ matrix.edition }}
           TESTING_IMAGE=${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}
+          if [[ -z "${PULL_TAG}" ]]; then
+               PULL_TAG=${VERSION}
+          fi
+            export PULL_TAG=${PULL_TAG} 
             export PRODUCT_EDITION
             export TAG=${VERSION}
             export SHORTER_TAG=${VERSION%.*}
@@ -112,13 +121,19 @@ jobs:
 
       - name: build UCS
         run: |
-           set -eux
-           export PRODUCT_EDITION=${{ matrix.edition }}
-           export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}/test
-           export DOCKERFILE=Dockerfile
-           export BASE_IMAGE=ubuntu:20.04
-           export PG_VERSION=12
-           export TAG=${{ github.event.inputs.tag }}
-           export PACKAGE_VERSION=$( echo ${TAG} |  sed -E 's/(.*)\./\1-/')~stretch
-           docker buildx bake -f docker-bake.hcl documentserver-ucs --push
+          set -eux
+          VERSION=${{ github.event.inputs.tag }}
+          PULL_TAG=${{ github.event.inputs.pull_tag }}
+          BUILD_TAG=${VERSION}
+          if [[ "${PULL_TAG}" != "" ]]; then
+               BUILD_TAG=${PULL_TAG}
+          fi
+            export PRODUCT_EDITION=${{ matrix.edition }}
+            export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}/test
+            export DOCKERFILE=Dockerfile
+            export BASE_IMAGE=ubuntu:20.04
+            export PG_VERSION=12
+            export TAG=${VERSION}
+            export PACKAGE_VERSION=$( echo ${BUILD_TAG} |  sed -E 's/(.*)\./\1-/')~stretch
+            docker buildx bake -f docker-bake.hcl documentserver-ucs --push
         shell: bash
