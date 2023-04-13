@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Git Install
-        run: sudo apt update && apt install -y git
+        run: sudo apt update && sudo apt install -y git
       - name: Git Clone
         run: git clone https://github.com/IskandarKurbonov/Docker-DocumentServer.git
       - name: Login to Docker Hub
