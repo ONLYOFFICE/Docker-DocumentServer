@@ -17,13 +17,10 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: whri
-        run: ls -al && pwd
-      #- name: Build and push
-        #run: cd Docker-DocumentServer && pwd && ls -al
-        #uses: docker/build-push-action@v4
-        #with:
-        #  context: .
-        #  file: ./Dockerfile
-        #  push: true
-        #  tags: ${{ secrets.DOCKERHUB_USERNAME }}/Docker-DocumentServer
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: Docker-DocumentServer
+          file: ./Docker-DocumentServer/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/Docker-DocumentServer
