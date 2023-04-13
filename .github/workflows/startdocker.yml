@@ -22,7 +22,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: Docker-DocumentServer
-          file: ./Docker-DocumentServer/Dockerfile
+          context: .
+          file: /home/runner/work/Docker-DocumentServer/Docker-DocumentServer/Docker-DocumentServer/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/Docker-DocumentServer
