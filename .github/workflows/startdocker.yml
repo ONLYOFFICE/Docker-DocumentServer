@@ -3,7 +3,6 @@ name : DeployOnlyOffice
 on: 
   push:
     tags:
-      - ""
 
 jobs:
   build:
