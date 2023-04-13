@@ -18,10 +18,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push
-        run: ls -la && pwd
-        #uses: docker/build-push-action@v4
-        #with:
-        #  context: .
-        #  file: ./Dockerfile
-        #  push: true
-        #  tags: ${{ secrets.DOCKERHUB_USERNAME }}/Docker-DocumentServer
+        uses: cd Docker-DocumentServer && docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/Docker-DocumentServer
