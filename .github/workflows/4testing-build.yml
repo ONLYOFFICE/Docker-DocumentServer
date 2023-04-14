@@ -125,7 +125,7 @@ jobs:
 
           export PRODUCT_EDITION
           export PACKAGE_VERSION=${PRODUCT_VERSION}-${BUILD_NUMBER}
-          export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}/${BUILD_CHANNEL}
+          export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}
           export BUILD_CHANNEL
           export PLATFORM
           export DOCKERFILE=Dockerfile
