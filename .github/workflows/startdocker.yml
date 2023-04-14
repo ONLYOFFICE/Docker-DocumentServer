@@ -12,13 +12,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-
       - name: Get Tag Name
-        id  : tag_name
-        run : |
-          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags}
-
-
+        id: tag_name
+        run: |
+          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}          
+      
+      - name: Build 4testing
+        run: |
+          DOCKER_TAG=$(echo ${{ steps.tag_name.outputs.SOURCE_TAG }} | sed 's/^.//' )
+      
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -30,4 +32,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/docker-documentserver:"${{ steps.tag_name.outputs.SOURCE_TAG  }}"
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/docker-documentserver:${{ DOCKER_TAG }}
