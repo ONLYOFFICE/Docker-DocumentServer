@@ -19,11 +19,10 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Get Tag
-        id  : tag_name
-        run : |
-          SOURCE_TAG=${{ github.event.release.tag_name }}
-          echo DOCKER_TAG=$( echo ${SOURCE_TAG} | sed 's/^.//' )  >> $GITHUB_ENV
-            
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo ${TAG}
+          echo DOCKER_TAG=$( echo ${TAG} | sed 's/^.//') >> $GITHUB_ENV    
         #- name: Set Versions
         #uses: actions/github-script@v4
           #id: set_version
