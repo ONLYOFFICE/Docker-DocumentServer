@@ -29,4 +29,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/docker-documentserver:${ DOCKER_TAG }
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/docker-documentserver:${{ steps.tag_name.DOCKER_TAG }}
