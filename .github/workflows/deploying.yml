@@ -16,7 +16,7 @@ jobs:
         id: tag_name
         run: |
           SOURCE_TAG=${{ github.event.release.tag_name }}
-          DOCKER_TAG=$( echo ${SOURCE_TAG} | sed 's/^.//' )  >> $GITHUB_ENV
+          echo "DOCKER_TAG=$( echo ${SOURCE_TAG} | sed 's/^.//')"  >> $GITHUB_ENV
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -29,4 +29,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/docker-documentserver:${{ steps.tag_name.outputs.DOCKER_TAG }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/docker-documentserver:${{ env.DOCKER_TAG }}
+          build-args: |
+            DOCKER_TAG=${{ env.DOCKER_TAG }}
