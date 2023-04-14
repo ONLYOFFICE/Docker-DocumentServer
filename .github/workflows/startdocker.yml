@@ -1,4 +1,4 @@
-name : DeployOnlyOffice2
+name : DeployTag
 
 on:
   push:
