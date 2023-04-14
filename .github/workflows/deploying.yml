@@ -18,18 +18,24 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set Versions
-        uses: actions/github-script@v4
-        id: set_version
-        with:
-          script: |
-            const tag = context.ref.substring(10)
-            const no_v = tag.replace('v', '')
-            const dash_index = no_v.lastIndexOf('-')
-            const no_dash = (dash_index > -1) ?  no_v.substring(0, dash_index) : no_v
-            core.setOutput('tag', tag)
-            core.setOutput('no-v', no_v)
-            core.setOutput('no-dash', no_dash)
+      - name: Get Tag
+        id  : tag_name
+        run : |
+          SOURCE_TAG=${{ github.event.release.tag_name }}
+          DOCKER_TAG=$( echo ${SOURCE_TAG} | sed 's/^.//' )  >> $GITHUB_ENV
+            
+        #- name: Set Versions
+        #uses: actions/github-script@v4
+          #id: set_version
+          #with:
+          #script: |
+            #const tag = context.ref.substring(10)
+            #const no_v = tag.replace('v', '')
+            #const dash_index = no_v.lastIndexOf('-')
+            #const no_dash = (dash_index > -1) ?  no_v.substring(0, dash_index) : no_v
+            # core.setOutput('tag', tag)
+            #core.setOutput('no-v', no_v)
+            #core.setOutput('no-dash', no_dash)
 
      
       - name: Build and push
@@ -39,5 +45,5 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/docker-documentserver:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/docker-documentserver:${{steps.set_version.outputs.no-dash}}
+            #${{ secrets.DOCKERHUB_USERNAME }}/docker-documentserver:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/docker-documentserver:${{env.DOCKER_TAG}}
