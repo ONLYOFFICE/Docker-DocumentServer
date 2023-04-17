@@ -10,9 +10,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-      strategy:
-        matrix:
-          compose-files: [tests/activemq.yml, tests/certs.yml]
+    strategy:
+      matrix:
+        compose-files: [tests/activemq.yml, tests/certs.yml]
             
             #Comment strings
             #|
