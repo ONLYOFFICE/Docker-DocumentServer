@@ -2,7 +2,7 @@ name : Tests
 
 on:
   schedule:
-   - cron: '0 18 * * 7'
+   - cron: '0 18 * * 6'
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
