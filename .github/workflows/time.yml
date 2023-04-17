@@ -16,3 +16,4 @@ jobs:
         run: |
           chmod +x tests/test.sh
           ls -la tests
+          bash tests/test.sh
