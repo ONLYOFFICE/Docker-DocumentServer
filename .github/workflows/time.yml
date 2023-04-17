@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: "Compose files"
+    name: " Compose files:${{matrix.compose-files}} "
     runs-on: ubuntu-latest
     strategy:
       matrix:
