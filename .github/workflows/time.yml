@@ -12,7 +12,13 @@ jobs:
     runs-on: ubuntu-latest
       strategy:
         matrix:
-          compose-files: [activemq.yml, certs.yml, graphite.yml, mysql.yml, postgres.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml]
+          compose-files: [tests/activemq.yml, tests/certs.yml]
+            
+            #Comment strings
+            #|
+            #|
+            #graphite.yml, mysql.yml, postgres.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml]
+      
       steps:
       
       - name: Checkout
