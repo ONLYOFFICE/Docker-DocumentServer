@@ -14,6 +14,5 @@ jobs:
       
       - name: Locate
         run: |
-          pwd
-          ls -la
+          chmod +x tests/test.sh
           ls -la tests
