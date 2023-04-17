@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose-files: ["activemq.yml, certs.yml"]
+        compose-files: ["tests/activemq.yml, tests/certs.yml"]
             
             #Comment strings
             #|
