@@ -20,8 +20,7 @@ jobs:
             #|
             #graphite.yml, mysql.yml, postgres.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml]
       
-      steps:
-      
+    steps:       
       - name: Checkout
         uses: actions/checkout@v3
       
