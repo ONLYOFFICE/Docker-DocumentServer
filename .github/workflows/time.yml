@@ -19,3 +19,4 @@ jobs:
           export config="tests/*.yml"
           chmod +x tests/test.sh
           echo $config
+          bash tests/test.sh
