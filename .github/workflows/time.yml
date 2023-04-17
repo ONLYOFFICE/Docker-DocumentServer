@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: " Compose files:${{matrix.compose-files}} "
+    name: " Start test files:${{matrix.compose-files}} "
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       
-      - name: Start Postgres
+      - name: "Test files"
         run: |
           cd tests
           ls -la
