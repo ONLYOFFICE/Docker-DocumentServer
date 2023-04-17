@@ -1,6 +1,8 @@
 name : Tests
 
 on:
+  schedule:
+   - cron: '0 18 * * 7'
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
