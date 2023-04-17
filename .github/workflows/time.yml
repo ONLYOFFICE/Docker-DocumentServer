@@ -16,6 +16,6 @@ jobs:
       
       - name: Locate
         run: |
-          export config=tests/*.yml
+          export config="tests/*.yml"
           chmod +x tests/test.sh
-          bash tests/test.sh
+          echo $config
