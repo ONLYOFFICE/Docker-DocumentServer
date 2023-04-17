@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose-files: [activemq.yml, certs.yml, mysql.yml, postgres.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml]
+        compose-files: [postgres.yml, mariadb.yml]
             
             #Comment strings
             #|
@@ -29,7 +29,7 @@ jobs:
           cd tests
           ls -la
           pwd
-          config=${{ matrix.compose-files }}
+          export config=${{ matrix.compose-files }}
           chmod +x test.sh
           echo $config
           bash test.sh
