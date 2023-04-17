@@ -16,3 +16,5 @@ jobs:
         run: |
           pwd
           ls -la
+          chmod +x ./tests/test.sh
+          ./tests/test.sh
