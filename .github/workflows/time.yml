@@ -8,11 +8,12 @@ on:
         #    - cron: '0 18 * * 6'
 
 jobs:
-  matrix:
-      compose-files: [activemq.yml, certs.yml, graphite.yml, mysql.yml, postgres.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml]
   build:
     runs-on: ubuntu-latest
-    steps:
+      strategy:
+        matrix:
+          compose-files: [activemq.yml, certs.yml, graphite.yml, mysql.yml, postgres.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml]
+      steps:
       
       - name: Checkout
         uses: actions/checkout@v3
