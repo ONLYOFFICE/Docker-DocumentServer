@@ -1,9 +1,8 @@
 name : Tests
 
 on:
-  push:
   schedule:
-    - cron: '0 15,16,17 * * 2'
+    - cron: '0 14,15,16 * * 2'
 
 
   #push:
