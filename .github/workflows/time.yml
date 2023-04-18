@@ -1,10 +1,14 @@
 name : Tests
 
 on:
-  schedule:
-    - cron: '40 14 * * 2'  
+  push:
+    tags:
+      - "v*"
   pull_request:
-    types: [closed, assigned, opened, reopened]
+    tags:
+      - "v*"
+  schedule:
+    - cron: '40 12 * * 2'
 
 
 jobs:
