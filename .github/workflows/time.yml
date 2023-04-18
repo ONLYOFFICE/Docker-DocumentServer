@@ -6,7 +6,7 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+"
   pull_request:
     schedule:
-      - cron: '10 11 * * 2'
+      - cron: '0 18 * * 6'
 
 
 
