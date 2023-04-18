@@ -2,7 +2,7 @@ name : Tests
 
 on:
   schedule:
-    - cron: '50 13 * * 2'
+    - cron: '07 11 * * 2'
   
   pull_request:
     types: [closed, assigned, opened, reopened]
