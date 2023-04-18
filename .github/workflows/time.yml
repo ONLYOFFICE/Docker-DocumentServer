@@ -2,7 +2,7 @@ name : Tests
 
 on:
   schedule:
-    - cron: '0 14,15,16 * * 2'
+    - cron: '0 21 * * 6'
 
 
   #push:
