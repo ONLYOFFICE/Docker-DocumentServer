@@ -2,10 +2,12 @@ name : Tests
 
 on:
   schedule:
-    - cron: '07 11 * * 2'
+    - cron: '15 14 * * 2'
+  workflow_dispatch:
+
   
-  pull_request:
-    types: [closed, assigned, opened, reopened]
+  #pull_request:
+  #  types: [closed, assigned, opened, reopened]
 
 
 jobs:
