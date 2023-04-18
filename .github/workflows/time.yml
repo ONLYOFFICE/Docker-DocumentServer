@@ -4,11 +4,11 @@ on:
   #push:
   #  tags:
   #    - "v*"
-  pull_request:
-    tags:
-      - "v*"
-  schedule:
-    - cron: '40 12 * * 2'
+  #pull_request:
+  #  tags:
+  #    - "v*"
+  #schedule:
+  #  - cron: '40 12 * * 2'
 
 
 jobs:
