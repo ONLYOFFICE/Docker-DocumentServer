@@ -38,6 +38,7 @@ jobs:
       - name: "Test files"
         run: |
           cd tests
-          export config=${{ matrix.compose-files }}:${{ matrix.POSTGRES_VERSION}}
+          export config=${{ matrix.compose-files }}
+          export version=${{ matrix.POSTGRES_VERSION }}
           chmod +x test.sh
           bash test.sh
