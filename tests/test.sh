@@ -37,7 +37,7 @@ fi
 
 
 # Run test environment
-docker-compose -p ds -f $config:$version up -d
+docker-compose -p ds -f $config up -d --build-arg POSTGRES_VERSION=$version
 
 wakeup_timeout=90
 
