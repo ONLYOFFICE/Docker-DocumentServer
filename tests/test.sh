@@ -33,9 +33,6 @@ if [[ ! -f $config ]]; then
   exit 1
 fi
 
-for version in $(echo $POSTGRES_VERSION | tr ',' ' '); do
-done
-
 # Run test environment
 docker-compose -p ds -f "${config}" up -d
 wakeup_timeout=90

@@ -41,6 +41,8 @@ jobs:
 
       - name: "Test file: ${{ matrix.compose_file}}"
         run: |
+          for version in $(echo $POSTGRES_VERSION | tr ',' ' '); do
+          done
           cd tests
           chmod +x test.sh
           bash test.sh
