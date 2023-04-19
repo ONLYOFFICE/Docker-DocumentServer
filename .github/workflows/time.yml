@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: "Start test file: ${{ matrix.compose_file.compose_file }}"
+    name: "Start test file: ${{ matrix.compose_file }}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,13 +32,13 @@ jobs:
              compose_file: redis.yml
 
     env:
-      config: ${{ matrix.compose_file.compose_file }}
+      config: ${{ matrix.compose_file }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Test file: ${{ matrix.compose_file.compose_file }}"
+      - name: "Test file: ${{ matrix.compose_file}}"
         run: |
           cd tests
           chmod +x test.sh
