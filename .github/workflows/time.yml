@@ -13,10 +13,7 @@ jobs:
       matrix:
         compose_file: [postgres.yml, graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml]
         include:
-           - POSTGRES_VERSION: 9
-           - POSTGRES_VERSION: 10
-           - POSTGRES_VERSION: 11
-           - POSTGRES_VERSION: 12
+           - POSTGRES_VERSION: [9, 10, 11, 12]
              compose_file: postgres.yml
            - MYSQL_VERSION: 8
            - MYSQL_VERSION: 5
