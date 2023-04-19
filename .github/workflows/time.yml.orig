@@ -1,9 +1,9 @@
-#name : Tests
-#
-#on:
-# push:
-#  schedule:
-#    - cron: '0 21 * * 6'
+name : Tests
+
+on:
+ push:
+  schedule:
+    - cron: '0 21 * * 6'
 
 
   #push:
@@ -20,11 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose-files: [postgres.yml, mariadb.yml, graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml]
-        include:
-          - compose-files: postgres.yml
-            POSTGRES_VERSION: 9
-          - compose-files: postgres.yml
+        compose-files: []
 
 #Comment strings
 #|
