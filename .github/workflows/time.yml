@@ -16,8 +16,8 @@ jobs:
             - compose_file:
                 compose_files: postgres.yml
                 POSTGRES_VERSION: 9
-      include:
-        - ${compose_file}
+        include:
+          - ${compose_file}
 
     env:
       POSTGRES_VERSION: ${{ matrix.POSTGRES_VERSION }}
