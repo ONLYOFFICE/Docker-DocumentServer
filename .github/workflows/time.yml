@@ -29,19 +29,6 @@ jobs:
         REDIS_VERSION:
           - 6
           - 5
-      include:
-        - compose_file: postgres.yml
-          POSTGRES_VERSION: ${{ matrix.POSTGRES_VERSION }}
-        - compose_file: mysql.yml
-          MYSQL_VERSION: ${{ matrix.MYSQL_VERSION }}
-        - compose_file: mariadb.yml
-          MARIADB_VERSION: ${{ matrix.MARIADB_VERSION }}
-        - compose_file: activemq.yml
-          ACTIVEMQ_VERSION: ${{ matrix.ACTIVEMQ_VERSION }}
-        - compose_file: rabbitmq.yml
-          RABBITMQ_VERSION: ${{ matrix.RABBITMQ_VERSION }}
-        - compose_file: redis.yml
-          REDIS_VERSION: ${{ matrix.REDIS_VERSION }}
 
     env:
       config: ${{ matrix.compose_file }}
@@ -55,3 +42,23 @@ jobs:
           cd tests
           chmod +x test.sh
           bash test.sh
+
+    include:
+      - matrix:
+          compose_file: postgres.yml
+          POSTGRES_VERSION: ${{ matrix.POSTGRES_VERSION }}
+      - matrix:
+          compose_file: mysql.yml
+          MYSQL_VERSION: ${{ matrix.MYSQL_VERSION }}
+      - matrix:
+          compose_file: mariadb.yml
+          MARIADB_VERSION: ${{ matrix.MARIADB_VERSION }}
+      - matrix:
+          compose_file: activemq.yml
+          ACTIVEMQ_VERSION: ${{ matrix.ACTIVEMQ_VERSION }}
+      - matrix:
+          compose_file: rabbitmq.yml
+          RABBITMQ_VERSION: ${{ matrix.RABBITMQ_VERSION }}
+      - matrix:
+          compose_file: redis.yml
+          REDIS_VERSION: ${{ matrix.REDIS_VERSION }}
