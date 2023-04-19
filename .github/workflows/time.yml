@@ -13,9 +13,9 @@ jobs:
     strategy:
       matrix:
         compose-files:
-          - compose_file:
-              compose_files: postgres.yml
-              POSTGRES_VERSION: 9
+            - compose_file:
+                compose_files: postgres.yml
+                POSTGRES_VERSION: 9
       include:
         - ${compose_file}
 
