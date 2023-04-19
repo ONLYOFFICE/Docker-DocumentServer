@@ -36,9 +36,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       
-      - name: "Test files ${{matrix.postgres.yml}}"
+      - name: "Test files"
         run: |
           cd tests
-          export config=${{ matrix.postgres.yml }}
+          export config=${{ matrix.compose-files }}
           chmod +x test.sh
           bash test.sh
