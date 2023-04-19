@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         compose_file: [postgres.yml, graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml]
-          include:
+        include:
            - POSTGRES_VERSION: 9
            - POSTGRES_VERSION: 10
            - POSTGRES_VERSION: 11
