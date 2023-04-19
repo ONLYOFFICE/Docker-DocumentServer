@@ -1,4 +1,4 @@
-name : Tests
+name: Tests
 
 on:
   push:
@@ -11,16 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose_file:
-          compose_files: postgres.yml
-          POSTGRES_VERSION: 9
+        compose_files:
+          - compose_file: postgres.yml
+            POSTGRES_VERSION: 9
       include:
-        - compose_files: ${{ matrix.compose_file.compose_files }}
-          POSTGRES_VERSION: ${{ matrix.compose_file.POSTGRES_VERSION }}
+        - compose_files: ${{ matrix.compose_files }}
 
     env:
       POSTGRES_VERSION: ${{ matrix.compose_file.POSTGRES_VERSION }}
-      config: ${{ matrix.compose_file.compose_files }}
+      config: ${{ matrix.compose_file.compose_file }}
 
     steps:
       - name: Checkout
