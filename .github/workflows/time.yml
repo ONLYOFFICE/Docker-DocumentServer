@@ -1,6 +1,7 @@
 name : Tests
 
 on:
+  push:
   schedule:
     - cron: '0 21 * * 6'
 
@@ -20,7 +21,13 @@ jobs:
     strategy:
       matrix:
         compose-files: [postgres.yml, mariadb.yml, graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml]
-            
+        include:
+          - compose-files: postgres.yml   
+            POSTGRES_VERSION: 9
+            POSTGRES_VERSION: 9.5
+            POSTGRES_VERSION: 10
+            POSTGRES_VERSION: 11
+            POSTGRES_VERSION: 12
 #Comment strings
 #|
 #|
@@ -31,12 +38,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       
-      - name: "Test files ${{matrix.compose-files}}"
+      - name: "Test files ${{matrix.postgres.yml}}"
         run: |
           cd tests
-          ls -la
-          pwd
-          export config=${{ matrix.compose-files }}
+          export config=${{ matrix.postgres.yml }}
           chmod +x test.sh
-          echo $config
           bash test.sh
