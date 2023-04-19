@@ -23,7 +23,7 @@ jobs:
         compose-files: [postgres.yml]
         include:
           - compose-files: postgres.yml   
-            POSTGRES_VERSION: 9
+            POSTGRES_VERSION: -9.5
 
 #Comment strings
 #|
