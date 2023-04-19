@@ -35,12 +35,6 @@ if [[ ! -f $config ]]; then
   exit 1
 fi
 
-# Check if the version exists
-if [[ ! -f $version ]]; then
-  echo "Version $version doesn't exist"
-  exit 1
-fi
-
 
 # Run test environment
 docker-compose -p ds -f $config:$version up -d
