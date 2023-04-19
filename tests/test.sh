@@ -27,17 +27,14 @@ else
   url=${url:-"http://localhost"}
 fi
 
-
-
 # Check if the yml exists
 if [[ ! -f $config ]]; then
   echo "File $config doesn't exist!"
   exit 1
 fi
 
-
 # Run test environment
-docker-compose -p ds -f $config up -d --build --build-arg *_VERSION=$version
+docker-compose -p ds -f ${config} up -d
 wakeup_timeout=90
 
 # Get documentserver healthcheck status
@@ -53,4 +50,4 @@ else
   exit 1
 fi
 
-docker-compose -p ds -f $config down
+docker-compose -p ds -f ${config} down

@@ -6,39 +6,29 @@ on:
     - cron: '0 21 * * 6'
 
 
-  #push:
-    #tags:
-      #- "v[0-9]+.[0-9]+.[0-9]+"
-  #pull_request:
-    #tags:
-      #- "v[0-9]+.[0-9]+.[0-9]+"
-
-
 jobs:
   build:
     name: " Start test files:${{matrix.compose-files}} "
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose-files: [postgres.yml]
-        include:
-          - compose-files: postgres.yml   
-            POSTGRES_VERSION: 9
+        compose-files:
+          - compose_file:
+              compose_files: postgres.yml
+              POSTGRES_VERSION: 9
+      include:
+        - ${compose_file}
 
-#Comment strings
-#|
-#|
-#graphite.yml, mysql.yml, postgres.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, 
-#mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml, postgres.yml
-      
-    steps:       
+    env:
+      POSTGRES_VERSION: ${{ matrix.POSTGRES_VERSION }}
+      config: ${{ matrix.compose_file.compose_files }}
+
+    steps:
       - name: Checkout
         uses: actions/checkout@v3
-      
+
       - name: "Test files"
         run: |
           cd tests
-          export config=${{ matrix.compose-files }}
-          export version=${{ matrix.POSTGRES_VERSION }}
           chmod +x test.sh
           bash test.sh
