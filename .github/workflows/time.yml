@@ -11,24 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose_file:
-          - { compose_file: postgres.yml, POSTGRES_VERSION:-12 }
-          - { compose_file: postgres.yml, POSTGRES_VERSION:-11 }
-          - { compose_file: postgres.yml, POSTGRES_VERSION:-10 }
-          - { compose_file: postgres.yml, POSTGRES_VERSION:-9 }
-          - { compose_file: activemq.yml, ACTIVEMQ_VERSION:-latest }
-          - { compose_file: certs-customized.yml }
-          - { compose_file: certs.yml }
-          - { compose_file: graphite.yml }
-          - { compose_file: mariadb.yml, MARIADB_VERSION:-10 }
-          - { compose_file: mysql.yml, MYSQL_VERSION:-8 }
-          - { compose_file: mysql.yml, MYSQL_VERSION:-5 }
-          - { compose_file: postgres-old.yml }
-          - { compose_file: rabbitmq-old.yml }
-          - { compose_file: rabbitmq.yml, RABBITMQ_VERSION:-3 }
-          - { compose_file: redis.yml, REDIS_VERSION:-6 }
-          - { compose_file: redis.yml, REDIS_VERSION:-5 }
-          - { compose_file: standalone.yml }
+        compose_file: [postgres.yml, graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml]
+          include:
+           - POSTGRES_VERSION: 9
+           - POSTGRES_VERSION: 10
+           - POSTGRES_VERSION: 11
+           - POSTGRES_VERSION: 12
+             compose_file: postgres.yml
+           - MYSQL_VERSION: 8
+           - MYSQL_VERSION: 5
+             compose_file: mysql.yml
+           - MARIADB_VERSION: 10
+             compose_file: mariadb.yml
+           - ACTIVEMQ_VERSION: latest
+             compose_file: activemq.yml
+           - RABBITMQ_VERSION: 3
+             compose_file: rabbitmq.yml
+           - REDIS_VERSION: 6
+           - REDIS_VERSION: 5
+             compose_file: redis.yml
 
     env:
       config: ${{ matrix.compose_file.compose_file }}
