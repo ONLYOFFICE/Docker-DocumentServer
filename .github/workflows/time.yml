@@ -11,11 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose_files:
-          - compose_file: postgres.yml
-            POSTGRES_VERSION: 9
-            include:
-              - compose_files: ${{ matrix.compose_files }}
+        compose_file:
+          - { compose_file: postgres.yml, POSTGRES_VERSION: 9 }
 
     env:
       POSTGRES_VERSION: ${{ matrix.compose_file.POSTGRES_VERSION }}
