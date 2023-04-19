@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: "Start test files: ${{ matrix.compose_file.compose_file }}"
+    name: "Start test file: ${{ matrix.compose_file.compose_file }}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -37,7 +37,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Test files ${{ matrix.compose_file.compose_file }}"
+      - name: "Test file: ${{ matrix.compose_file.compose_file }}"
         run: |
           cd tests
           chmod +x test.sh
