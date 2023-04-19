@@ -37,8 +37,7 @@ fi
 
 
 # Run test environment
-docker-compose -p ds -f $config up -d --build-arg POSTGRES_VERSION=$version
-
+docker-compose -p ds -f $config up -d --build --build-arg *_VERSION=$version
 wakeup_timeout=90
 
 # Get documentserver healthcheck status
