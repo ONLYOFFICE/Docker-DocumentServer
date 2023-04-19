@@ -1,9 +1,9 @@
-name : Tests
-
-on:
-  push:
-  schedule:
-    - cron: '0 21 * * 6'
+#name : Tests
+#
+#on:
+# push:
+#  schedule:
+#    - cron: '0 21 * * 6'
 
 
   #push:
