@@ -34,7 +34,7 @@ if [[ ! -f $config ]]; then
 fi
 
 # Run test environment
-docker-compose -p ds -f ${config} up -d
+docker-compose -p ds -f "${config}" up -d
 wakeup_timeout=90
 
 # Get documentserver healthcheck status
@@ -50,4 +50,4 @@ else
   exit 1
 fi
 
-docker-compose -p ds -f ${config} down
+docker-compose -p ds -f "${config}" down
