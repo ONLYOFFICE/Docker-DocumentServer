@@ -4,7 +4,6 @@ ssl=${ssl:-false}
 private_key=${private_key:-tls.key}
 certificate_request=${certificate_request:-tls.csr}
 certificate=${certificate:-tls.crt}
-POSTGRES_VERSION=(9 10 11 12)
 
 # Generate certificate
 if [[ $ssl == "true" ]]; then
@@ -34,25 +33,21 @@ if [[ ! -f $config ]]; then
   exit 1
 fi
 
-# Loop through each POSTGRES_VERSION and run test environment
-for version in "${POSTGRES_VERSION[@]}"
-do
-  echo "Testing Postgres version $version"
-  POSTGRES_VERSION=$version docker-compose -p ds -f "${config}" up -d
-  wakeup_timeout=90
+# Run test environment
+docker-compose -p ds -f "${config}" up -d
+wakeup_timeout=90
 
-  # Get documentserver healthcheck status
-  echo "Wait for service wake up"
-  sleep $wakeup_timeout
-  healthcheck_res=$(wget --no-check-certificate -qO - ${url}/healthcheck)
+# Get documentserver healthcheck status
+echo "Wait for service wake up"
+sleep $wakeup_timeout
+healthcheck_res=$(wget --no-check-certificate -qO - ${url}/healthcheck)
 
-  # Fail if it isn't true
-  if [[ $healthcheck_res == "true" ]]; then
-    echo "Healthcheck passed."
-  else
-    echo "Healthcheck failed!"
-    exit 1
-  fi
+# Fail if it isn't true
+if [[ $healthcheck_res == "true" ]]; then
+  echo "Healthcheck passed."
+else
+  echo "Healthcheck failed!"
+  exit 1
+fi
 
-  docker-compose -p ds -f "${config}" down
-done
+docker-compose -p ds -f "${config}" down

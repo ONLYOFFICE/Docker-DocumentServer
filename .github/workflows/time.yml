@@ -33,7 +33,7 @@ jobs:
 
     env:
       config: ${{ matrix.compose_file }}
-      POSTGRES_VERSION: ${{ matrix.POSTGRES_VERSION}}
+      POSTGRES_VERSION: "9,10,11,12"
 
     steps:
       - name: Checkout
