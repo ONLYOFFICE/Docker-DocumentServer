@@ -24,10 +24,8 @@ jobs:
         include:
           - compose-files: postgres.yml   
             POSTGRES_VERSION: 9
+          - compose-files: postgres.yml
             POSTGRES_VERSION: 9.5
-            POSTGRES_VERSION: 10
-            POSTGRES_VERSION: 11
-            POSTGRES_VERSION: 12
 #Comment strings
 #|
 #|
