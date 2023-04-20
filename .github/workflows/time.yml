@@ -25,11 +25,17 @@ jobs:
       - name: "Test file: ${{ matrix.compose_file}}"
         run: |
           cd tests
-          for MYSQL_VERSION in 5 8; do
-            export MYSQL_VERSION=$MYSQL_VERSION
-          done
-          for POSTGRES_VERSION in ${{ matrix.version }}; do
-            export POSTGRES_VERSION=$POSTGRES_VERSION
+          export config=${{ matrix.compose_file }}
+          for version in ${{ matrix.version }}; do
+            if [ ${{ matrix.compose_file }} == "mysql.yml" ]; then
+              if [ $MYSQL_VERSION == "5" ] || [ $MYSQL_VERSION == "8" ]; then
+                MYSQL_VERSION=$MYSQL_VERSION
+              fi
+            elif [ ${{ matrix.compose_file }} == "postgres.yml" ]; then
+              if [ $POSTGRES_VERSION == "9" ] || [ $POSTGRES_VERSION == "10" ] || [ $POSTGRES_VERSION == "11" ] || [ $POSTGRES_VERSION == "12" ]; then
+                POSTGRES_VERSION=$POSTGRES_VERSION
+              fi
+            fi
           done
           chmod +x test.sh
           bash test.sh
