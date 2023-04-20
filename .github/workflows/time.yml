@@ -27,7 +27,7 @@
             export config=${{ matrix.compose_file }}
 
             for version in "${{ matrix.version }}"; do
-              export POSTGRES_VERSION=$version
+              export POSTGRES_VERSION=${version#*=}
               chmod +x test.sh
               bash test.sh
             done
