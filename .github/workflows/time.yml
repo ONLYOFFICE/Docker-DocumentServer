@@ -28,7 +28,7 @@ jobs:
           export config=${{ matrix.compose_file }}
           for version in ${{ matrix.version }}; do
             if [ ${{ matrix.compose_file }} == "mysql.yml" ]; then
-              if [ $MYSQL_VERSION == "5" ] || [ $MYSQL_VERSION == "8" ]; then
+              if [ $MYSQL_VERSION == "5" ] || [ $MYSQL_VERSION == "8" ] || [ $MYSQL_VERSION !== "9" ]; then
                 MYSQL_VERSION=$MYSQL_VERSION
               fi
             elif [ ${{ matrix.compose_file }} == "postgres.yml" ]; then
