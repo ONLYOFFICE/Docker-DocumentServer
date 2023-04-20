@@ -12,12 +12,7 @@ jobs:
     strategy:
       matrix:
         compose_file: [postgres.yml]
-        version:
-          - POSTGRESQL_VERSION=9
-          - POSTGRESQL_VERSION=10
-          - POSTGRESQL_VERSION=11
-          - POSTGRESQL_VERSION=12
-
+        version: ["", "POSTGRES_VERSION=9", "POSTGRES_VERSION=10", "POSTGRES_VERSION=11", "POSTGRES_VERSION=12",]
 
 # graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml
 
@@ -32,7 +27,7 @@ jobs:
           export config=${{ matrix.compose_file }}
 
           for POSTGRES_VERSION in ${{ matrix.version }}; do
-            export POSTGRES_VERSION=$POSTGRES_VERSION
+            export POSTGRES_VERSION=${{ matrix.version }}
             chmod +x test.sh
             bash test.sh
           done
