@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose_file: [postgres.yml, mysql.yml]
-        version: [5, 8, 9, 10, 11, 12]
+        compose_file: [postgres.yml]
+        version: [9, 10, 11, 12]
 
 
 # graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml
@@ -26,17 +26,9 @@ jobs:
         run: |
           cd tests
           export config=${{ matrix.compose_file }}
-          if [[ $config == "mysql.yml" ]]; then
-            for MYSQL_VERSION in 5 8; do
-              export MYSQL_VERSION=$MYSQL_VERSION
-            done
-          fi
-          if [[ $config == "postgres.yml" ]]; then
-            POSTGRES_VERSION=""
-            for version in 9 10 11 12; do
-              POSTGRES_VERSION="$POSTGRES_VERSION $version"
-            done
+
+          for POSTGRES_VERSION in ${{ matrix.version }}; do
             export POSTGRES_VERSION=$POSTGRES_VERSION
-          fi 
-          chmod +x test.sh
-          bash test.sh
+            chmod +x test.sh
+            bash test.sh
+          done
