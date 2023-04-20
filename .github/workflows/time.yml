@@ -15,12 +15,11 @@ jobs:
         include:
           - compose_file: postgres.yml
             POSTGRES_VERSION: 9
+          - compose_file: postgres.yml
+            POSTGRES_VERSION: 10
 
 # graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml
 
-    env:
-      config: ${{ matrix.compose_file }}
-      POSTGRES_VERSION: ${{ matrix.POSTGRES_VERSION}}
 
     steps:
       - name: Checkout
@@ -29,5 +28,7 @@ jobs:
       - name: "Test file: ${{ matrix.compose_file}}"
         run: |
           cd tests
+          export config=${{matrix.compose_file}}
+          export POSTGRES_VERSION=${{matrix.POSTGRES_VERSION}}
           chmod +x test.sh
           bash test.sh
