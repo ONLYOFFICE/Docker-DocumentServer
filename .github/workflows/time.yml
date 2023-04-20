@@ -1,35 +1,33 @@
-name: Tests
+  name: Tests
 
-on:
-  push:
-  schedule:
-    - cron: '0 21 * * 6'
+  on:
+    push:
+    schedule:
+      - cron: '0 21 * * 6'
 
-jobs:
-  build:
-    name: "Start test file: ${{ matrix.compose_file }}"
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        compose_file: [postgres.yml]
-        version:
-          - POSTGRES_VERSION=9
-          - POSTGRES_VERSION=10
+  jobs:
+    build:
+      name: "Start test file: ${{ matrix.compose_file }}"
+      runs-on: ubuntu-latest
+      strategy:
+        matrix:
+          compose_file: [postgres.yml]
+          version: ["", "POSTGRES_VERSION=9", "POSTGRES_VERSION=10", "POSTGRES_VERSION=11", "POSTGRES_VERSION=12"]
 
-# graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml
+  # graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml
 
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v3
 
-      - name: "Test file: ${{ matrix.compose_file}}"
-        run: |
-          cd tests
-          export config=${{ matrix.compose_file }}
+        - name: "Test file: ${{ matrix.compose_file}}"
+          run: |
+            cd tests
+            export config=${{ matrix.compose_file }}
 
-          for POSTGRES_VERSION in ${{ matrix.version }}; do
-            export POSTGRES_VERSION=$POSTGRES_VERSION
-          done
-          chmod +x test.sh
-          bash test.sh
+            for POSTGRES_VERSION in ${{ matrix.version[@] }}; do
+              export POSTGRES_VERSION=$POSTGRES_VERSION
+            done
+            chmod +x test.sh
+            bash test.sh
