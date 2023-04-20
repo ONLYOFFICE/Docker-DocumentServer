@@ -31,5 +31,6 @@ jobs:
           chmod +x tests/test.sh
           for version in 9 10 11 12; do
             export POSTGRES_VERSION=$version
+            export config=${{matrix.compose_file}}
             bash tests/test.sh
           done
