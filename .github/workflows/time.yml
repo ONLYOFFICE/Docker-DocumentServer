@@ -7,7 +7,7 @@
 
   jobs:
     build:
-      name: "Start test file: ${{ matrix.compose_file }}:${{matrix.version#*=}}"
+      name: "Start test file: ${{ matrix.compose_file }} POSTGRES:"${version#*=}
       runs-on: ubuntu-latest
       strategy:
         matrix:
@@ -21,7 +21,7 @@
         - name: Checkout
           uses: actions/checkout@v3
 
-        - name: "Test file: ${{ matrix.compose_file}}:${{matrix.version#*=}}"
+        - name: "Test file: ${{ matrix.compose_file}}"
           run: |
             cd tests
             export config=${{ matrix.compose_file }}
