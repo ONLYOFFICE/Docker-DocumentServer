@@ -1,4 +1,4 @@
-  name: Tests
+  name: "Run Database List"
 
   on:
     push:
@@ -21,7 +21,7 @@
         - name: Checkout
           uses: actions/checkout@v3
 
-        - name: "Test file: ${{ matrix.compose_file}}"
+        - name: "Test file: ${{ matrix.compose_file}}:${version#*=}"
           run: |
             cd tests
             export config=${{ matrix.compose_file }}
