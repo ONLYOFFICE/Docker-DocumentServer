@@ -16,7 +16,7 @@
 
   # graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml
       env:
-        versions: ${version#*=}
+        version: ${version#*=}
 
       steps:
         - name: Checkout
