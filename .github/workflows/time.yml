@@ -11,8 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose_file: [postgres.yml]
-        version: [9, 10, 11, 12]
+        compose_file: [postgres.yml, mysql.yml]
+        version:
+          - POSTGRESQL_VERSION=9
+          - POSTGRESQL_VERSION=10
+          - POSTGRESQL_VERSION=11
+          - POSTGRESQL_VERSION=12
 
 
 # graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml
