@@ -26,7 +26,7 @@ jobs:
           cd tests
           export config=${{ matrix.compose_file }}
           for version in "${{ matrix.version }}"; do
-            export POSTGRES_VERSION=${version#*=}
+            export ${{ matrix.variables }}
             chmod +x test.sh
             bash test.sh
           done
