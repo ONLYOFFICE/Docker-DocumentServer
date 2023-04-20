@@ -22,6 +22,9 @@ jobs:
           - compose_file: postgres.yml
             POSTGRES_VERSION: 12
 
+    env:
+      config: ${{ matrix.compose_file }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
