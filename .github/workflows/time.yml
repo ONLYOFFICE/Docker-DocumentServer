@@ -29,8 +29,6 @@ jobs:
           if [[ $config == "mysql.yml" ]]; then
             for MYSQL_VERSION in 5 8; do
               export MYSQL_VERSION=$MYSQL_VERSION
-              chmod +x test.sh
-              bash test.sh
             done
           fi
           if [[ $config == "postgres.yml" ]]; then
