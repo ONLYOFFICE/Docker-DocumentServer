@@ -25,9 +25,6 @@ jobs:
         run: |
           cd tests
           export config=${{ matrix.compose_file }}
-
-          for POSTGRES_VERSION in ${{ matrix.version }}; do
-            export POSTGRES_VERSION=$POSTGRES_VERSION
-            chmod +x test.sh
-            bash test.sh
-          done
+          export POSTGRES_VERSION=${{ matrix.compose_files }}
+          chmod +x test.sh
+          bash test.sh
