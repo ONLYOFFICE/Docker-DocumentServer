@@ -28,14 +28,13 @@ jobs:
           export config=${{ matrix.compose_file }}
           for version in ${{ matrix.version }}; do
             if [ ${{ matrix.compose_file }} == "mysql.yml" ]; then
-              if [ $MYSQL_VERSION == "5" ] || [ $MYSQL_VERSION == "8" ] || [ $MYSQL_VERSION !== "9" ]; then
-                MYSQL_VERSION=$MYSQL_VERSION
+              if [ $version == "5" ] || [ $version == "8" ]; then
+                continue
               fi
             elif [ ${{ matrix.compose_file }} == "postgres.yml" ]; then
-              if [ $POSTGRES_VERSION == "9" ] || [ $POSTGRES_VERSION == "10" ] || [ $POSTGRES_VERSION == "11" ] || [ $POSTGRES_VERSION == "12" ]; then
-                POSTGRES_VERSION=$POSTGRES_VERSION
+              if [ $version == "9" ] || [ $version == "10" ] || [ $version == "11" ] || [ $version == "12" ]; then
+                continue
               fi
             fi
+            MYSQL_VERSION=$version POSTGRES_VERSION=$version chmod +x test.sh && ./test.sh
           done
-          chmod +x test.sh
-          bash test.sh
