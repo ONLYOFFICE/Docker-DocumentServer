@@ -12,53 +12,36 @@ jobs:
     strategy:
       matrix:
         compose_file: [postgres.yml, graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml]
-        POSTGRES_VERSION:
-          - 9
-          - 10
-          - 11
-          - 12
-        MYSQL_VERSION:
-          - 8
-          - 5
-        MARIADB_VERSION:
-          - 10
-        ACTIVEMQ_VERSION:
-          - latest
-        RABBITMQ_VERSION:
-          - 3
-        REDIS_VERSION:
-          - 6
-          - 5
+        include:
+          - compose_file: postgres.yml
+            POSTGRES_VERSION:
+              - 9
+              - 10
+              - 11
+              - 12
+          - MYSQL_VERSION: 8
+          - MYSQL_VERSION: 5
+            compose_file: mysql.yml
+          - MARIADB_VERSION: 10
+            compose_file: mariadb.yml
+          - ACTIVEMQ_VERSION: latest
+            compose_file: activemq.yml
+          - RABBITMQ_VERSION: 3
+            compose_file: rabbitmq.yml
+          - REDIS_VERSION: 6
+          - REDIS_VERSION: 5
+            compose_file: redis.yml
 
     env:
       config: ${{ matrix.compose_file }}
+      POSTGRES_VERSION: ${{ matrix.POSTGRES_VERSION}}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Test file: ${{ matrix.compose_file }}"
+      - name: "Test file: ${{ matrix.compose_file}}"
         run: |
           cd tests
           chmod +x test.sh
           bash test.sh
-
-    include:
-      - matrix:
-          compose_file: postgres.yml
-          POSTGRES_VERSION: ${{ matrix.POSTGRES_VERSION }}
-      - matrix:
-          compose_file: mysql.yml
-          MYSQL_VERSION: ${{ matrix.MYSQL_VERSION }}
-      - matrix:
-          compose_file: mariadb.yml
-          MARIADB_VERSION: ${{ matrix.MARIADB_VERSION }}
-      - matrix:
-          compose_file: activemq.yml
-          ACTIVEMQ_VERSION: ${{ matrix.ACTIVEMQ_VERSION }}
-      - matrix:
-          compose_file: rabbitmq.yml
-          RABBITMQ_VERSION: ${{ matrix.RABBITMQ_VERSION }}
-      - matrix:
-          compose_file: redis.yml
-          REDIS_VERSION: ${{ matrix.REDIS_VERSION }}

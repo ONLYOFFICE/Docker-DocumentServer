@@ -6,27 +6,15 @@ on:
     - cron: '0 21 * * 6'
 
 
-  #push:
-    #tags:
-      #- "v[0-9]+.[0-9]+.[0-9]+"
-  #pull_request:
-    #tags:
-      #- "v[0-9]+.[0-9]+.[0-9]+"
-
-
 jobs:
   build:
     name: " Start test files:${{matrix.compose-files}} "
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose-files: []
+        compose-files: [graphite.yml, mysql.yml, postgres.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml, postgres.yml]
 
-#Comment strings
-#|
-#|
-#graphite.yml, mysql.yml, postgres.yml, rabbitmq.yml, standalone.yml, certs-customized.yml,
-#mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml, postgres.yml
+
 
     steps:
       - name: Checkout
