@@ -66,7 +66,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service nginx stop && \
     rm -rf /var/lib/apt/lists/*
 
-COPY config /app/ds/setup/config/
+COPY config/supervisor/ds/* /etc/supervisor/conf.d/
 COPY run-document-server.sh /app/ds/run-document-server.sh
 
 EXPOSE 80 443
