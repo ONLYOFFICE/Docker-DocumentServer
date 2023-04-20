@@ -30,7 +30,7 @@ jobs:
             export MYSQL_VERSION=$MYSQL_VERSION
             for POSTGRES_VERSION in 9 10 11 12; do
               export POSTGRES_VERSION=$POSTGRES_VERSION
-              chmod +x test.sh
-              bash test.sh
             done
           done
+          chmod +x test.sh
+          bash test.sh
