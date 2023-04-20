@@ -26,11 +26,17 @@ jobs:
         run: |
           cd tests
           export config=${{ matrix.compose_file }}
-          for MYSQL_VERSION in 5 8; do
-            export MYSQL_VERSION=$MYSQL_VERSION
+          if [[ $config == "mysql.yml" ]]; then
+            for MYSQL_VERSION in 5 8; do
+              export MYSQL_VERSION=$MYSQL_VERSION
+              chmod +x test.sh
+              bash test.sh
+            done
+          fi
+          if [[ $config == "postgres.yml" ]]; then
             for POSTGRES_VERSION in 9 10 11 12; do
               export POSTGRES_VERSION=$POSTGRES_VERSION
             done
-          done
+          fi
           chmod +x test.sh
           bash test.sh
