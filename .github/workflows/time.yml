@@ -26,12 +26,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up Docker Compose
-        uses: docker/compose-action@1.2.1
-        with:
-          compose-file: ${{ matrix.compose_file }}
-          compose-version: '1.27.4'
-
       - name: Run tests
         run: |
           chmod +x tests/test.sh
