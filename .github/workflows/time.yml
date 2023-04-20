@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose_file: [postgres.yml, mysql.yml]
+        compose_file: [postgres.yml]
         version:
           - POSTGRESQL_VERSION=9
           - POSTGRESQL_VERSION=10
