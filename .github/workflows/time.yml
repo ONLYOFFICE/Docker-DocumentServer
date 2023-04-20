@@ -7,7 +7,7 @@
 
   jobs:
     build:
-      name: "Start test file: ${{ matrix.compose_file }}:VERSION=${version#*=}"
+      name: "Start test file: ${{ matrix.compose_file }}:${{ env.versions }}"
       runs-on: ubuntu-latest
       strategy:
         matrix:
@@ -15,13 +15,14 @@
           version: ["", "POSTGRES_VERSION=9", "POSTGRES_VERSION=10", "POSTGRES_VERSION=11", "POSTGRES_VERSION=12"]
 
   # graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml
-
+      env:
+        versions: ${version#*=}
 
       steps:
         - name: Checkout
           uses: actions/checkout@v3
 
-        - name: "Test file: ${{ matrix.compose_file }}:VERSION=${version#*=}"
+        - name: "Test file: ${{ matrix.compose_file }}"
           run: |
             cd tests
             export config=${{ matrix.compose_file }}
