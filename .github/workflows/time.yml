@@ -22,18 +22,20 @@ jobs:
           - compose_file: postgres.yml
             POSTGRES_VERSION: 12
 
-# graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml
-
-    env:
-      config: ${{ matrix.compose_file }}
-      POSTGRES_VERSION: ${{ matrix.POSTGRES_VERSION}}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Test file: ${{ matrix.compose_file}}"
+      - name: Set up Docker Compose
+        uses: docker/compose-action@1.2.1
+        with:
+          compose-file: ${{ matrix.compose_file }}
+          compose-version: '1.27.4'
+
+      - name: Run tests
         run: |
-          cd tests
-          chmod +x test.sh
-          bash test.sh
+          chmod +x tests/test.sh
+          for version in 9 10 11 12; do
+            export POSTGRES_VERSION=$version
+            bash tests/test.sh
+          done
