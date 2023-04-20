@@ -7,7 +7,7 @@
 
   jobs:
     build:
-      name: "Start test file: ${{ matrix.compose_file }}:${{ env.versions }}"
+      name: "Start test file: ${{ matrix.compose_file }}:${{ env.version }}"
       runs-on: ubuntu-latest
       strategy:
         matrix:
