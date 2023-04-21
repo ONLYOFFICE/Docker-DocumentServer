@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: "Start test file: ${{ matrix.compose_file }}:${{version_num}}"
+    name: "Start test file: ${{ matrix.compose_file }}:${{ steps.version_num}}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Test file: ${{ matrix.compose_file }}:${{version_num}}"
+      - name: "Test file: ${{ matrix.compose_file }}:${{steps.version_num}}"
         run: |
           cd tests
           export config=${{ matrix.compose_file }}
