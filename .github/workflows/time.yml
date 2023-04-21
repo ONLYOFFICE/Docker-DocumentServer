@@ -15,9 +15,9 @@ jobs:
         version: ["", "version=9", "version=10", "version=11", "version=12"]
         include:
           - compose_file: mysql.yml
-            version: "mysql_version=5"
+            version: "version=5"
           - compose_file: mysql.yml
-            version: "mysql_version=8"
+            version: "version=8"
 
     # graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml
 
@@ -34,7 +34,7 @@ jobs:
             export POSTGRES_VERSION=${version#*=}
           done
           for mysql_version in "${{ matrix.version }}"; do
-            export MYSQL_VERSION=${version#*=}
+            export MYSQL_VERSION=${mysql_version#*=}
           done
           chmod +x test.sh
           bash test.sh
