@@ -27,7 +27,7 @@ jobs:
           export config=${{ matrix.compose_file }}
           for version in "${{ matrix.version }}"; do
             export ${{ matrix.version }}
-            version_num=${{ version#*= }}
+            version_num=${ version#*= }
             echo "Version number:$version_num" >> GITHUB_ENV
             chmod +x test.sh
             bash test.sh
