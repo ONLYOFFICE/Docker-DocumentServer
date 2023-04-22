@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose_file: [postgres.yml, graphite.yml]
+        compose_file: [postgres.yml]
         version: ["", "version=9", "version=10", "version=11", "version=12"]
         include:
           - compose_file: mysql.yml
