@@ -46,38 +46,31 @@ jobs:
       - name: "Test file: ${{ matrix.compose_file }}:${{matrix.version}}"
         run: |
           cd tests
-        # Export .yml files in variable config
+          # Export .yml files in variable config
           export config=${{ matrix.compose_file }} 
-          
           # Sending version number in variable POSTGRES_VERSION
           for version in "${{ matrix.version }}"; do
             export POSTGRES_VERSION=${version#*=}                           # Deleting all symbols before version number
           done
-          
           # Sending version number in variable MYSQL_VERSION       
           for mysql_version in "${{ matrix.version }}"; do
             export MYSQL_VERSION=${mysql_version#*=}                        # Deleting all symbols before version number
           done
-          
           # Sending version number in variable MARIADB_VERSION               
           for mariadb_version in "${{ matrix.version }}"; do
                export MARIADB_VERSION=${mariadb_version#*=}                 # Deleting all symbols before version number
           done
-          
           # Sending version number in variable ACTIVEMQ_VERSION
           for activemq_version in "${{ matrix.version }}"; do
                export ACTIVEMQ_VERSION=${activemq_version#*=}               # Deleting all symbols before version number
           done
-          
           # Sending version number in variable RABBITMQ_VERSION
           for rabbitmq_version in "${{ matrix.version }}"; do
                export RABBITMQ_VERSION=${rabbitmq_version#*=}               # Deleting all symbols before version number
           done
-          
           # Sending version number in variable REDIS_VERSION
           for redis_version in "${{ matrix.version }}"; do
                export REDIS_VERSION=${redis_version#*=}                     # Deleting all symbols before version number
           done
-          
           chmod +x test.sh
           bash test.sh
