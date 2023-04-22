@@ -18,6 +18,8 @@ jobs:
             version: "version=5"
           - compose_file: mysql.yml
             version: "version=8"
+          - compose_file: mysql.yml
+            version: ""
 
     # graphite.yml, mysql.yml, rabbitmq.yml, standalone.yml, certs-customized.yml, mariadb.yml, postgres-old.yml, rabbitmq-old.yml, redis.yml, mariadb.yml
 
