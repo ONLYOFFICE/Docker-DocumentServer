@@ -6,7 +6,7 @@ on:
     - cron: '0 21 * * 6'
 
 jobs:
-  start_files_1:
+  start_databases:
     name: "Databases: ${{ matrix.compose_file }}:${{matrix.version}}"
     runs-on: ubuntu-latest
     strategy:
@@ -65,7 +65,7 @@ jobs:
           chmod +x test.sh
           bash test.sh
 
-  start_files_2:
+  start_certs:
     name: "Cert files: ${{ matrix.cert_file }}"
     runs-on: ubuntu-latest
     strategy:
@@ -76,7 +76,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Cert files: ${{ matrix.compose_file }}:${{matrix.version}}"
+      - name: "Cert files: ${{ matrix.compose_file }}"
         run: |
           cd tests
           # Export .yml files in variable config
