@@ -6,82 +6,88 @@ on:
     - cron: '0 21 * * 6'
 
 jobs:
-  start_databases:
-    name: "Databases: ${{ matrix.compose_file }}:${{matrix.version}}"
+  start_databases_and_certs:
+    name: "File: ${{ matrix.name }}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
         compose_file: [postgres.yml]
-        version: ["version=9.5", "version=9", "version=10", "version=11", "version=12"]
+        version: ["POSTGRES_VERSION=9.5", "POSTGRES_VERSION=9", "POSTGRES_VERSION=10", "POSTGRES_VERSION=11", "POSTGRES_VERSION=12"]
+        name: "Test postgres file"
         include:
           - compose_file: activemq.yml
-            version: "version=latest"                 # latest version activemq
+            version: "ACTIVEMQ_VERSION=latest"                        # latest version activemq
+            name: "Test activemq latest file"
+
           - compose_file: activemq.yml
-            version: "version=5.14.3"                 # activemq 5.14.3
+            version: "ACTIVEMQ_VERSION=5.14.3"                        # activemq 5.14.3
+            name: "Test activemq 5.14.3 file"
+
           - compose_file: rabbitmq.yml
-            version: "version=latest"                 # rabbitmq latest
+            version: "RABBITMQ_VERSION=latest"                        # rabbitmq latest
+            name: "Test rabbitmq latest file"
+
           - compose_file: rabbitmq.yml
-            version: "version=3"                      # rabbitmq 3
+            version: "RABBITMQ_VERSION=3"                             # rabbitmq 3
+            name: "Test rabbitmq 3 file"
+
           - compose_file: redis.yml
-            version: "version=5"                      # redis 5
+            version: "REDIS_VERSION=5"                                # redis 5
+            name: "Test redis 5 file"
+
           - compose_file: redis.yml
-            version: "version=6"                      # redis 6
+            version: "REDIS_VERSION=6"                                # redis 6
+            name: "Test redis 6 file"
+
           - compose_file: graphite.yml
-            version: "version=latest"                 # graphite latest
+            version: "GRAPHITE_VERSION=latest"                        # graphite latest
+            name: "Test graphite latest file"
+
+          - compose_file: mysql.yml
+            version: "MYSQL_VERSION=5"                                # mysql 5
+            name: "Test mysql 5 file"
+
+          - compose_file: mysql.yml
+            version: "MYSQL_VERSION=8"                                # mysql 8
+            name: "Test mysql 8 file"
+
+          - compose_file: mysql.yml
+            version: "MYSQL_VERSION=5.7"                              # mysql 5.7
+            name: "Test mysql 5.7 file"
+
+          - compose_file: mariadb.yml
+            version: "MARIADB_VERSION=10"                             # mariadb 10
+            name: "Test mariadb 10 file"
+
+          - compose_file: mariadb.yml
+            version: "MARIADB_VERSION=10.5"                           # mariadb 10.5
+            name: "Test mariadb 10.5 file"
+
+          - cert_file: certs.yml
+            name: "Start certs file"
+
+          - cert_file: certs-customized.yml
+            name: "Start certs-customized file"
+
+          - cert_file: standalone.yml
+            name: "Start standalone file"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Databases: ${{ matrix.compose_file }}:${{matrix.version}}"
+      - name: "Start ${{ matrix.name }}"
         run: |
           cd tests
           # Export .yml files in variable config
           export config=${{ matrix.compose_file }} 
-          # Sending version number in variable POSTGRES_VERSION
-          for version in "${{ matrix.version }}"; do
-            export POSTGRES_VERSION=${version#*=}                           # Deleting all symbols before version number
-          done
-          # Sending version number in variable ACTIVEMQ_VERSION
-          for activemq_version in "${{ matrix.version }}"; do
-               export ACTIVEMQ_VERSION=${activemq_version#*=}               # Deleting all symbols before version number
-          done
-          # Sending version number in variable RABBITMQ_VERSION
-          for rabbitmq_version in "${{ matrix.version }}"; do
-               export RABBITMQ_VERSION=${rabbitmq_version#*=}               # Deleting all symbols before version number
-          done
-          # Sending version number in variable REDIS_VERSION
-          for redis_version in "${{ matrix.version }}"; do
-               export REDIS_VERSION=${redis_version#*=}                     # Deleting all symbols before version number
-          done
-          # Sending version number in variable MYSQL_VERSION       
-          for mysql_version in "${{ matrix.version }}"; do
-            export MYSQL_VERSION=${mysql_version#*=}                        # Deleting all symbols before version number
-          done
-          # Sending version number in variable MARIADB_VERSION               
-          for mariadb_version in "${{ matrix.version }}"; do
-              export MARIADB_VERSION=${mariadb_version#*=}                  # Deleting all symbols before version number
+          echo "export versions for ${{ matrix.compose_file }}"
+          for v in ${{ matrix.version }}; do
+            export ${v}
           done
           chmod +x test.sh
           bash test.sh
-
-  start_certs:
-    name: "Cert files: ${{ matrix.cert_file }}"
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        cert_file: [ certs.yml, certs-customized.yml, standalone.yml ]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: "Cert files: ${{ matrix.cert_file }}"
-        run: |
-          cd tests
-          # Export .yml files in variable config
-          export config=${{ matrix.cert_file }} 
-          chmod +x test.sh
-          bash test.sh
-      
-        
+          echo config file is ${config}
+          echo postgresql version is ${POSTGRESQL_VERSION}
+          echo mysql version is ${MYSQL_VERSION}
+          echo rabbitmq version is ${RABBITMQ_VERSION}
