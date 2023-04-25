@@ -11,10 +11,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose_file: [postgres.yml]
-        version: ["POSTGRES_VERSION=9.5", "POSTGRES_VERSION=9", "POSTGRES_VERSION=10", "POSTGRES_VERSION=11", "POSTGRES_VERSION=12"]
-        name: ["Test postgres file"]
         include:
+          - compose_file: postgres.yml
+            version: "POSTGRES_VERSION=9.5"                           # postgtres 9.5 version
+            name: "Test postgres 9.5 file"
+
+          - compose_file: postgres.yml
+            version: "POSTGRES_VERSION=9"                             # postgtres 9 version
+            name: "Test postgres 9 file"
+
+          - compose_file: postgres.yml
+            version: "POSTGRES_VERSION=10"                            # postgtres 10 version
+            name: "Test postgres 10 file"
+
+          - compose_file: postgres.yml
+            version: "POSTGRES_VERSION=11"                            # postgtres 11 version
+            name: "Test postgres 11 file"
+
+          - compose_file: postgres.yml
+            version: "POSTGRES_VERSION=12"                            # postgtres 12 version
+            name: "Test postgres 12 file"
+
           - compose_file: activemq.yml
             version: "ACTIVEMQ_VERSION=latest"                        # latest version activemq
             name: "Test activemq latest file"
