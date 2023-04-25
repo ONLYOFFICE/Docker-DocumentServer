@@ -31,6 +31,11 @@ jobs:
           - compose_file: postgres.yml
             version: "POSTGRES_VERSION=12"                            # postgtres 12 version
             name: "Test postgres 12 file"
+            variables: " DB_NAME: mydb
+                DB_USER: myuser
+                DB_PWD: password
+                POSTGRES_DB: mydb
+                POSTGRES_USER: myuser "
 
           - compose_file: activemq.yml
             version: "ACTIVEMQ_VERSION=latest"                        # latest version activemq
