@@ -12,24 +12,24 @@ jobs:
     strategy:
       matrix:
         compose_file: [postgres.yml]
-        version: ["", "version=9", "version=10", "version=11", "version=12"]
+        version: ["version=9.5", "version=9", "version=10", "version=11", "version=12"]
         include:
           - compose_file: mysql.yml
             version: "version=5"                      #mysql 5
           - compose_file: mysql.yml
             version: "version=8"                      # mysql 8
           - compose_file: mysql.yml
-            version: ""                               # mysql 5.7
+            version: "version=5.7"                    # mysql 5.7
           - compose_file: mariadb.yml
             version: "version=10"                     # mariadb 10
           - compose_file: mariadb.yml
-            version: ""                               # mariadb 10.5
+            version: "version=10.5"                   # mariadb 10.5
           - compose_file: activemq.yml
-            version: "latest"                         # latest version activemq
+            version: "version=latest"                 # latest version activemq
           - compose_file: activemq.yml
-            version: ""                               # activemq 5.14.3
+            version: "version=5.14.3"                 # activemq 5.14.3
           - compose_file: rabbitmq.yml
-            version: ""                               # rabbitmq latest
+            version: "version=latest"                 # rabbitmq latest
           - compose_file: rabbitmq.yml
             version: "version=3"                      # rabbitmq 3
           - compose_file: redis.yml
@@ -37,7 +37,7 @@ jobs:
           - compose_file: redis.yml
             version: "version=6"                      # redis 6
           - compose_file: graphite.yml
-            version: ""                               # graphite latest
+            version: "version=latest"                 # graphite latest
 
     steps:
       - name: Checkout
