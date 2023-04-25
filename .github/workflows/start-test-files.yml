@@ -93,7 +93,7 @@ jobs:
           - compose_file: rabbitmq-old.yml
             name: "Start rabbitmq-old file"
 
-          - compose_file: postgres_old.yml
+          - compose_file: postgres-old.yml
             name: "Start postgres_old file"
 
           - compose_file: certs-customized.yml
