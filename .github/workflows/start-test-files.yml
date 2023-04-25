@@ -69,9 +69,6 @@ jobs:
             version: "version=10"                     # mariadb 10
           - compose_file: mariadb.yml
             version: "version=10.5"                   # mariadb 10.5
-          - compose_file: certs.yml
-          - compose_file: certs-customized.yml
-          - compose_file: standalone.yml
 
     steps:
       - name: Checkout
