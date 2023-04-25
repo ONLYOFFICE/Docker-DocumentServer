@@ -1,6 +1,7 @@
 run-name: " Scheduled tests ${{ inputs.deploy_target }}"
 
 on:
+  push:
   schedule:
     - cron: '35 14 * * 2'
 
