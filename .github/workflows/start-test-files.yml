@@ -90,6 +90,12 @@ jobs:
             variables: " ssl=true private_key=onlyoffice.key 
             certificate_request=onlyoffice.csr certificate=onlyoffice.crt"
 
+          - compose_file: rabbitmq-old.yml
+            name: "Start rabbitmq-old file"
+
+          - compose_file: postgres_old.yml
+            name: "Start postgres_old file"
+
           - compose_file: certs-customized.yml
             name: "Start certs-customized file"
             variables: " ssl=true
