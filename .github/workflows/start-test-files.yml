@@ -1,8 +1,8 @@
-name: "Test Docker-DocumentServer"
+run-name: "Scheduled tests Docker-DocumentServer"
 
 on:
   schedule:
-    - cron: '0 13 * * 2'
+    - cron: '35 14 * * 2'
 
 jobs:
   start_databases_and_certs:
