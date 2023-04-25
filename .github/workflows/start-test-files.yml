@@ -13,7 +13,7 @@ jobs:
       matrix:
         compose_file: [postgres.yml]
         version: ["POSTGRES_VERSION=9.5", "POSTGRES_VERSION=9", "POSTGRES_VERSION=10", "POSTGRES_VERSION=11", "POSTGRES_VERSION=12"]
-        name: "Test postgres file"
+        name: ["Test postgres file"]
         include:
           - compose_file: activemq.yml
             version: "ACTIVEMQ_VERSION=latest"                        # latest version activemq
