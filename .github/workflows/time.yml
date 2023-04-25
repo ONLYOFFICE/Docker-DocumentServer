@@ -6,7 +6,7 @@ on:
     - cron: '0 21 * * 6'
 
 jobs:
-  build:
+  start_files_1:
     name: "Start test file: ${{ matrix.compose_file }}:${{matrix.version}}"
     runs-on: ubuntu-latest
     strategy:
@@ -14,16 +14,6 @@ jobs:
         compose_file: [postgres.yml]
         version: ["version=9.5", "version=9", "version=10", "version=11", "version=12"]
         include:
-          - compose_file: mysql.yml
-            version: "version=5"                      #mysql 5
-          - compose_file: mysql.yml
-            version: "version=8"                      # mysql 8
-          - compose_file: mysql.yml
-            version: "version=5.7"                    # mysql 5.7
-          - compose_file: mariadb.yml
-            version: "version=10"                     # mariadb 10
-          - compose_file: mariadb.yml
-            version: "version=10.5"                   # mariadb 10.5
           - compose_file: activemq.yml
             version: "version=latest"                 # latest version activemq
           - compose_file: activemq.yml
@@ -52,14 +42,6 @@ jobs:
           for version in "${{ matrix.version }}"; do
             export POSTGRES_VERSION=${version#*=}                           # Deleting all symbols before version number
           done
-          # Sending version number in variable MYSQL_VERSION       
-          for mysql_version in "${{ matrix.version }}"; do
-            export MYSQL_VERSION=${mysql_version#*=}                        # Deleting all symbols before version number
-          done
-          # Sending version number in variable MARIADB_VERSION               
-          for mariadb_version in "${{ matrix.version }}"; do
-               export MARIADB_VERSION=${mariadb_version#*=}                 # Deleting all symbols before version number
-          done
           # Sending version number in variable ACTIVEMQ_VERSION
           for activemq_version in "${{ matrix.version }}"; do
                export ACTIVEMQ_VERSION=${activemq_version#*=}               # Deleting all symbols before version number
@@ -74,3 +56,38 @@ jobs:
           done
           chmod +x test.sh
           bash test.sh
+
+  start_files_2:
+    name: "Start test file: ${{ matrix.compose_file }}:${{matrix.version}}"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compose_file: [ mysql.yml ]
+        version: [ "version=5.7", "version=5", "version=8" ]
+        include:
+          - compose_file: mariadb.yml
+            version: "version=10"                     # mariadb 10
+          - compose_file: mariadb.yml
+            version: "version=10.5"                   # mariadb 10.5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: "Test file: ${{ matrix.compose_file }}:${{matrix.version}}"
+        run: |
+          cd tests
+          # Export .yml files in variable config
+          export config=${{ matrix.compose_file }} 
+          # Sending version number in variable MYSQL_VERSION       
+          for mysql_version in "${{ matrix.version }}"; do
+           export MYSQL_VERSION=${mysql_version#*=}                        # Deleting all symbols before version number
+          done
+          # Sending version number in variable MARIADB_VERSION               
+          for mariadb_version in "${{ matrix.version }}"; do
+              export MARIADB_VERSION=${mariadb_version#*=}                 # Deleting all symbols before version number
+          done
+          chmod +x test.sh
+          bash test.sh
+      
+        
