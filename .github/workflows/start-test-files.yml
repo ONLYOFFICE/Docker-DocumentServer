@@ -87,7 +87,3 @@ jobs:
           done
           chmod +x test.sh
           bash test.sh
-          echo config file is ${config}
-          echo postgresql version is ${POSTGRESQL_VERSION}
-          echo mysql version is ${MYSQL_VERSION}
-          echo rabbitmq version is ${RABBITMQ_VERSION}
