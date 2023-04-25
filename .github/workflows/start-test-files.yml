@@ -70,17 +70,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose_file: [ certs.yml, certs-customized.yml, standalone.yml ]
+        cert_file: [ certs.yml, certs-customized.yml, standalone.yml ]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Cert files: ${{ matrix.compose_file }}"
+      - name: "Cert files: ${{ matrix.cert_file }}"
         run: |
           cd tests
           # Export .yml files in variable config
-          export config=${{ matrix.compose_file }} 
+          export config=${{ matrix.cert_file }} 
           chmod +x test.sh
           bash test.sh
       
