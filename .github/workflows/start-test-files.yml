@@ -63,13 +63,13 @@ jobs:
             version: "MARIADB_VERSION=10.5"                           # mariadb 10.5
             name: "Test mariadb 10.5 file"
 
-          - cert_file: certs.yml
+          - compose_file: certs.yml
             name: "Start certs file"
 
-          - cert_file: certs-customized.yml
+          - compose_file: certs-customized.yml
             name: "Start certs-customized file"
 
-          - cert_file: standalone.yml
+          - compose_file: standalone.yml
             name: "Start standalone file"
 
     steps:
