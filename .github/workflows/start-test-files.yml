@@ -1,4 +1,4 @@
-name: "Run Database List"
+name: "Run Database List ${{ on.cron }}"
 
 on:
   push:
@@ -14,23 +14,23 @@ jobs:
         include:
           - compose_file: postgres.yml
             version: "POSTGRES_VERSION=9.5"                           # postgtres 9.5 version
-            name: "Test postgres 9.5 file"
+            name: "Test with Postgresql 9.5"
 
           - compose_file: postgres.yml
             version: "POSTGRES_VERSION=9"                             # postgtres 9 version
-            name: "Test postgres 9 file"
+            name: "Test with Postgresql 9"
 
           - compose_file: postgres.yml
             version: "POSTGRES_VERSION=10"                            # postgtres 10 version
-            name: "Test postgres 10 file"
+            name: "Test with Postgresql 10"
 
           - compose_file: postgres.yml
             version: "POSTGRES_VERSION=11"                            # postgtres 11 version
-            name: "Test postgres 11 file"
+            name: "Test with Postgresql 11"
 
           - compose_file: postgres.yml
             version: "POSTGRES_VERSION=12"                            # postgtres 12 version
-            name: "Test postgres 12 file"
+            name: "Test with Postgresql 12"
             variables: " DB_NAME: mydb
                 DB_USER: myuser
                 DB_PWD: password
@@ -39,67 +39,67 @@ jobs:
 
           - compose_file: activemq.yml
             version: "ACTIVEMQ_VERSION=latest"                        # latest version activemq
-            name: "Test activemq latest file"
+            name: "Test with Activemq latest"
 
           - compose_file: activemq.yml
             version: "ACTIVEMQ_VERSION=5.14.3"                        # activemq 5.14.3
-            name: "Test activemq 5.14.3 file"
+            name: "Test with Activemq 5.14.3"
 
           - compose_file: rabbitmq.yml
             version: "RABBITMQ_VERSION=latest"                        # rabbitmq latest
-            name: "Test rabbitmq latest file"
+            name: "Test with Rabbitmq latest"
 
           - compose_file: rabbitmq.yml
             version: "RABBITMQ_VERSION=3"                             # rabbitmq 3
-            name: "Test rabbitmq 3 file"
+            name: "Test with Rabbitmq 3"
 
           - compose_file: redis.yml
             version: "REDIS_VERSION=5"                                # redis 5
-            name: "Test redis 5 file"
+            name: "Test with Redis 5"
 
           - compose_file: redis.yml
             version: "REDIS_VERSION=6"                                # redis 6
-            name: "Test redis 6 file"
+            name: "Test with Redis 6"
 
           - compose_file: graphite.yml
             version: "GRAPHITE_VERSION=latest"                        # graphite latest
-            name: "Test graphite latest file"
+            name: "Test with Graphite latest"
 
           - compose_file: mysql.yml
             version: "MYSQL_VERSION=5"                                # mysql 5
-            name: "Test mysql 5 file"
+            name: "Test with MySQL 5"
 
           - compose_file: mysql.yml
             version: "MYSQL_VERSION=8"                                # mysql 8
-            name: "Test mysql 8 file"
+            name: "Test with MySQL 8"
 
           - compose_file: mysql.yml
             version: "MYSQL_VERSION=5.7"                              # mysql 5.7
-            name: "Test mysql 5.7 file"
+            name: "Test with MySQL 5.7"
 
           - compose_file: mariadb.yml
             version: "MARIADB_VERSION=10"                             # mariadb 10
-            name: "Test mariadb 10 file"
+            name: "Test with MariaDB 10"
 
           - compose_file: mariadb.yml
             version: "MARIADB_VERSION=10.5"                           # mariadb 10.5
-            name: "Test mariadb 10.5 file"
+            name: "Test with MariaDB 10.5"
 
           - compose_file: certs.yml
-            name: "Start certs file"
+            name: "Test with Certs"
             variables: " ssl=true 
             private_key=onlyoffice.key 
             certificate_request=onlyoffice.csr 
             certificate=onlyoffice.crt "
 
           - compose_file: rabbitmq-old.yml
-            name: "Start rabbitmq-old file"
+            name: "Test with rabbitmq-old"
 
           - compose_file: postgres-old.yml
-            name: "Start postgres_old file"
+            name: "Test with postgres_old"
 
           - compose_file: certs-customized.yml
-            name: "Start certs-customized file"
+            name: "Test with certs-customized"
             variables: " ssl=true
                 private_key=mycert.key
                 certificate_request=mycert.csr
@@ -108,7 +108,7 @@ jobs:
                 SSL_KEY_PATH=/var/www/onlyoffice/Data/certs/mycert.key "
 
           - compose_file: standalone.yml
-            name: "Start standalone file"
+            name: "Test with standalone file"
 
     steps:
       - name: Checkout
