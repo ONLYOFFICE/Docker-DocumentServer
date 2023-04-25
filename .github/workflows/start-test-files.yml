@@ -7,7 +7,7 @@ on:
 
 jobs:
   start_files_1:
-    name: "Start test file: ${{ matrix.compose_file }}:${{matrix.version}}"
+    name: "Databases: ${{ matrix.compose_file }}:${{matrix.version}}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -33,7 +33,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Test file: ${{ matrix.compose_file }}:${{matrix.version}}"
+      - name: "Databases: ${{ matrix.compose_file }}:${{matrix.version}}"
         run: |
           cd tests
           # Export .yml files in variable config
@@ -54,42 +54,33 @@ jobs:
           for redis_version in "${{ matrix.version }}"; do
                export REDIS_VERSION=${redis_version#*=}                     # Deleting all symbols before version number
           done
+          # Sending version number in variable MYSQL_VERSION       
+          for mysql_version in "${{ matrix.version }}"; do
+            export MYSQL_VERSION=${mysql_version#*=}                        # Deleting all symbols before version number
+          done
+          # Sending version number in variable MARIADB_VERSION               
+          for mariadb_version in "${{ matrix.version }}"; do
+              export MARIADB_VERSION=${mariadb_version#*=}                  # Deleting all symbols before version number
+          done
           chmod +x test.sh
           bash test.sh
 
   start_files_2:
-    name: "Start test file: ${{ matrix.compose_file }}:${{matrix.version}}"
+    name: "Cert files: ${{ matrix.cert_file }}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compose_file: [ mysql.yml ]
-        version: [ "version=5.7", "version=5", "version=8" ]
-        include:
-          - compose_file: mariadb.yml
-            version: "version=10"                     # mariadb 10
-          - compose_file: mariadb.yml
-            version: "version=10.5"                   # mariadb 10.5
-          - compose_file: certs.yml
-          - compose_file: certs-customized.yml
-          - compose_file: standalone.yml
+        compose_file: [ certs.yml, certs-customized.yml, standalone.yml ]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Test file: ${{ matrix.compose_file }}:${{matrix.version}}"
+      - name: "Cert files: ${{ matrix.compose_file }}:${{matrix.version}}"
         run: |
           cd tests
           # Export .yml files in variable config
           export config=${{ matrix.compose_file }} 
-          # Sending version number in variable MYSQL_VERSION       
-          for mysql_version in "${{ matrix.version }}"; do
-           export MYSQL_VERSION=${mysql_version#*=}                        # Deleting all symbols before version number
-          done
-          # Sending version number in variable MARIADB_VERSION               
-          for mariadb_version in "${{ matrix.version }}"; do
-              export MARIADB_VERSION=${mariadb_version#*=}                 # Deleting all symbols before version number
-          done
           chmod +x test.sh
           bash test.sh
       
