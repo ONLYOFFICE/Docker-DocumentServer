@@ -17,8 +17,7 @@ ARG DS_SUPERVISOR_CONF=/etc/supervisor/conf.d/ds.conf
 
 ### Remove all documentserver-example data ###
 
-RUN set -x \
-    && rm -rf /var/www/$COMPANY_NAME/$PRODUCT_NAME-example \
+RUN    rm -rf /var/www/$COMPANY_NAME/$PRODUCT_NAME-example \
     && rm -rf /etc/$COMPANY_NAME/$PRODUCT_NAME-example \
     && rm -f $DS_SUPERVISOR_CONF \ 
     && rm -f /etc/nginx/includes/ds-example.conf \
