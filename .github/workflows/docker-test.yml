@@ -34,6 +34,7 @@ jobs:
             
           - compose_file: postgres.yml  
             # postgresql custom variables
+            name: "Test postgres custom variables"
             variables: "DB_NAME=mydb                                
                 DB_USER=myuser
                 DB_PWD=password
