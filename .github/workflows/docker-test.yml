@@ -83,6 +83,9 @@ jobs:
           - compose_file: mariadb.yml
             version: "MARIADB_VERSION=10.5"                           # mariadb 10.5
             name: "Test with MariaDB 10.5"
+          - compose_file: certs.yml
+            name: "Test certs.yml"
+            variables: "ssl=true"
 
           - compose_file: certs.yml
             name: "Test with Certs"
