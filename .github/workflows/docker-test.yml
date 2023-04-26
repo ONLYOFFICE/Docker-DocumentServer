@@ -1,6 +1,7 @@
 run-name: "Scheduled tests Docker-DocumentServer"
 
 on:
+  push:
   schedule:
     - cron: '0 21 * * 6'
 
@@ -12,78 +13,79 @@ jobs:
       matrix:
         include:
           - compose_file: postgres.yml
-            version: "POSTGRES_VERSION=9.5"                           # postgtres 9.5 version
+            variables: "POSTGRES_VERSION=9.5"                           # postgtres 9.5 version
             name: "Test with Postgresql 9.5"
 
           - compose_file: postgres.yml
-            version: "POSTGRES_VERSION=9"                             # postgtres 9 version
+            variables: "POSTGRES_VERSION=9"                             # postgtres 9 version
             name: "Test with Postgresql 9"
 
           - compose_file: postgres.yml
-            version: "POSTGRES_VERSION=10"                            # postgtres 10 version
+            variables: "POSTGRES_VERSION=10"                            # postgtres 10 version
             name: "Test with Postgresql 10"
 
           - compose_file: postgres.yml
-            version: "POSTGRES_VERSION=11"                            # postgtres 11 version
+            variables: "POSTGRES_VERSION=11"                            # postgtres 11 version
             name: "Test with Postgresql 11"
 
           - compose_file: postgres.yml
-            version: "POSTGRES_VERSION=12"                            # postgtres 12 version
+            variables: "POSTGRES_VERSION=12"                            # postgtres 12 version
             name: "Test with Postgresql 12"
             
-            # postgresql custom values
-            variables: " DB_NAME: mydb                                
-                DB_USER: myuser
-                DB_PWD: password
-                POSTGRES_DB: mydb
-                POSTGRES_USER: myuser "
+          - compose_file: postgres.yml  
+            # postgresql custom variables
+            variables: "DB_NAME=mydb                                
+                DB_USER=myuser
+                DB_PWD=password
+                POSTGRES_DB=mydb
+                POSTGRES_USER=myuser"
 
           - compose_file: activemq.yml
-            version: "ACTIVEMQ_VERSION=latest"                        # latest version activemq
+            variables: "ACTIVEMQ_VERSION=latest"                        # latest version activemq
             name: "Test with Activemq latest"
 
           - compose_file: activemq.yml
-            version: "ACTIVEMQ_VERSION=5.14.3"                        # activemq 5.14.3
+            variables: "ACTIVEMQ_VERSION=5.14.3"                        # activemq 5.14.3
             name: "Test with Activemq 5.14.3"
 
           - compose_file: rabbitmq.yml
-            version: "RABBITMQ_VERSION=latest"                        # rabbitmq latest
+            variables: "RABBITMQ_VERSION=latest"                        # rabbitmq latest
             name: "Test with Rabbitmq latest"
 
           - compose_file: rabbitmq.yml
-            version: "RABBITMQ_VERSION=3"                             # rabbitmq 3
+            variables: "RABBITMQ_VERSION=3"                             # rabbitmq 3
             name: "Test with Rabbitmq 3"
 
           - compose_file: redis.yml
-            version: "REDIS_VERSION=5"                                # redis 5
+            variables: "REDIS_VERSION=5"                                # redis 5
             name: "Test with Redis 5"
 
           - compose_file: redis.yml
-            version: "REDIS_VERSION=6"                                # redis 6
+            variables: "REDIS_VERSION=6"                                # redis 6
             name: "Test with Redis 6"
 
           - compose_file: graphite.yml
-            version: "GRAPHITE_VERSION=latest"                        # graphite latest
+            variables: "GRAPHITE_VERSION=latest"                        # graphite latest
             name: "Test with Graphite latest"
 
           - compose_file: mysql.yml
-            version: "MYSQL_VERSION=5"                                # mysql 5
+            variables: "MYSQL_VERSION=5"                                # mysql 5
             name: "Test with MySQL 5"
 
           - compose_file: mysql.yml
-            version: "MYSQL_VERSION=8"                                # mysql 8
+            variables: "MYSQL_VERSION=8"                                # mysql 8
             name: "Test with MySQL 8"
 
           - compose_file: mysql.yml
-            version: "MYSQL_VERSION=5.7"                              # mysql 5.7
+            variables: "MYSQL_VERSION=5.7"                              # mysql 5.7
             name: "Test with MySQL 5.7"
 
           - compose_file: mariadb.yml
-            version: "MARIADB_VERSION=10"                             # mariadb 10
+            variables: "MARIADB_VERSION=10"                             # mariadb 10
             name: "Test with MariaDB 10"
 
           - compose_file: mariadb.yml
-            version: "MARIADB_VERSION=10.5"                           # mariadb 10.5
+            variables: "MARIADB_VERSION=10.5"                           # mariadb 10.5
             name: "Test with MariaDB 10.5"
             
           - compose_file: certs.yml                                   # certificates (default tls if onlyoffice not exists)            
@@ -123,8 +125,8 @@ jobs:
         run: |
           cd tests                                                    
           export config=${{ matrix.compose_file }}                    # Export .yml files in variable config
-          echo "export versions for ${{ matrix.compose_file }}"       
-          for v in ${{ matrix.version }}; do
+          echo "export variables for ${{ matrix.compose_file }}"       
+          for v in ${{ matrix.variables }}; do
             export ${v}
           done
           chmod +x test.sh
