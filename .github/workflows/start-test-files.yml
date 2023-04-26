@@ -1,4 +1,4 @@
-run-name: " Scheduled tests Docker-DocumentServer"
+run-name: "Scheduled tests Docker-DocumentServer"
 
 on:
   schedule:
