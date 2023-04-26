@@ -87,7 +87,7 @@ fi
 
 [ -z $JWT_SECRET ] && JWT_MESSAGE='JWT is enabled by default. A random secret is generated automatically. Run the command "docker exec $(sudo docker ps -q) sudo documentserver-jwt-status.sh" to get information about JWT.'
 
-JWT_SECRET=${JWT_SECRET:-$(pwgen -s 20)}
+JWT_SECRET=${JWT_SECRET:-$(pwgen -s 32)}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
@@ -497,7 +497,7 @@ update_supervisor_settings(){
   # Copy modified supervisor config
   cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
   sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf
-  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf etc/supervisor/conf.d/
+  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf /etc/supervisor/conf.d/
 }
 
 update_log_settings(){

@@ -1,0 +1,46 @@
+name : DeployTag
+
+on: workflow_dispatch
+  #tags:
+      #- "v[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Get Tag
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo ${TAG}
+          echo DOCKER_TAG=$( echo ${TAG} | sed 's/^.//') >> $GITHUB_ENV    
+        #- name: Set Versions
+        #uses: actions/github-script@v4
+          #id: set_version
+          #with:
+          #script: |
+            #const tag = context.ref.substring(10)
+            #const no_v = tag.replace('v', '')
+            #const dash_index = no_v.lastIndexOf('-')
+            #const no_dash = (dash_index > -1) ?  no_v.substring(0, dash_index) : no_v
+            # core.setOutput('tag', tag)
+            #core.setOutput('no-v', no_v)
+            #core.setOutput('no-dash', no_dash)
+
+     
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/docker-documentserver:${{env.DOCKER_TAG}}
