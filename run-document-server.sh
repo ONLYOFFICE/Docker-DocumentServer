@@ -600,7 +600,7 @@ else
   update_welcome_page
 fi
 
-find /etc/${COMPANY_NAME} -exec chown ds:ds {} \;
+find /etc/${COMPANY_NAME} ! -path '*logrotate*' -exec chown ds:ds {} \;
 
 #start needed local services
 for i in ${LOCAL_SERVICES[@]}; do
