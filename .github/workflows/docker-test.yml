@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - feature/docker-test
-  schedule:
-    - cron: '0 21 * * 6'
 
 jobs:
-  start_databases_and_certs:
+  add_files_in_matrix:
     name: "File: ${{ matrix.name }}"
     runs-on: ubuntu-latest
     strategy:
