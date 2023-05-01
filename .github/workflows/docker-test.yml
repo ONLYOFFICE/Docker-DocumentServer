@@ -129,5 +129,4 @@ jobs:
           for v in ${{ matrix.variables }}; do
             export ${v}
           done
-          chmod +x test.sh
-          bash test.sh
+          ./test.sh
