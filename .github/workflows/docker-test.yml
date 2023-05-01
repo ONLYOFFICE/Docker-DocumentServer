@@ -3,10 +3,10 @@ run-name: "Scheduled tests Docker-DocumentServer"
 on:
   push:
     branches:
-      - release
+      - feature
   pull_request:
     branches:
-      - release
+      - feature
   schedule:
     - cron: '0 21 * * 6'
 
