@@ -6,7 +6,7 @@ on:
       - feature/docker-test
 
 jobs:
-  add_files_in_matrix:
+  start_test_files:
     name: "File: ${{ matrix.name }}"
     runs-on: ubuntu-latest
     strategy:
