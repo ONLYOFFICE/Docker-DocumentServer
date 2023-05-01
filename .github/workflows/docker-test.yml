@@ -2,11 +2,7 @@ run-name: "Scheduled tests Docker-DocumentServer"
 
 on:
   push:
-    branches:
-      - feature/docker-test
   pull_request:
-    branches:
-      - feature/docker-test
 
 jobs:
   start_test_files:
