@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature
+  pull_request:
+    branches:
+      - feature
   schedule:
     - cron: '0 21 * * 6'
 
