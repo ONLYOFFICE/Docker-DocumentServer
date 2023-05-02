@@ -4,6 +4,9 @@ run-name: "Scheduled tests Docker-DocumentServer"
 on:
   push:
   pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - 'feature/**'
 
 jobs:
   start_test_files:
