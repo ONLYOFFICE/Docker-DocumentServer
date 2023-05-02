@@ -5,8 +5,10 @@ on:
   push:
   pull_request:
     types: [opened, reopened, synchronize]
-    paths:
+    paths-ignore:
+      - '.github/**'
       - 'tests/**'
+      - '**/README.md'
 
 jobs:
   start_test_files:
