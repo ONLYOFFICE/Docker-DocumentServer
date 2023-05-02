@@ -6,7 +6,7 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     branches:
-      - 'feature/**'
+      - 'feature/docker-test'
 
 jobs:
   start_test_files:
