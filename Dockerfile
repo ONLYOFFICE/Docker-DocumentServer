@@ -57,9 +57,8 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     sed 's|\(application\/zip.*\)|\1\n    application\/wasm wasm;|' -i /etc/nginx/mime.types && \
     pg_conftool $PG_VERSION main set listen_addresses 'localhost' && \
     service postgresql restart && \
-    sudo -u postgres psql -c "CREATE DATABASE $ONLYOFFICE_VALUE;" && \
     sudo -u postgres psql -c "CREATE USER $ONLYOFFICE_VALUE WITH password '$ONLYOFFICE_VALUE';" && \
-    sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE $ONLYOFFICE_VALUE TO $ONLYOFFICE_VALUE;" && \ 
+    sudo -u postgres psql -c "CREATE DATABASE $ONLYOFFICE_VALUE OWNER $ONLYOFFICE_VALUE;" && \
     service postgresql stop && \
     service redis-server stop && \
     service rabbitmq-server stop && \
