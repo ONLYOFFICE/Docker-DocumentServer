@@ -1,0 +1,6 @@
+scrape_configs:
+  - job_name: 'statsd'
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+        - onlyoffice-statsd-exporter:9102
