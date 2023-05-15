@@ -78,6 +78,9 @@ NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
 
 JWT_ENABLED=${JWT_ENABLED:-true}
 
+AUTO_ASSEMBLY_ENABLED=${AUTO_ASSEMBLY_ENABLED:-false}
+AUTO_ASSEMBLY_INTERVAL=${AUTO_ASSEMBLY_INTERVAL:-20m}
+
 # validate user's vars before usinig in json
 if [ "${JWT_ENABLED}" == "true" ]; then
   JWT_ENABLED="true"
@@ -343,6 +346,12 @@ update_ds_settings(){
   if [ "${WOPI_ENABLED}" == "true" ]; then
     ${JSON} -I -e "if(this.wopi===undefined)this.wopi={}"
     ${JSON} -I -e "this.wopi.enable = true"
+  fi
+    
+  if [ "${AUTO_ASSEMBLY_ENABLED}" == "true" ]; then
+    ${JSON} -I -e "if(this.services.CoAuthoring.autoAssembly===undefined)this.services.CoAuthoring.autoAssembly={};"
+    ${JSON} -I -e "this.services.CoAuthoring.autoAssembly.enable = true"
+    ${JSON} -I -e "this.services.CoAuthoring.autoAssembly.interval = '${AUTO_ASSEMBLY_INTERVAL}'"
   fi
 }
 
