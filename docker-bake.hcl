@@ -10,6 +10,10 @@ variable "SHORTEST_TAG" {
     default = ""
 }
 
+variable "PULL_TAG" {
+    default = ""
+}
+
 variable "COMPANY_NAME" {
     default = ""
 }
@@ -90,7 +94,7 @@ target "documentserver-stable" {
             equal("-ee",PRODUCT_EDITION) ? "docker.io/${COMPANY_NAME}4enterprise/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}": "",]
     platforms = ["linux/amd64", "linux/arm64"]
     args = {
-        "TAG": "${TAG}"
+        "PULL_TAG": "${PULL_TAG}"
         "COMPANY_NAME": "${COMPANY_NAME}"
         "PRODUCT_NAME": "${PRODUCT_NAME}"
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
@@ -121,7 +125,7 @@ target "documentserver-nonexample" {
     tags = [ "docker.io/${COMPANY_NAME}/${PRODUCT_NAME}${PREFIX_NAME}${PRODUCT_EDITION}:${TAG}-nonexample" ]
     platforms = ["linux/amd64", "linux/arm64"]
     args = {
-        "TAG": "${TAG}"
+        "PULL_TAG": "${PULL_TAG}"
         "COMPANY_NAME": "${COMPANY_NAME}"
         "PRODUCT_NAME": "${PRODUCT_NAME}"
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
