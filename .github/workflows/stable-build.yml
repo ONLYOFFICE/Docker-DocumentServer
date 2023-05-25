@@ -8,6 +8,11 @@ on:
         description: 'Tag for release (ex. 1.2.3.45)'
         type: string
         required: true
+      release_number:
+        description: 'Sequence number of the release (ex. x.x.x.<number>)'
+        type: string
+        required: true
+        default: '1'
 
 env:
   COMPANY_NAME: "onlyoffice"
@@ -42,10 +47,12 @@ jobs:
         run: |
           set -eux
           VERSION=${{ github.event.inputs.tag }}
+          RELEASE_NUMBER=${{ github.event.inputs.release_number }}
           PRODUCT_EDITION=${{ matrix.edition }}
           TESTING_IMAGE=${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}
             export PRODUCT_EDITION
-            export TAG=${VERSION}
+            export PULL_TAG=${VERSION}
+            export TAG=${VERSION%.*}.${RELEASE_NUMBER}
             export SHORTER_TAG=${VERSION%.*}
             export SHORTEST_TAG=${VERSION%.*.*}
             docker buildx bake -f docker-bake.hcl ${{ matrix.images }} --push
@@ -82,8 +89,11 @@ jobs:
       - name: build image
         run: |
           set -eux
+          VERSION=${{ github.event.inputs.tag }}
+          RELEASE_NUMBER=${{ github.event.inputs.release_number }}
+          export PULL_TAG=${VERSION%.*}.${RELEASE_NUMBER}
           export PRODUCT_EDITION=${{ matrix.edition }}
-          export TAG=${{ github.event.inputs.tag }}
+          export TAG=${VERSION%.*}.${RELEASE_NUMBER}
           docker buildx bake -f docker-bake.hcl ${{ matrix.images }} --push
         shell: bash
 
@@ -113,12 +123,14 @@ jobs:
       - name: build UCS
         run: |
            set -eux
+           VERSION=${{ github.event.inputs.tag }}
+           RELEASE_NUMBER=${{ github.event.inputs.release_number }}
            export PRODUCT_EDITION=${{ matrix.edition }}
            export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}
            export DOCKERFILE=Dockerfile
            export BASE_IMAGE=ubuntu:20.04
            export PG_VERSION=12
-           export TAG=${{ github.event.inputs.tag }}
-           export PACKAGE_VERSION=$( echo ${TAG} |  sed -E 's/(.*)\./\1-/')
+           export TAG=${VERSION%.*}.${RELEASE_NUMBER}
+           export PACKAGE_VERSION=$( echo ${VERSION} |  sed -E 's/(.*)\./\1-/')
            docker buildx bake -f docker-bake.hcl documentserver-ucs --push
         shell: bash
