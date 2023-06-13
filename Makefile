@@ -12,7 +12,7 @@ COMPANY_NAME_ESC = $(subst -,,$(COMPANY_NAME_LOW))
 
 PACKAGE_NAME := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME)$(PRODUCT_EDITION)
 PACKAGE_VERSION ?= $(PRODUCT_VERSION)-$(BUILD_NUMBER)~stretch
-PACKAGE_BASEURL ?= https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/server/linux/debian/$(BUILD_CHANNEL)
+PACKAGE_BASEURL ?= https://s3.eu-west-1.amazonaws.com/repo-doc-onlyoffice-com/server/linux/debian
 
 ifeq ($(BUILD_CHANNEL),$(filter $(BUILD_CHANNEL),nightly test))
 	DOCKER_TAG := $(PRODUCT_VERSION).$(BUILD_NUMBER)
