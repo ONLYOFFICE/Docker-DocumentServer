@@ -54,6 +54,10 @@ variable "BUILD_CHANNEL" {
     default = ""
 }
 
+variable "PUSH_MAJOR" {
+    default = "false"
+}
+
 ### ↓ Variables for UCS build ↓
 
 variable "BASE_IMAGE" {
@@ -62,6 +66,14 @@ variable "BASE_IMAGE" {
 
 variable "PG_VERSION" {
     default     = ""
+}
+
+variable "UCS_REBUILD" {
+    default = ""
+}
+
+variable "UCS_PREFIX" {
+    default = ""
 }
 
 ### ↑ Variables for UCS build ↑
@@ -130,4 +142,24 @@ target "documentserver-nonexample" {
         "PRODUCT_NAME": "${PRODUCT_NAME}"
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
     } 
+}
+
+target "documentserver-stable-rebuild" {
+    target = "documentserver-stable-rebuild"
+    dockerfile = "production.dockerfile"
+    tags = equal("true",UCS_REBUILD) ? ["docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}-ucs:${TAG}",] : [
+                                        "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
+                equal("",PREFIX_NAME) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTER_TAG}": "",
+             equal("true",PUSH_MAJOR) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTEST_TAG}": "",
+                equal("",PREFIX_NAME) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
+         equal("-ee",PRODUCT_EDITION) && equal("",PREFIX_NAME) ? "docker.io/${COMPANY_NAME}4enterprise/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}": "",
+                                 ]
+    platforms = ["linux/amd64", "linux/arm64"]
+    args = {
+        "UCS_PREFIX": "${UCS_PREFIX}"
+        "PULL_TAG": "${PULL_TAG}"
+        "COMPANY_NAME": "${COMPANY_NAME}"
+        "PRODUCT_NAME": "${PRODUCT_NAME}"
+        "PRODUCT_EDITION": "${PRODUCT_EDITION}"
+    }
 }
