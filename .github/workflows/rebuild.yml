@@ -152,10 +152,10 @@ jobs:
           RELEASE_NUMBER: ${{ steps.release-number.outputs.release-number }}
           PREFIX_NAME: ${{ needs.rebuild-info.outputs.prefix-name }}
           REPO: ${{ needs.rebuild-info.outputs.repo }}
+          PRODUCT_EDITION: ${{ matrix.edition }}
         run: |
             set -eux
-            export PRODUCT_EDITION=${{ matrix.edition }}
-            export PULL_TAG=${VERSION%.*}.1
+            export PULL_TAG=${VERSION}
             export TAG=${VERSION%.*}.${RELEASE_NUMBER}
             export SHORTER_TAG=${VERSION%.*}
             export SHORTEST_TAG=${VERSION%.*.*}
@@ -212,10 +212,10 @@ jobs:
         env: 
           VERSION: ${{ matrix.version }}
           RELEASE_NUMBER: ${{ steps.release-number.outputs.release-number }}
+          PRODUCT_EDITION: ${{ matrix.edition }}
         run: |
             set -eux
-            export PRODUCT_EDITION=${{ matrix.edition }}        
-            export PULL_TAG=${VERSION%.*}.1
+            export PULL_TAG=${VERSION}
             export TAG=${VERSION%.*}.${RELEASE_NUMBER}
             export SHORTER_TAG=${VERSION%.*}
             export SHORTEST_TAG=${VERSION%.*.*}
