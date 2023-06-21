@@ -1,7 +1,8 @@
 ---
 name: Rebuild Docker-Documentserver 
 
-run-name: "Rebuild images for repo: ${{ github.event.inputs.repo }}"
+run-name: >
+        Rebuild DocumentServer with secure updates for repo: ${{ github.event.inputs.repo }}
 
 on:
   # Push trigger is disabled now.
@@ -30,8 +31,7 @@ permissions:
   # If it is for a fork, then the token is read-only anyway.
   packages: read
 
-env:
-  REPO:  ${{ github.event.inputs.repo }} 
+env: 
   COMPANY_NAME: "onlyoffice"
   PRODUCT_NAME: "documentserver" 
   REGISTRY_URL: "https://hub.docker.com/v2/repositories"  
@@ -40,25 +40,33 @@ jobs:
   rebuild-info:
     name: "Rebuild-info"
     runs-on: "ubuntu-22.04"
+    env:
+      REPO_INPUTS: ${{ github.event.inputs.repo }}
+      QUANTITY_INPUTS: ${{ github.event.inputs.quantity }}
+      EVENT: ${{ github.event_name }}
     outputs: 
       stable-versions: ${{ steps.selective-checks.outputs.stable-versions }}
       ucs-versions: ${{ steps.selective-checks.outputs.ucs-versions }}
       minor-tags: ${{ steps.selective-checks.outputs.minor-tags }}
       ucs-rebuild-condition: ${{ steps.selective-checks.outputs.ucs-rebuild-condition }}
       prefix-name: ${{ steps.selective-checks.outputs.prefix-name }}
+      repo: ${{ steps.selective-checks.outputs.repo }}
     steps:
       - name: Selective checks
         id: selective-checks
-        env: 
-          QUANTITY: ${{ github.event.inputs.quantity }}
         run: |
             set -e
+
+            REPO=${REPO_INPUTS:-"4test"}
+            QUANTITY=${QUANTITY_INPUTS:-"1"}
+
             if [ "${REPO}" == "stable" ]; then
                  UCS_REBUILD=true
                  UCS_VERSIONS=($(curl -s -H -X ${REGISTRY_URL}/${COMPANY_NAME}/${PRODUCT_NAME}-ucs/tags/?page_size=100 | \
                             jq -r '.results|.[]|.name' | grep -m${QUANTITY} -Eo '[0-9]{1,}.[0-9]{1,}.[0-9]{1,}.1' || true))
                  echo "ucs-versions=$(jq -c -n '$ARGS.positional' --args "${UCS_VERSIONS[@]}")" >> "$GITHUB_OUTPUT"
-            else 
+            elif
+               [ "${REPO}" == "4test" ]; then 
                  UCS_REBUILD=false
                  PREFIX_NAME=4testing-
             fi
@@ -98,6 +106,7 @@ jobs:
             echo "minor-tags=${MINOR_TAGS[@]}" >> "$GITHUB_OUTPUT"
             echo "ucs-rebuild-condition=${UCS_REBUILD}" >> "$GITHUB_OUTPUT"
             echo "prefix-name=${PREFIX_NAME}" >>  "$GITHUB_OUTPUT"
+            echo "repo=${REPO}" >> "$GITHUB_OUTPUT"
         shell: bash
 
   re-build-stable:
@@ -144,6 +153,7 @@ jobs:
           VERSION: ${{ matrix.version }}
           RELEASE_NUMBER: ${{ steps.release-number.outputs.release-number }}
           PREFIX_NAME: ${{ needs.rebuild-info.outputs.prefix-name }}
+          REPO: ${{ needs.rebuild-info.outputs.repo }}
         run: |
             set -eux
             export PRODUCT_EDITION=${{ matrix.edition }}
