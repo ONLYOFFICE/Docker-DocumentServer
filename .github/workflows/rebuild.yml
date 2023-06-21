@@ -5,8 +5,6 @@ run-name: >
         Rebuild DocumentServer with secure updates for repo: ${{ github.event.inputs.repo }}
 
 on:
-  # Push trigger is disabled now.
-  # push:
   workflow_dispatch:
     inputs:
       repo:
