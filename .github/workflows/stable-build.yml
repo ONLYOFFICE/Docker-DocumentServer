@@ -18,7 +18,7 @@ env:
   PRODUCT_NAME: "documentserver" 
 
 jobs:
-    build-info:
+  build-info:
     name: build-info
     runs-on: ubuntu-latest
     outputs:
