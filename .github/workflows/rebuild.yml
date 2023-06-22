@@ -13,11 +13,6 @@ on:
         options:
         - '4test'
         - 'stable'
-      quantity: 
-        type: string
-        description: 'How many recent releases should be rebuilt? last 1 by default'
-        required: true
-        default: '1'
 
 permissions:
   # All other permissions are set to none
@@ -40,7 +35,6 @@ jobs:
     runs-on: "ubuntu-22.04"
     env:
       REPO_INPUTS: ${{ github.event.inputs.repo }}
-      QUANTITY_INPUTS: ${{ github.event.inputs.quantity }}
       EVENT: ${{ github.event_name }}
     outputs: 
       stable-versions: ${{ steps.selective-checks.outputs.stable-versions }}
@@ -56,12 +50,11 @@ jobs:
             set -e
 
             REPO=${REPO_INPUTS:-"4test"}
-            QUANTITY=${QUANTITY_INPUTS:-"1"}
 
             if [ "${REPO}" == "stable" ]; then
                  UCS_REBUILD=true
                  UCS_VERSIONS=($(curl -s -H -X ${REGISTRY_URL}/${COMPANY_NAME}/${PRODUCT_NAME}-ucs/tags/?page_size=100 | \
-                            jq -r '.results|.[]|.name' | grep -m${QUANTITY} -Eo '[0-9]{1,}.[0-9]{1,}.[0-9]{1,}.1' || true))
+                            jq -r '.results|.[]|.name' | grep -oxE '[0-9]{1,}.[0-9]{1,}.[0-9]{1,}.1' || true))
                  echo "ucs-versions=$(jq -c -n '$ARGS.positional' --args "${UCS_VERSIONS[@]}")" >> "$GITHUB_OUTPUT"
             elif
                [ "${REPO}" == "4test" ]; then 
@@ -70,7 +63,7 @@ jobs:
             fi
             
             STABLE_VERSIONS=($(curl -s -H -X ${REGISTRY_URL}/${COMPANY_NAME}/${PRODUCT_NAME}/tags/?page_size=100 | \
-                            jq -r '.results|.[]|.name' | grep -m${QUANTITY} -Eo '[0-9]{1,}.[0-9]{1,}.[0-9]{1,}.1' || true))
+                            jq -r '.results|.[]|.name' | grep -oxE '[0-9]{1,}.[0-9]{1,}.[0-9]{1,}.1' || true))
                             
             # When rebuilding stable versions of the document server, 
             # it is necessary to determine the version from which the 

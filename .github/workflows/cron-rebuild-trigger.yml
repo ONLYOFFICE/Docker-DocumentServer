@@ -19,5 +19,4 @@ jobs:
         run: |
           gh workflow run rebuild.yml \
               --repo ONLYOFFICE/Docker-DocumentServer \
-              -f repo=4test \
-              -f quantity=1 
+              -f repo=4test
