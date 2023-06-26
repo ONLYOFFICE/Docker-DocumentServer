@@ -140,7 +140,7 @@ jobs:
     #  all dependencies. Update tags got +1 to previous release.
       - name: Re-build documentserver-stable
         env:
-          MINOR_TAGS: ${{ needs.rebuild-info.outputs.minor-tags }}
+          MINOR_TAGS_ST: ${{ needs.rebuild-info.outputs.minor-tags }}
           VERSION: ${{ matrix.version }}
           RELEASE_NUMBER: ${{ steps.release-number.outputs.release-number }}
           PREFIX_NAME: ${{ needs.rebuild-info.outputs.prefix-name }}
@@ -154,11 +154,15 @@ jobs:
             export SHORTEST_TAG=${VERSION%.*.*}
             
             if [ "${REPO}" == "stable" ]; then
+                 MINOR_TAGS=(${MINOR_TAGS_ST})
                  for v in ${MINOR_TAGS[@]}; do
                      if [ "${SHORTER_TAG}" == "${v}" ]; then
                          export PUSH_MAJOR="true"
                      fi
                  done
+                 if [ "${SHORTER_TAG}" == "${MINOR_TAGS[0]}" ]; then
+                     export LATEST="true"
+                 fi
             fi
             docker buildx bake -f docker-bake.hcl documentserver-stable-rebuild --push
         shell: bash

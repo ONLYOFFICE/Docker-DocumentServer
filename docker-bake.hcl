@@ -58,6 +58,10 @@ variable "PUSH_MAJOR" {
     default = "false"
 }
 
+variable "LATEST" {
+    default = "false"
+}
+
 ### ↓ Variables for UCS build ↓
 
 variable "BASE_IMAGE" {
@@ -151,7 +155,7 @@ target "documentserver-stable-rebuild" {
                                         "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
                 equal("",PREFIX_NAME) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTER_TAG}": "",
              equal("true",PUSH_MAJOR) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTEST_TAG}": "",
-                equal("",PREFIX_NAME) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
+                equal("",PREFIX_NAME) && equal("true",LATEST) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
          equal("-ee",PRODUCT_EDITION) && equal("",PREFIX_NAME) ? "docker.io/${COMPANY_NAME}4enterprise/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}": "",
                                  ]
     platforms = ["linux/amd64", "linux/arm64"]
