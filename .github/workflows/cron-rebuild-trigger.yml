@@ -1,0 +1,22 @@
+---
+name: Trigger 4testing rebuild
+
+run-name: "Weekly 4testing rebuild trigger"
+
+on: 
+  schedule:
+    # Run every Saturday at 10 p.m.   
+    - cron: '00 22 * * 6'
+  
+jobs: 
+  trigger-rebuild:
+    name: "trigget-rebuild"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Rebuild 4testing manualy
+        env: 
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          gh workflow run rebuild.yml \
+              --repo ONLYOFFICE/Docker-DocumentServer \
+              -f repo=4test

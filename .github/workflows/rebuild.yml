@@ -1,0 +1,224 @@
+---
+name: Rebuild Docker-Documentserver 
+
+run-name: >
+        Rebuild DocumentServer with secure updates for repo: ${{ github.event.inputs.repo }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        type: choice
+        description: Please, choose upload repo..
+        options:
+        - '4test'
+        - 'stable'
+
+permissions:
+  # All other permissions are set to none
+  contents: read
+  # Technically read access while waiting for images should be more than enough. However,
+  # there is a bug in GitHub Actions/Packages and in case private repositories are used, you get a permission
+  # denied error when attempting to just pull private image, changing the token permission to write solves the
+  # issue. This is not dangerous, because if it is for "ONLYOFFICE/Docker-DocumentServer", only maintainers can use ds-rebuild.yaml
+  # If it is for a fork, then the token is read-only anyway.
+  packages: read
+
+env: 
+  COMPANY_NAME: "onlyoffice"
+  PRODUCT_NAME: "documentserver" 
+  REGISTRY_URL: "https://hub.docker.com/v2/repositories"  
+
+jobs:
+  rebuild-info:
+    name: "Rebuild-info"
+    runs-on: "ubuntu-22.04"
+    env:
+      REPO_INPUTS: ${{ github.event.inputs.repo }}
+      EVENT: ${{ github.event_name }}
+    outputs: 
+      stable-versions: ${{ steps.selective-checks.outputs.stable-versions }}
+      ucs-versions: ${{ steps.selective-checks.outputs.ucs-versions }}
+      minor-tags: ${{ steps.selective-checks.outputs.minor-tags }}
+      ucs-rebuild-condition: ${{ steps.selective-checks.outputs.ucs-rebuild-condition }}
+      prefix-name: ${{ steps.selective-checks.outputs.prefix-name }}
+      repo: ${{ steps.selective-checks.outputs.repo }}
+    steps:
+      - name: Selective checks
+        id: selective-checks
+        run: |
+            set -e
+
+            REPO=${REPO_INPUTS:-"4test"}
+
+            if [ "${REPO}" == "stable" ]; then
+                 UCS_REBUILD=true
+                 UCS_VERSIONS=($(curl -s -H -X ${REGISTRY_URL}/${COMPANY_NAME}/${PRODUCT_NAME}-ucs/tags/?page_size=100 | \
+                            jq -r '.results|.[]|.name' | grep -oxE '[0-9]{1,}.[0-9]{1,}.[0-9]{1,}.1' || true))
+                 echo "ucs-versions=$(jq -c -n '$ARGS.positional' --args "${UCS_VERSIONS[@]}")" >> "$GITHUB_OUTPUT"
+            elif
+               [ "${REPO}" == "4test" ]; then 
+                 UCS_REBUILD=false
+                 PREFIX_NAME=4testing-
+            fi
+            
+            STABLE_VERSIONS=($(curl -s -H -X ${REGISTRY_URL}/${COMPANY_NAME}/${PRODUCT_NAME}/tags/?page_size=100 | \
+                            jq -r '.results|.[]|.name' | grep -oxE '[0-9]{1,}.[0-9]{1,}.[0-9]{1,}.1' || true))
+                            
+            # When rebuilding stable versions of the document server, 
+            # it is necessary to determine the version from which the 
+            # minor x.x tag will need to be pushed.        
+            
+            VERSIONS=(${STABLE_VERSIONS[@]})
+            for i in {1..10}; do
+                 if [ -z "${VERSIONS}" ]; then
+                     break
+                 else 
+                     TEMPLATE=${VERSIONS[0]%.*.*}
+                     TEMPLATE_MINOR=$(printf -- '%s\n' "${VERSIONS[@]}" | grep -o -m 1 "${VERSIONS[0]%.*.*}.[0-9].[0-9]")
+                     MINOR_TAGS+=(${TEMPLATE_MINOR%.*})
+            
+                     for v in ${MINOR_TAGS[@]}; do
+                          VERSIONS=(${VERSIONS[@]//${v%.*}.*.*})
+                     done
+                 fi
+            done
+            
+            echo "Stable releases that will be rebuilded"
+            echo "--------------------------------------"
+            echo "${STABLE_VERSIONS[@]}"
+            echo
+            echo 
+            echo "Ucs releases that will be rebuilded"
+            echo "-----------------------------------"
+            echo "${UCS_VERSIONS[@]}"
+            
+            echo "stable-versions=$(jq -c -n '$ARGS.positional' --args "${STABLE_VERSIONS[@]}")" >> "$GITHUB_OUTPUT"
+            echo "minor-tags=${MINOR_TAGS[@]}" >> "$GITHUB_OUTPUT"
+            echo "ucs-rebuild-condition=${UCS_REBUILD}" >> "$GITHUB_OUTPUT"
+            echo "prefix-name=${PREFIX_NAME}" >>  "$GITHUB_OUTPUT"
+            echo "repo=${REPO}" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+  re-build-stable:
+    name: "Rebuild stable:${{ matrix.version }} ${{ matrix.edition }}"
+    needs: [rebuild-info]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        type: ["stable"]
+        edition: ["", "-ee", "-de"]
+        version: ${{fromJSON(needs.rebuild-info.outputs.stable-versions)}}
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+     # Determines the new build number based 
+     # on data from the hub.docker registry
+      - name: Declare release number
+        id: release-number
+        env: 
+          REBUILD_VERSION: ${{ matrix.version }}
+        run: |
+          MINOR_VERSION=${REBUILD_VERSION%.*} 
+          LAST_RELEASE=$(curl -s -H -X ${REGISTRY_URL}/${COMPANY_NAME}/${PRODUCT_NAME}/tags/?page_size=100 \
+          | jq -r '.results|.[]|.name' | grep -Eo -m1 "${MINOR_VERSION}.[0-9]{1,}")
+          LAST_RELEASE=${LAST_RELEASE#*.*.*.}
+          echo "release-number=$((LAST_RELEASE+1))" >> "$GITHUB_OUTPUT"   
+        shell: bash  
+    #  Note: Rebuilding images with an 
+    #  extra layer to update security and 
+    #  all dependencies. Update tags got +1 to previous release.
+      - name: Re-build documentserver-stable
+        env:
+          MINOR_TAGS_ST: ${{ needs.rebuild-info.outputs.minor-tags }}
+          VERSION: ${{ matrix.version }}
+          RELEASE_NUMBER: ${{ steps.release-number.outputs.release-number }}
+          PREFIX_NAME: ${{ needs.rebuild-info.outputs.prefix-name }}
+          REPO: ${{ needs.rebuild-info.outputs.repo }}
+          PRODUCT_EDITION: ${{ matrix.edition }}
+        run: |
+            set -eux
+            export PULL_TAG=${VERSION}
+            export TAG=${VERSION%.*}.${RELEASE_NUMBER}
+            export SHORTER_TAG=${VERSION%.*}
+            export SHORTEST_TAG=${VERSION%.*.*}
+            
+            if [ "${REPO}" == "stable" ]; then
+                 MINOR_TAGS=(${MINOR_TAGS_ST})
+                 for v in ${MINOR_TAGS[@]}; do
+                     if [ "${SHORTER_TAG}" == "${v}" ]; then
+                         export PUSH_MAJOR="true"
+                     fi
+                 done
+                 if [ "${SHORTER_TAG}" == "${MINOR_TAGS[0]}" ]; then
+                     export LATEST="true"
+                 fi
+            fi
+            docker buildx bake -f docker-bake.hcl documentserver-stable-rebuild --push
+        shell: bash
+  re-build-ucs:
+    name: "Rebuild ucs: ${{ matrix.version }} ${{ matrix.edition }}"
+    if: needs.rebuild-info.outputs.ucs-rebuild-condition == 'true'
+    needs: [rebuild-info]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        type: ["ucs"]
+        edition: ["", "-ee"]
+        version: ${{fromJSON(needs.rebuild-info.outputs.ucs-versions)}}
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      # Determines the new build number based 
+      # on data from the hub.docker registry
+      - name: Declare release number
+        id: release-number
+        env: 
+          REBUILD_VERSION: ${{ matrix.version }}
+        run: |
+          MINOR_VERSION=${REBUILD_VERSION%.*} 
+          LAST_RELEASE=$(curl -s -H -X ${REGISTRY_URL}/${COMPANY_NAME}/${PRODUCT_NAME}/tags/?page_size=100 \
+                        | jq -r '.results|.[]|.name' | grep -Eo -m1 "${MINOR_VERSION}.[0-9]{1,}")
+          LAST_RELEASE=${LAST_RELEASE#*.*.*.}
+          echo "release-number=$((LAST_RELEASE+1))" >> "$GITHUB_OUTPUT"
+        shell: bash       
+      #  Note: Rebuilding images with an 
+      #  extra layer to update security and 
+      #  all dependencies. Update tags +1 to previous release.
+      - name: Re-build documentserver-ucs
+        env: 
+          VERSION: ${{ matrix.version }}
+          RELEASE_NUMBER: ${{ steps.release-number.outputs.release-number }}
+          PRODUCT_EDITION: ${{ matrix.edition }}
+        run: |
+            set -eux
+            export PULL_TAG=${VERSION}
+            export TAG=${VERSION%.*}.${RELEASE_NUMBER}
+            export SHORTER_TAG=${VERSION%.*}
+            export SHORTEST_TAG=${VERSION%.*.*}
+          
+            export UCS_REBUILD=true
+            export UCS_PREFIX=-ucs
+          
+            docker buildx bake -f docker-bake.hcl documentserver-stable-rebuild --push
+        shell: bash
