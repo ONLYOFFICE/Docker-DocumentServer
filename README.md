@@ -190,12 +190,14 @@ Below is the complete list of parameters that can be set using environment varia
 - **REDIS_SERVER_PASS**: The Redis server password. The password is not set by default.
 - **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
 - **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process.
-- **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](http://nginx.org/ru/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.
+- **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](https://nginx.org/en/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.
 - **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `true`.
 - **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to random value.
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
 - **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
 - **WOPI_ENABLED**: Specifies the enabling the wopi handlers. Defaults to `false`.
+- **ALLOW_META_IP_ADDRESS**: Defines if it is allowed to connect meta IP address or not. Defaults to `false`.
+- **ALLOW_PRIVATE_IP_ADDRESS**: Defines if it is allowed to connect private IP address or not. Defaults to `false`.
 - **USE_UNAUTHORIZED_STORAGE**: Set to `true`if using selfsigned certificates for your storage server e.g. Nextcloud. Defaults to `false`
 - **GENERATE_FONTS**: When 'true' regenerates fonts list and the fonts thumbnails etc. at each start. Defaults to `true`
 - **METRICS_ENABLED**: Specifies the enabling StatsD for ONLYOFFICE Document Server. Defaults to `false`.

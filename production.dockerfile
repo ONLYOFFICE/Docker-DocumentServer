@@ -1,15 +1,15 @@
 ### Arguments avavlivable only for FROM instruction ### 
-ARG TAG=latest
+ARG PULL_TAG=latest
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_EDITION=
 
 ### Build main-release ###
 
-FROM ${COMPANY_NAME}/4testing-documentserver${PRODUCT_EDITION}:${TAG} as documentserver-stable
+FROM ${COMPANY_NAME}/4testing-documentserver${PRODUCT_EDITION}:${PULL_TAG} as documentserver-stable
 
 ### Build nonexample ###
  
-FROM ${COMPANY_NAME}/documentserver${PRODUCT_EDITION}:${TAG} as documentserver-nonexample
+FROM ${COMPANY_NAME}/documentserver${PRODUCT_EDITION}:${PULL_TAG} as documentserver-nonexample
 
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_NAME=documentserver

@@ -61,7 +61,7 @@ jobs:
             echo "None of the editions are selected."
             exit 1
           fi
-          echo "::set-output name=editions::$(jq -n -c --arg s "${EDITIONS[*]}" '($s|split(" "))')"
+          echo "editions=$(jq -n -c --arg s "${EDITIONS[*]}" '($s|split(" "))')" >> $GITHUB_OUTPUT
     outputs:
       editions: ${{ steps.matrix.outputs.editions }}
 

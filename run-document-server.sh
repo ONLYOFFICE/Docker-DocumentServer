@@ -87,11 +87,13 @@ fi
 
 [ -z $JWT_SECRET ] && JWT_MESSAGE='JWT is enabled by default. A random secret is generated automatically. Run the command "docker exec $(sudo docker ps -q) sudo documentserver-jwt-status.sh" to get information about JWT.'
 
-JWT_SECRET=${JWT_SECRET:-$(pwgen -s 20)}
+JWT_SECRET=${JWT_SECRET:-$(pwgen -s 32)}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
 WOPI_ENABLED=${WOPI_ENABLED:-false}
+ALLOW_META_IP_ADDRESS=${ALLOW_META_IP_ADDRESS:-false}
+ALLOW_PRIVATE_IP_ADDRESS=${ALLOW_PRIVATE_IP_ADDRESS:-false}
 
 GENERATE_FONTS=${GENERATE_FONTS:-true}
 
@@ -344,6 +346,12 @@ update_ds_settings(){
     ${JSON} -I -e "if(this.wopi===undefined)this.wopi={}"
     ${JSON} -I -e "this.wopi.enable = true"
   fi
+
+  if [ "${ALLOW_META_IP_ADDRESS}" = "true" ] || [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ]; then
+    ${JSON} -I -e "if(this.services.CoAuthoring['request-filtering-agent']===undefined)this.services.CoAuthoring['request-filtering-agent']={}"
+    [ "${ALLOW_META_IP_ADDRESS}" = "true" ] && ${JSON} -I -e "this.services.CoAuthoring['request-filtering-agent'].allowMetaIPAddress = true"
+    [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ] && ${JSON} -I -e "this.services.CoAuthoring['request-filtering-agent'].allowPrivateIPAddress = true"
+  fi
 }
 
 create_postgresql_cluster(){
@@ -495,7 +503,7 @@ update_supervisor_settings(){
   # Copy modified supervisor start script
   cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisor /etc/init.d/
   sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf
-  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf etc/supervisor/conf.d/
+  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf /etc/supervisor/conf.d/
 }
 
 update_log_settings(){
