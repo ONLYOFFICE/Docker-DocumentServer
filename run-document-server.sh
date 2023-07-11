@@ -499,24 +499,6 @@ update_nginx_settings(){
   documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
 }
 
-update_supervisor_settings(){
-
-  conf_file="/etc/supervisor/conf.d/ds-example.conf"
-  # Check the file in the directory, if there is a file, then check the autostart line
-  if [ -f "$conf_file" ]; then
-    autostart=$(awk -F '=' '/autostart/ {print $2}' "$conf_file")
-  fi
-
-  # Copy modified supervisor start script
-  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisor /etc/init.d/
-  sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf
-  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf /etc/supervisor/conf.d/
-
-  if [ "$autostart" = "true" ]; then
-    sed 's,autostart=false,autostart=true,' -i "$conf_file"
-  fi
-}
-
 update_log_settings(){
    ${JSON_LOG} -I -e "this.categories.default.level = '${DS_LOG_LEVEL}'"
 }
@@ -643,7 +625,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
 
   update_nginx_settings
 
-  update_supervisor_settings
+  sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i /etc/supervisor/conf.d/*.conf
   service supervisor start
   
   # start cron to enable log rotating
