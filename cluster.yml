@@ -54,9 +54,9 @@ services:
     volumes_from:
      - onlyoffice-documentserver-data
 
-  onlyoffice-haproxy:
-    container_name: onlyoffice-haproxy
-    image: dockercloud/haproxy:1.5.1
+  onlyoffice-nginx:
+    container_name: onlyoffice-nginx
+    image: nginx:latest
     depends_on:
       - onlyoffice-documentserver
     environment:
@@ -67,7 +67,7 @@ services:
     links:
      - onlyoffice-documentserver
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/default.conf:/etc/nginx/conf.d/default.conf
       # Uncomment the string below to map a ssl certificate from host
       # to the proxy container
       #- /app/onlyoffice/DocumentServer/data/certs/onlyoffice.pem:/certs/cert1.pem
