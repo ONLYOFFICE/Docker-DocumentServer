@@ -499,13 +499,6 @@ update_nginx_settings(){
   documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
 }
 
-update_supervisor_settings(){
-  # Copy modified supervisor start script
-  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisor /etc/init.d/
-  sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf
-  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf /etc/supervisor/conf.d/
-}
-
 update_log_settings(){
    ${JSON_LOG} -I -e "this.categories.default.level = '${DS_LOG_LEVEL}'"
 }
@@ -631,8 +624,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   fi
 
   update_nginx_settings
-
-  update_supervisor_settings
+  
   service supervisor start
   
   # start cron to enable log rotating
