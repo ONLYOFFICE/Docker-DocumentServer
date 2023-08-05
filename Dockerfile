@@ -68,7 +68,8 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service nginx stop && \
     rm -rf /var/lib/apt/lists/*
 
-COPY config /app/ds/setup/config/
+COPY config/supervisor/supervisor /etc/init.d/
+COPY config/supervisor/ds/*.conf /etc/supervisor/conf.d/
 COPY run-document-server.sh /app/ds/run-document-server.sh
 
 EXPOSE 80 443
@@ -93,6 +94,8 @@ RUN    wget -q -P /tmp "https://github.com/thomisus/server/releases/download/${O
     service postgresql start && \
     apt-get -yq install /tmp/onlyoffice-documentserver_${OOU_VERSION_MAJOR}-${OOU_BUILD}.oou_amd64.deb && \
     service postgresql stop && \
+    chmod 755 /etc/init.d/supervisor && \
+    sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i /etc/supervisor/conf.d/*.conf && \
     service supervisor stop && \
     chmod 755 /app/ds/*.sh && \
     rm -f /tmp/onlyoffice-documentserver_${OOU_VERSION_MAJOR}-${OOU_BUILD}.oou_amd64.deb && \
