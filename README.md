@@ -324,19 +324,25 @@ docker-compose up -d
 ## ONLYOFFICE Document Server ipv6 setup
 
 (Works and is supported only for Linux hosts)
+
 Docker does not currently provide ipv6 addresses to containers by default. This function is experimental now.
+
 To set up interaction via ipv6, you need to enable support for this feature in your Docker. For this you need:
 - create the `/etc/docker/daemon.json` file with the following content:
 
-```{
+```
+{
 "ipv6": true,
 "fixed-cidr-v6": "2001:db8:abc1::/64"
 }
 ```
 - restart docker with the following command: `systemctl restart docker`
+
 After that, all running containers receive an ipv6 address and have an inet6 interface.
+
 You can check your default bridge network and see the field there
 `EnableIPv6=true`. A new ipv6 subnet will also be added.
+
 For more information, visit the official [Docker manual site](https://docs.docker.com/config/daemon/ipv6/)
 
 ## Issues
