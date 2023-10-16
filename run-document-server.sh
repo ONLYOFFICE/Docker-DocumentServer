@@ -3,7 +3,8 @@
 umask 0022
 
 function clean_exit {
-  if [ ${ONLYOFFICE_DATA_CONTAINER} == "false" ] && [ ${ONLYOFFICE_DATA_CONTAINER_HOST} == "localhost" ]; then
+  if [ ${ONLYOFFICE_DATA_CONTAINER} == "false" ] && \
+  [ ${ONLYOFFICE_DATA_CONTAINER_HOST} == "localhost" ]; then
     /usr/bin/documentserver-prepare4shutdown.sh
   fi
 }
