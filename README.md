@@ -11,6 +11,7 @@
         + [Installation of the SSL Certificates](#installation-of-the-ssl-certificates)
         + [Available Configuration Parameters](#available-configuration-parameters)
 * [Installing ONLYOFFICE Document Server integrated with Community and Mail Servers](#installing-onlyoffice-document-server-integrated-with-community-and-mail-servers)
+* [ONLYOFFICE Document Server ipv6 setup](#onlyoffice-document-server-ipv6-setup)
 * [Issues](#issues)
     - [Docker Issues](#docker-issues)
     - [Document Server usage Issues](#document-server-usage-issues)
@@ -25,7 +26,7 @@ Starting from version 6.0, Document Server is distributed as ONLYOFFICE Docs. It
 
 ONLYOFFICE Docs can be used as a part of ONLYOFFICE Workspace or with third-party sync&share solutions (e.g. Nextcloud, ownCloud, Seafile) to enable collaborative editing within their interface.
 
-***Important*** Please update `docker-enginge` to latest version (`20.10.21` as of writing this doc) before using it. We use `ubuntu:22.04` as base image and it older versions of docker have compatibility problems with it
+***Important*** Please update `docker-engine` to latest version (`20.10.21` as of writing this doc) before using it. We use `ubuntu:22.04` as base image and it older versions of docker have compatibility problems with it
 
 ## Functionality ##
 * ONLYOFFICE Document Editor
@@ -319,6 +320,30 @@ Or, use [docker-compose](https://docs.docker.com/compose/install "docker-compose
 wget https://raw.githubusercontent.com/ONLYOFFICE/Docker-CommunityServer/master/docker-compose.groups.yml
 docker-compose up -d
 ```
+
+## ONLYOFFICE Document Server ipv6 setup
+
+(Works and is supported only for Linux hosts)
+
+Docker does not currently provide ipv6 addresses to containers by default. This function is experimental now.
+
+To set up interaction via ipv6, you need to enable support for this feature in your Docker. For this you need:
+- create the `/etc/docker/daemon.json` file with the following content:
+
+```
+{
+"ipv6": true,
+"fixed-cidr-v6": "2001:db8:abc1::/64"
+}
+```
+- restart docker with the following command: `systemctl restart docker`
+
+After that, all running containers receive an ipv6 address and have an inet6 interface.
+
+You can check your default bridge network and see the field there
+`EnableIPv6=true`. A new ipv6 subnet will also be added.
+
+For more information, visit the official [Docker manual site](https://docs.docker.com/config/daemon/ipv6/)
 
 ## Issues
 

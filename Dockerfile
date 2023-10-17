@@ -20,7 +20,6 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         bomstrip \
         certbot \
         curl \
-        gconf-service \
         htop \
         libasound2 \
         libboost-regex-dev \
