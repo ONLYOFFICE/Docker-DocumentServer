@@ -148,6 +148,8 @@ jobs:
   zap:
     name: "Zap scanning DocumentServer"
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     if: github.event.inputs.community == 'true' && needs.build.outputs.branch != 'develop'
     needs: build
     steps:
