@@ -160,7 +160,7 @@ jobs:
           TAG=${{ needs.build.outputs.tag }}
         run: |
            CONTAINER_NAME="documentserver"
-           sudo docker run -itd --name ${CONTAINER_NAME} -p 80:80 onlyoffice/documentserver:${TAG}
+           sudo docker run -itd --name ${CONTAINER_NAME} -p 80:80 onlyoffice/4testing-documentserver:${TAG}
            sleep 60
            sudo docker exec ${CONTAINER_NAME} sudo supervisorctl start ds:example
            LOCAL_IP=$(hostname -I | awk '{print $1}')
