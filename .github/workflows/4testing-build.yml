@@ -160,7 +160,6 @@ jobs:
           TAG: ${{ needs.build.outputs.tag }}
         run: |
            # Create ssl certs
-           export CONTAINER_NAME="documentserver"
            openssl genrsa -out tls.key 2048
            openssl req -new -key tls.key -out tls.csr -subj "/C=RU/ST=NizhObl/L=NizhNov/O=RK-Tech/OU=TestUnit/CN=TestName"
            openssl x509 -req -days 365 -in tls.csr -signkey tls.key -out tls.crt
