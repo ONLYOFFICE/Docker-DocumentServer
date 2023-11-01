@@ -157,10 +157,29 @@ jobs:
       - name: Run DS
         id: run-ds
         env:
-          TAG=${{ needs.build.outputs.tag }}
+          TAG: ${{ needs.build.outputs.tag }}
         run: |
-           CONTAINER_NAME="documentserver"
-           sudo docker run -itd --name ${CONTAINER_NAME} -p 80:80 onlyoffice/4testing-documentserver:${TAG}
+           # Create ssl certs
+           export CONTAINER_NAME="documentserver"
+           openssl genrsa -out tls.key 2048
+           openssl req -new -key tls.key -out tls.csr -subj "/C=RU/ST=NizhObl/L=NizhNov/O=RK-Tech/OU=TestUnit/CN=TestName"
+           openssl x509 -req -days 365 -in tls.csr -signkey tls.key -out tls.crt
+           openssl dhparam -out dhparam.pem 2048
+           sudo mkdir -p /app/onlyoffice/DocumentServer/data/certs
+           sudo cp ./tls.key /app/onlyoffice/DocumentServer/data/certs/
+           sudo cp ./tls.crt /app/onlyoffice/DocumentServer/data/certs/
+           sudo cp ./dhparam.pem /app/onlyoffice/DocumentServer/data/certs/
+           sudo chmod 400 /app/onlyoffice/DocumentServer/data/certs/tls.key
+           rm ./tls.key ./tls.crt ./dhparam.pem
+
+           # Run Ds with enabled ssl
+           export CONTAINER_NAME="documentserver"
+           sudo docker run -itd \
+                           --name ${CONTAINER_NAME} \
+                           -p 80:80 \
+                           -p 443:443 \
+                           -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data \
+                           onlyoffice/4testing-documentserver:${TAG}
            sleep 60
            sudo docker exec ${CONTAINER_NAME} sudo supervisorctl start ds:example
            LOCAL_IP=$(hostname -I | awk '{print $1}')
