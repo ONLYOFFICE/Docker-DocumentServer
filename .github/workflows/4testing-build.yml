@@ -136,8 +136,10 @@ jobs:
           export PREFIX_NAME=4testing-
           export TAG=${PRODUCT_VERSION}.${BUILD_NUMBER}
 
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "branch=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
+          if [[ $BRANCH_NAME =~ release ]]; then
+               echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+               echo "branch=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
+          fi
 
           ### ==>> Build and push images at this step ###
 
@@ -150,7 +152,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-    if: github.event.inputs.community == 'true' && needs.build.outputs.branch != 'develop'
+    if: ${{ github.event.inputs.community == 'true' && startsWith(needs.build.outputs.branch, 'release/') }}
     needs: build
     steps:
       - name: Checkout code
