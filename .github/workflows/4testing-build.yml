@@ -1,5 +1,14 @@
 ### This workflow setup instance then build and push images ###
 name: 4testing multiarch-build
+run-name: >-
+  Build #${{ inputs.build }} [
+  ${{ inputs.amd64 && 'AMD64' || '-' }}
+  ${{ inputs.arm64 && 'ARM64' || '-' }}
+  ] [
+  ${{ inputs.community && 'CE' || '-' }}
+  ${{ inputs.developer && 'DE' || '-' }}
+  ${{ inputs.enterprise && 'EE' || '-' }}
+  ]
 
 on:
   workflow_dispatch:
