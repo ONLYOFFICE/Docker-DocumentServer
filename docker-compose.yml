@@ -1,4 +1,4 @@
-version: '2'
+version: '3.2'
 services:
   onlyoffice-documentserver:
     build:
@@ -7,6 +7,7 @@ services:
     depends_on:
       - onlyoffice-postgresql
       - onlyoffice-rabbitmq
+      - onlyoffice-redis
     environment:
       - DB_TYPE=postgres
       - DB_HOST=onlyoffice-postgresql
@@ -14,6 +15,8 @@ services:
       - DB_NAME=onlyoffice
       - DB_USER=onlyoffice
       - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
+      - REDIS_SERVER_HOST=onlyoffice-redis
+      - REDIS_SERVER_PORT=6379
       # Uncomment strings below to enable the JSON Web Token validation.
       #- JWT_ENABLED=true
       #- JWT_SECRET=secret
@@ -25,32 +28,43 @@ services:
     stdin_open: true
     restart: always
     stop_grace_period: 60s
+    networks:
+      - onlyoffice-net
     volumes:
-       - /var/www/onlyoffice/Data
-       - /var/log/onlyoffice
-       - /var/lib/onlyoffice/documentserver/App_Data/cache/files
-       - /var/www/onlyoffice/documentserver-example/public/files
-       - /usr/share/fonts
+       - /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data
+       - /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice
+       - /app/onlyoffice/DocumentServer/logs:/var/log/onlyoffice
+       - /app/onlyoffice/DocumentServer/cache:/var/lib/onlyoffice/documentserver/App_Data/cache/files
+       - /app/onlyoffice/DocumentServer/public:/var/www/onlyoffice/documentserver-example/public/files
+       - /app/onlyoffice/DocumentServer/fonts:/usr/share/fonts/truetype/custom
        
   onlyoffice-rabbitmq:
     container_name: onlyoffice-rabbitmq
     image: rabbitmq
     restart: always
-    expose:
-      - '5672'
+    networks:
+      - onlyoffice-net
+    volumns:
+      - /app/onlyoffice/DocumentServer/rabbitmq:/var/lib/rabbitmq
+
+  onlyoffice-redis:
+    container_name: onlyoffice-redis
+    image: redis
+    restart: always
+    networks:
+      - onlyoffice-net
+    volumns:
+      - /app/onlyoffice/DocumentServer/redis:/var/lib/redis
 
   onlyoffice-postgresql:
     container_name: onlyoffice-postgresql
-    image: postgres:9.5
+    image: postgres:14
     environment:
       - POSTGRES_DB=onlyoffice
       - POSTGRES_USER=onlyoffice
       - POSTGRES_HOST_AUTH_METHOD=trust
     restart: always
-    expose:
-      - '5432'
+    networks:
+      - onlyoffice-net
     volumes:
-      - postgresql_data:/var/lib/postgresql
-
-volumes:
-  postgresql_data:
+      - /app/onlyoffice/DocumentServer/postgresql_data:/var/lib/postgresql/data
