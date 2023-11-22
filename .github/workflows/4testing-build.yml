@@ -101,6 +101,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Build 4testing
+        id: build-ds
         run: |
           set -eux
 
@@ -129,6 +130,8 @@ jobs:
           elif [[ $BRANCH_NAME =~ hotfix || $BRANCH_NAME =~ release ]]; then
             BUILD_CHANNEL=test
             PRODUCT_VERSION=${BRANCH_NAME#*/v}
+            echo "version=${TAG}" >> "$GITHUB_OUTPUT"
+            echo "branch=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
           fi
           BUILD_NUMBER=${{ github.event.inputs.build }}
 
@@ -146,3 +149,19 @@ jobs:
           docker buildx bake -f docker-bake.hcl ${{ matrix.image }} --push
           echo "DONE: Build success"
         shell: bash
+
+      - name: Trigger zap manualy
+        if: >
+          ${{ startWith(steps.build-ds.outputs.branch, 'release/')
+          || startWith(steps.build-ds.outputs.branch, 'hotfix/') }}
+        env:
+          VERSION: ${{ steps.build-ds.outputs.version }}
+          BRANCH: ${{ steps.build-ds.outputs.branch }}
+          TOKEN: ${{ secrets.TOKEN }}
+        run: |
+            gh workflow run zap-scanning.yaml \
+                 --repo ${{ github.repository }} \
+                 -f branch=${BRANCH} \
+                 -f version=${VERSION}
+        shell: bash
+
