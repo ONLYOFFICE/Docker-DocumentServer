@@ -159,8 +159,9 @@ jobs:
           BRANCH: ${{ steps.build-ds.outputs.branch }}
           TOKEN: ${{ secrets.TOKEN }}
         run: |
-            gh workflow run zap-scanning.yaml \
+            gh workflow run zap-ds.yaml \
                  --repo ${{ github.repository }} \
+                 --ref ${BRANCH} \
                  -f branch=${BRANCH} \
                  -f version=${VERSION}
         shell: bash
