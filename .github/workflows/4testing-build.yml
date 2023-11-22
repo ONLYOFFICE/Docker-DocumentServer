@@ -161,7 +161,6 @@ jobs:
         run: |
             gh workflow run zap-ds.yaml \
                  --repo ${{ github.repository }} \
-                 --ref ${BRANCH} \
                  -f branch=${BRANCH} \
                  -f version=${VERSION}
         shell: bash
