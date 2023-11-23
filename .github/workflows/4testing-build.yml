@@ -157,7 +157,7 @@ jobs:
         env:
           VERSION: ${{ steps.build-ds.outputs.version }}
           BRANCH: ${{ steps.build-ds.outputs.branch }}
-          TOKEN: ${{ secrets.TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
         run: |
             gh workflow run zap-ds.yaml \
                  --repo ${{ github.repository }} \
