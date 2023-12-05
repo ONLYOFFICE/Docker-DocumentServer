@@ -130,7 +130,7 @@ jobs:
           elif [[ $BRANCH_NAME =~ hotfix || $BRANCH_NAME =~ release ]]; then
             BUILD_CHANNEL=test
             PRODUCT_VERSION=${BRANCH_NAME#*/v}
-            echo "version=${TAG}" >> "$GITHUB_OUTPUT"
+            echo "version=${PRODUCT_VERSION}.${{ github.event.inputs.build }}" >> "$GITHUB_OUTPUT"
             echo "branch=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
           fi
           BUILD_NUMBER=${{ github.event.inputs.build }}
