@@ -130,8 +130,6 @@ jobs:
           elif [[ $BRANCH_NAME =~ hotfix || $BRANCH_NAME =~ release ]]; then
             BUILD_CHANNEL=test
             PRODUCT_VERSION=${BRANCH_NAME#*/v}
-            echo "version=${PRODUCT_VERSION}.${{ github.event.inputs.build }}" >> "$GITHUB_OUTPUT"
-            echo "branch=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
           fi
           BUILD_NUMBER=${{ github.event.inputs.build }}
 
@@ -148,12 +146,21 @@ jobs:
 
           docker buildx bake -f docker-bake.hcl ${{ matrix.image }} --push
           echo "DONE: Build success"
+
+          ### Set output for Zap scanner
+          ### NOTE: Output will be used only in release/hotfix branches
+          
+          echo "version=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
         shell: bash
 
+      # Run scanner only when edition is community 
+      # and branch hit release/ or hotfix/
       - name: Trigger zap manualy
-        if: >
-          ${{ startWith(steps.build-ds.outputs.branch, 'release/')
-          || startWith(steps.build-ds.outputs.branch, 'hotfix/') }}
+        if: >-
+             matrix.edition == '' &&
+             (startsWith(steps.build-ds.outputs.branch, 'release/') ||
+              startsWith(steps.build-ds.outputs.branch, 'hotfix/'))
         env:
           VERSION: ${{ steps.build-ds.outputs.version }}
           BRANCH: ${{ steps.build-ds.outputs.branch }}
