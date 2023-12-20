@@ -158,7 +158,7 @@ jobs:
       # and branch hit release/ or hotfix/
       - name: Trigger zap manualy
         if: >-
-             matrix.edition == '' &&
+             matrix.edition == 'community' &&
              (startsWith(steps.build-ds.outputs.branch, 'release/') ||
               startsWith(steps.build-ds.outputs.branch, 'hotfix/'))
         env:
