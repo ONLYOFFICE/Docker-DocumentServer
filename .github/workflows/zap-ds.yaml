@@ -30,6 +30,8 @@ jobs:
         env:
           TAG: ${{ github.event.inputs.version }}
         run: |
+           # Sleep before run and waiting that pushed images will be available
+           sleep 120
            # Create ssl certs
            openssl genrsa -out tls.key 2048
            openssl req -new -key tls.key -out tls.csr -subj "/C=RU/ST=NizhObl/L=NizhNov/O=RK-Tech/OU=TestUnit/CN=TestName"
