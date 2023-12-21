@@ -1,5 +1,5 @@
 ---
-name: Scanning DocSpace with ZAP
+name: Scanning DocumentServer with ZAP
 
 run-name: > 
       ZAP DocumentServer ver: ${{ github.event.inputs.version }} from branch: ${{ github.event.inputs.branch }}
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Set DocSpace version that will be deployed'
+        description: 'Set DocumentServer version that will be deployed'
         type: string
         required: true
       branch:
@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-    needs: build
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
