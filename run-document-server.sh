@@ -2,6 +2,14 @@
 
 umask 0022
 
+for FILE in /run/secrets/*
+  do
+    [ -e "$FILE" ] || break
+    VARCONTENT=$(cat "$FILE")
+    VARNAME="${FILE#/run/secrets/}"
+    eval export "$VARNAME"='"$VARCONTENT"'
+done
+
 function clean_exit {
   /usr/bin/documentserver-prepare4shutdown.sh
 }
@@ -649,6 +657,13 @@ fi
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
 echo "${JWT_MESSAGE}" 
+
+for FILE in /run/secrets/*
+  do
+    [ -e "$FILE" ] || break
+    VARNAME="${FILE#/run/secrets/}"
+    unset "$VARNAME"
+done
 
 tail -f /var/log/${COMPANY_NAME}/**/*.log &
 wait $!
