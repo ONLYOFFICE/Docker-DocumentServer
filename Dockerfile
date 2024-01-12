@@ -84,8 +84,9 @@ ENV COMPANY_NAME=$COMPANY_NAME \
     PRODUCT_EDITION=$PRODUCT_EDITION \
     DS_DOCKER_INSTALLATION=true
 
-RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
-    wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
+RUN PACKAGE_FILE="onlyoffice-documentserver_8.0.0-39_amd64.deb" && \
+    wget -P /tmp "https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/44eMWuuo474ZqA" && \
+    mv "/tmp/44eMWuuo474ZqA" /tmp/$PACKAGE_FILE && \
     apt-get -y update && \
     service postgresql start && \
     apt-get -yq install /tmp/$PACKAGE_FILE && \
@@ -94,6 +95,25 @@ RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VER
     sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i /etc/supervisor/conf.d/*.conf && \
     service supervisor stop && \
     chmod 755 /app/ds/*.sh && \
+    apt-get -yq install unzip && \
+    wget -O basic.zip https://download.oracle.com/otn_software/linux/instantclient/2112000/instantclient-basic-linux.x64-21.12.0.0.0dbru.zip && \
+    wget -O sqlplus.zip https://download.oracle.com/otn_software/linux/instantclient/2112000/instantclient-sqlplus-linux.x64-21.12.0.0.0dbru.zip && \
+    unzip -d /usr/share basic.zip && \
+    unzip -d /usr/share sqlplus.zip && \
+    echo "#!/bin/sh.RTN.CLIENTDIR=/usr/share/instantclient_21_12.RTN.export LD_LIBRARY_PATH=\$CLIENTDIR.RTN.\$CLIENTDIR/sqlplus \$@" > /usr/bin/sqlplus && \
+    sed -i -e "s/.RTN./\n/g" /usr/bin/sqlplus && \
+    chmod 755 /usr/bin/sqlplus && \
+    apt-get -yq install libaio1 && \
+    echo "GO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/createdb.sql && \
+    echo "GO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/removetbl.sql && \
+    echo "exit" >> /var/www/onlyoffice/documentserver/server/schema/oracle/createdb.sql && \
+    echo "" >> /var/www/onlyoffice/documentserver/server/schema/oracle/removetbl.sql && \
+    echo "exit" >> /var/www/onlyoffice/documentserver/server/schema/oracle/removetbl.sql && \
+    curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update --allow-insecure-repositories && \
+    ACCEPT_EULA=Y apt-get -yq --allow-unauthenticated install mssql-tools18 unixodbc-dev && \
+    rm -f /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update && \
     rm -f /tmp/$PACKAGE_FILE && \
     rm -rf /var/log/$COMPANY_NAME && \
     rm -rf /var/lib/apt/lists/*

@@ -1,0 +1,34 @@
+version: '2.1'
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    build:
+      context: ../.
+    depends_on:
+      onlyoffice-oracle:
+        condition: service_healthy
+    environment:
+      - DB_TYPE=${DB_TYPE:-oracle}
+      - DB_HOST=${DB_HOST:-onlyoffice-oracle}
+      - DB_PORT=${DB_PORT:-1521}
+      - DB_NAME=${DB_NAME:-onlyoffice}
+      - DB_USER=${DB_USER:-onlyoffice}
+      - DB_PWD=${DB_PWD:-onlyoffice}
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+
+  onlyoffice-oracle:
+    container_name: onlyoffice-oracle
+    image: container-registry.oracle.com/database/express:21.3.0-xe
+    environment:
+      - ORACLE_PWD=${ORACLE_PASSWORD:-onlyoffice}
+    restart: always
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    ports:
+      - '1521:1521'
+
+volumes:
+  oracle_data:

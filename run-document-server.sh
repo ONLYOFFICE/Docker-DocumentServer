@@ -151,6 +151,12 @@ read_setting(){
     "mariadb"|"mysql")
       DB_PORT=${DB_PORT:-"3306"}
       ;;
+    "mssql")
+      DB_PORT=${DB_PORT:-"1433"}
+      ;;
+    "oracle")
+      DB_PORT=${DB_PORT:-"1521"}
+      ;;
     "")
       DB_PORT=${DB_PORT:-${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}}
       ;;
@@ -370,6 +376,33 @@ create_postgresql_db(){
   sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
 }
 
+create_mssql_db(){
+  #MSSQL="/opt/mssql-tools18/bin/sqlcmd -S localhost,$DB_PORT"
+  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT"
+
+  SA_PWD="Onlyoffice1!"
+
+  #/opt/mssql-tools18/bin/sqlcmd -S localhost,1433 -U SA -P "Onlyoffice1!" -C -Q "CREATE LOGIN $DB_USER WITH PASSWORD = '$DB_PWD' , CHECK_POLICY = OFF; ALTER SERVER ROLE [dbcreator] ADD MEMBER [$DB_USER]"
+  #/opt/mssql-tools18/bin/sqlcmd -S localhost,1433 -U $DB_USER -P "$DB_PWD" -C -Q "CREATE DATABASE onlyoffice"
+  $MSSQL -U SA -P "$SA_PWD" -C -Q "IF NOT EXISTS (SELECT * FROM sys.sql_logins WHERE name = '$DB_USER') BEGIN CREATE LOGIN $DB_USER WITH PASSWORD = '$DB_PWD' , CHECK_POLICY = OFF; ALTER SERVER ROLE [dbcreator] ADD MEMBER [$DB_USER]; END"
+  $MSSQL -U $DB_USER -P "$DB_PWD" -C -Q "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '$DB_NAME') BEGIN CREATE DATABASE $DB_NAME; END"
+}
+
+create_oracle_db(){
+  SA_PWD="Onlyoffice1\\!"
+  DB_PWD="onlyoffice"
+  PDB="XEPDB1"
+  #ORACLE_SYS_SQL="sqlplus sys/$DB_PWD@//localhost:$DB_PORT/$PDB as sysdba"
+  ORACLE_SYS_SQL="sqlplus sys/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB as sysdba"
+  ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB"
+
+  $ORACLE_SYS_SQL <<EOF
+    CREATE USER $DB_USER IDENTIFIED BY $DB_PWD;
+    GRANT CREATE SESSION TO $DB_USER; 
+    GRANT CREATE TABLE TO $DB_USER;
+EOF
+}
+
 create_db_tbl() {
   case $DB_TYPE in
     "postgres")
@@ -377,6 +410,12 @@ create_db_tbl() {
     ;;
     "mariadb"|"mysql")
       create_mysql_tbl
+    ;;
+    "mssql")
+      create_mssql_tbl
+    ;;
+    "oracle")
+      create_oracle_tbl
     ;;
   esac
 }
@@ -388,6 +427,12 @@ upgrade_db_tbl() {
     ;;
     "mariadb"|"mysql")
       upgrade_mysql_tbl
+    ;;
+    "mssql")
+      upgrade_mssql_tbl
+    ;;
+    "oracle")
+      upgrade_oracle_tbl
     ;;
   esac
 }
@@ -411,6 +456,26 @@ upgrade_mysql_tbl() {
   $MYSQL $DB_NAME < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
 }
 
+upgrade_mssql_tbl() {
+  CONN_PARAMS="-U $DB_USER -P "$DB_PWD" -C"
+  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT $CONN_PARAMS"
+
+  $MSSQL < "$APP_DIR/server/schema/mssql/removetbl.sql" >/dev/null 2>&1
+  $MSSQL < "$APP_DIR/server/schema/mssql/createdb.sql" >/dev/null 2>&1
+}
+
+upgrade_oracle_tbl() {
+  PDB="XEPDB1"
+  ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB"
+  ORACLE_SYS_SQL="sqlplus sys/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB as sysdba"
+
+  #$ORACLE_SQL @$APP_DIR/server/schema/oracle/removetbl.sql >/dev/null 2>&1
+  #$ORACLE_SQL @$APP_DIR/server/schema/oracle/createdb.sql >/dev/null 2>&1
+
+  $ORACLE_SYS_SQL @$APP_DIR/server/schema/oracle/removetbl.sql
+  $ORACLE_SYS_SQL @$APP_DIR/server/schema/oracle/createdb.sql
+}
+
 create_postgresql_tbl() {
   if [ -n "$DB_PWD" ]; then
     export PGPASSWORD=$DB_PWD
@@ -428,6 +493,31 @@ create_mysql_tbl() {
   $MYSQL -e "CREATE DATABASE IF NOT EXISTS $DB_NAME DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null 2>&1
 
   $MYSQL $DB_NAME < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
+}
+
+create_mssql_tbl() {  
+  create_mssql_db
+
+  CONN_PARAMS="-U $DB_USER -P "$DB_PWD" -C"
+  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT $CONN_PARAMS"
+
+  $MSSQL < "$APP_DIR/server/schema/mssql/createdb.sql" >/dev/null 2>&1
+}
+
+create_oracle_tbl() {
+  echo "rfx: create_oracle_tbl: start"
+
+  create_oracle_db
+
+  PDB="XEPDB1"
+  ORACLE_SYS_SQL="sqlplus sys/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB as sysdba"
+  ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB"
+
+  #$ORACLE_SQL @$APP_DIR/server/schema/oracle/createdb.sql >/dev/null 2>&1
+  #$ORACLE_SQL @$APP_DIR/server/schema/oracle/createdb.sql
+  $ORACLE_SYS_SQL @$APP_DIR/server/schema/oracle/createdb.sql
+
+  echo "rfx: create_oracle_tbl: end"
 }
 
 update_welcome_page() {
@@ -544,6 +634,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
   update_ds_settings
 
+  echo "rfx: DataBase"
   # update settings by env variables
   if [ $DB_HOST != "localhost" ]; then
     update_db_settings
@@ -562,12 +653,16 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     LOCAL_SERVICES+=("postgresql")
   fi
 
+  echo "rfx: RabbitMQ"
   if [ ${AMQP_SERVER_HOST} != "localhost" ]; then
+    echo "rfx: RabbitMQ 1"
     update_rabbitmq_setting
   else
+    echo "rfx: RabbitMQ 2"
     # change rights for rabbitmq directory
     chown -R rabbitmq:rabbitmq ${RABBITMQ_DATA}
     chmod -R go=rX,u=rwX ${RABBITMQ_DATA}
+    echo "rfx: RabbitMQ 3"
     if [ -f ${RABBITMQ_DATA}/.erlang.cookie ]; then
         chmod 400 ${RABBITMQ_DATA}/.erlang.cookie
     fi
@@ -577,6 +672,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     rm -rf /var/run/rabbitmq
   fi
 
+  echo "rfx: Redis"
   if [ ${REDIS_ENABLED} = "true" ]; then
     if [ ${REDIS_SERVER_HOST} != "localhost" ]; then
       update_redis_settings
@@ -598,6 +694,7 @@ else
   
   update_welcome_page
 fi
+echo "rfx: Continue"
 
 find /etc/${COMPANY_NAME} ! -path '*logrotate*' -exec chown ds:ds {} \;
 
@@ -606,23 +703,28 @@ for i in ${LOCAL_SERVICES[@]}; do
   service $i start
 done
 
+echo "rfx: 1st"
 if [ ${PG_NEW_CLUSTER} = "true" ]; then
   create_postgresql_db
   create_postgresql_tbl
 fi
 
+echo "rfx: 2nd"
 if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   waiting_for_db
   waiting_for_amqp
   if [ ${REDIS_ENABLED} = "true" ]; then
+    echo "rfx: 2nd one" 
     waiting_for_redis
   fi
 
   if [ "${IS_UPGRADE}" = "true" ]; then
+    echo "rfx: 2nd second" 
     upgrade_db_tbl
     update_release_date
   fi
 
+  echo "rfx: 2nd third" 
   update_nginx_settings
   
   service supervisor start
@@ -636,12 +738,14 @@ fi
 # it run in all cases.
 service nginx start
 
+echo "rfx: 3rd"
 if [ "${LETS_ENCRYPT_DOMAIN}" != "" -a "${LETS_ENCRYPT_MAIL}" != "" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
     documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
   fi
 fi
 
+echo "rfx: 4th"
 # Regenerate the fonts list and the fonts thumbnails
 if [ "${GENERATE_FONTS}" == "true" ]; then
   documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
@@ -649,6 +753,8 @@ fi
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
 echo "${JWT_MESSAGE}" 
+
+echo "rfx: 5th"
 
 tail -f /var/log/${COMPANY_NAME}/**/*.log &
 wait $!
