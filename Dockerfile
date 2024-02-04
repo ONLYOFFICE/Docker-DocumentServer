@@ -21,6 +21,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         apt-utils \
         bomstrip \
         certbot \
+        cron \
         curl \
         htop \
         libasound2 \

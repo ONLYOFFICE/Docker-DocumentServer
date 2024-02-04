@@ -1,5 +1,6 @@
 ### This workflow setup instance then build and push images ###
 name: Multi-arch build stable
+run-name: ${{ inputs.tag }} (${{ inputs.release_number }})
 
 on:
   workflow_dispatch:

@@ -5,7 +5,10 @@
 umask 0022
 
 function clean_exit {
-  /usr/bin/documentserver-prepare4shutdown.sh
+  if [ ${ONLYOFFICE_DATA_CONTAINER} == "false" ] && \
+  [ ${ONLYOFFICE_DATA_CONTAINER_HOST} == "localhost" ]; then
+    /usr/bin/documentserver-prepare4shutdown.sh
+  fi
 }
 
 trap clean_exit SIGTERM
