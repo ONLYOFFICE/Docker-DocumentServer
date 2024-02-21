@@ -1,7 +1,7 @@
 version: '2'
 services:
   onlyoffice-documentserver:
-    image: onlyoffice/4testing-documentserver-ee:99.99.99.${BUILD}
+    image: onlyoffice/documentserver-ee:${VERSION}
     container_name: onlyoffice-documentserver
     depends_on:
       - onlyoffice-dameng
@@ -13,8 +13,8 @@ services:
       - DB_NAME=onlyoffice
       - DB_USER=onlyoffice
       - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
-      # Uncomment strings below to enable the JSON Web Token validation.
-      #- JWT_ENABLED=true
+      # Costomize the JSON Web Token validation parameters if needed.
+      #- JWT_ENABLED=false
       #- JWT_SECRET=secret
       #- JWT_HEADER=Authorization
       #- JWT_IN_BODY=true
@@ -42,7 +42,7 @@ services:
 
   onlyoffice-dameng:
     container_name: onlyoffice-dameng
-    image: danilaworker/damengdb:8.1.2
+    image: onlyoffice/damengdb:8.1.2
     environment:
       - PAGE_SIZE=16
       - LD_LIBRARY_PATH=/opt/dmdbms/bin
