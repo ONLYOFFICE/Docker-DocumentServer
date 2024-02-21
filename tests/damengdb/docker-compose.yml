@@ -25,7 +25,6 @@ services:
     restart: always
     stop_grace_period: 60s
     volumes:
-       - ../../run-document-server.sh:/app/ds/run-document-server.sh
        - /var/www/onlyoffice/Data
        - /var/log/onlyoffice
        - /var/lib/onlyoffice/documentserver/App_Data/cache/files
