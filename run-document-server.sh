@@ -60,6 +60,25 @@ if [[ -z $SSL_KEY_PATH ]] && [[ -f ${SSL_CERTIFICATES_DIR}/${COMPANY_NAME}.key ]
 else
   SSL_KEY_PATH=${SSL_KEY_PATH:-${SSL_CERTIFICATES_DIR}/tls.key}
 fi
+
+#When set, the well known "root" CAs will be extended with the extra certificates in file
+NODE_EXTRA_CA_CERTS=${NODE_EXTRA_CA_CERTS:-${SSL_CERTIFICATES_DIR}/extra-ca-certs.pem}
+if [[ -f ${NODE_EXTRA_CA_CERTS} ]]; then
+  NODE_EXTRA_ENVIRONMENT="${NODE_EXTRA_CA_CERTS}"
+elif [[ -f ${SSL_CERTIFICATE_PATH} ]]; then
+  SSL_CERTIFICATE_SUBJECT=$(openssl x509 -subject -noout -in "${SSL_CERTIFICATE_PATH}" | sed 's/subject=//')
+  SSL_CERTIFICATE_ISSUER=$(openssl x509 -issuer -noout -in "${SSL_CERTIFICATE_PATH}" | sed 's/issuer=//')
+
+  #Add self-signed certificate to trusted list for validating Docs requests to the test example 
+  if [[ -n $SSL_CERTIFICATE_SUBJECT && $SSL_CERTIFICATE_SUBJECT == $SSL_CERTIFICATE_ISSUER ]]; then
+    NODE_EXTRA_ENVIRONMENT="${SSL_CERTIFICATE_PATH}"
+  fi
+fi
+
+if [[ -n $NODE_EXTRA_ENVIRONMENT ]]; then
+  sed -i "s|^environment=.*$|&${NODE_EXTRA_ENVIRONMENT}|" /etc/supervisor/conf.d/*.conf
+fi
+
 CA_CERTIFICATES_PATH=${CA_CERTIFICATES_PATH:-${SSL_CERTIFICATES_DIR}/ca-certificates.pem}
 SSL_DHPARAM_PATH=${SSL_DHPARAM_PATH:-${SSL_CERTIFICATES_DIR}/dhparam.pem}
 SSL_VERIFY_CLIENT=${SSL_VERIFY_CLIENT:-off}
