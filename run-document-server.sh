@@ -3,7 +3,10 @@
 umask 0022
 
 function clean_exit {
-  /usr/bin/documentserver-prepare4shutdown.sh
+  if [ ${ONLYOFFICE_DATA_CONTAINER} == "false" ] && \
+  [ ${ONLYOFFICE_DATA_CONTAINER_HOST} == "localhost" ]; then
+    /usr/bin/documentserver-prepare4shutdown.sh
+  fi
 }
 
 trap clean_exit SIGTERM
@@ -57,6 +60,25 @@ if [[ -z $SSL_KEY_PATH ]] && [[ -f ${SSL_CERTIFICATES_DIR}/${COMPANY_NAME}.key ]
 else
   SSL_KEY_PATH=${SSL_KEY_PATH:-${SSL_CERTIFICATES_DIR}/tls.key}
 fi
+
+#When set, the well known "root" CAs will be extended with the extra certificates in file
+NODE_EXTRA_CA_CERTS=${NODE_EXTRA_CA_CERTS:-${SSL_CERTIFICATES_DIR}/extra-ca-certs.pem}
+if [[ -f ${NODE_EXTRA_CA_CERTS} ]]; then
+  NODE_EXTRA_ENVIRONMENT="${NODE_EXTRA_CA_CERTS}"
+elif [[ -f ${SSL_CERTIFICATE_PATH} ]]; then
+  SSL_CERTIFICATE_SUBJECT=$(openssl x509 -subject -noout -in "${SSL_CERTIFICATE_PATH}" | sed 's/subject=//')
+  SSL_CERTIFICATE_ISSUER=$(openssl x509 -issuer -noout -in "${SSL_CERTIFICATE_PATH}" | sed 's/issuer=//')
+
+  #Add self-signed certificate to trusted list for validating Docs requests to the test example 
+  if [[ -n $SSL_CERTIFICATE_SUBJECT && $SSL_CERTIFICATE_SUBJECT == $SSL_CERTIFICATE_ISSUER ]]; then
+    NODE_EXTRA_ENVIRONMENT="${SSL_CERTIFICATE_PATH}"
+  fi
+fi
+
+if [[ -n $NODE_EXTRA_ENVIRONMENT ]]; then
+  sed -i "s|^environment=.*$|&${NODE_EXTRA_ENVIRONMENT}|" /etc/supervisor/conf.d/*.conf
+fi
+
 CA_CERTIFICATES_PATH=${CA_CERTIFICATES_PATH:-${SSL_CERTIFICATES_DIR}/ca-certificates.pem}
 SSL_DHPARAM_PATH=${SSL_DHPARAM_PATH:-${SSL_CERTIFICATES_DIR}/dhparam.pem}
 SSL_VERIFY_CLIENT=${SSL_VERIFY_CLIENT:-off}
@@ -87,11 +109,13 @@ fi
 
 [ -z $JWT_SECRET ] && JWT_MESSAGE='JWT is enabled by default. A random secret is generated automatically. Run the command "docker exec $(sudo docker ps -q) sudo documentserver-jwt-status.sh" to get information about JWT.'
 
-JWT_SECRET=${JWT_SECRET:-$(pwgen -s 20)}
+JWT_SECRET=${JWT_SECRET:-$(pwgen -s 32)}
 JWT_HEADER=${JWT_HEADER:-Authorization}
 JWT_IN_BODY=${JWT_IN_BODY:-false}
 
 WOPI_ENABLED=${WOPI_ENABLED:-false}
+ALLOW_META_IP_ADDRESS=${ALLOW_META_IP_ADDRESS:-false}
+ALLOW_PRIVATE_IP_ADDRESS=${ALLOW_PRIVATE_IP_ADDRESS:-false}
 
 GENERATE_FONTS=${GENERATE_FONTS:-true}
 
@@ -347,6 +371,12 @@ update_ds_settings(){
     ${JSON} -I -e "if(this.wopi===undefined)this.wopi={}"
     ${JSON} -I -e "this.wopi.enable = true"
   fi
+
+  if [ "${ALLOW_META_IP_ADDRESS}" = "true" ] || [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ]; then
+    ${JSON} -I -e "if(this.services.CoAuthoring['request-filtering-agent']===undefined)this.services.CoAuthoring['request-filtering-agent']={}"
+    [ "${ALLOW_META_IP_ADDRESS}" = "true" ] && ${JSON} -I -e "this.services.CoAuthoring['request-filtering-agent'].allowMetaIPAddress = true"
+    [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ] && ${JSON} -I -e "this.services.CoAuthoring['request-filtering-agent'].allowPrivateIPAddress = true"
+  fi
 }
 
 create_postgresql_cluster(){
@@ -361,9 +391,8 @@ create_postgresql_cluster(){
 }
 
 create_postgresql_db(){
-  sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
   sudo -u postgres psql -c "CREATE USER $DB_USER WITH password '"$DB_PWD"';"
-  sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE $DB_NAME TO $DB_USER;"
+  sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
 }
 
 create_db_tbl() {
@@ -510,15 +539,6 @@ update_nginx_settings(){
   documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
 }
 
-update_supervisor_settings(){
-  # Copy modified supervisor start script
-  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisor /etc/init.d/
-  # Copy modified supervisor config
-  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
-  sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf
-  cp ${SYSCONF_TEMPLATES_DIR}/supervisor/ds/*.conf etc/supervisor/conf.d/
-}
-
 update_log_settings(){
    ${JSON_LOG} -I -e "this.categories.default.level = '${DS_LOG_LEVEL}'"
 }
@@ -619,7 +639,7 @@ else
   update_welcome_page
 fi
 
-find /etc/${COMPANY_NAME} -exec chown ds:ds {} \;
+find /etc/${COMPANY_NAME} ! -path '*logrotate*' -exec chown ds:ds {} \;
 
 #start needed local services
 for i in ${LOCAL_SERVICES[@]}; do
@@ -644,8 +664,7 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   fi
 
   update_nginx_settings
-
-  update_supervisor_settings
+  
   service supervisor start
   
   # start cron to enable log rotating

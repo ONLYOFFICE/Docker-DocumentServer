@@ -1,5 +1,6 @@
 ### This workflow setup instance then build and push images ###
 name: Multi-arch build stable
+run-name: ${{ inputs.tag }} (${{ inputs.release_number }})
 
 on:
   workflow_dispatch:
@@ -8,6 +9,11 @@ on:
         description: 'Tag for release (ex. 1.2.3.45)'
         type: string
         required: true
+      release_number:
+        description: 'Sequence number of the release (ex. x.x.x.<number>)'
+        type: string
+        required: true
+        default: '1'
 
 env:
   COMPANY_NAME: "onlyoffice"
@@ -42,21 +48,17 @@ jobs:
         run: |
           set -eux
           VERSION=${{ github.event.inputs.tag }}
+          RELEASE_NUMBER=${{ github.event.inputs.release_number }}
           PRODUCT_EDITION=${{ matrix.edition }}
           TESTING_IMAGE=${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}
-          if docker manifest inspect ${TESTING_IMAGE}:${VERSION} > /dev/null; then
-            echo "Image present on docker.hub >> start build stable version"
             export PRODUCT_EDITION
-            export TAG=${VERSION}
+            export PULL_TAG=${VERSION}
+            export TAG=${VERSION%.*}.${RELEASE_NUMBER}
             export SHORTER_TAG=${VERSION%.*}
             export SHORTEST_TAG=${VERSION%.*.*}
             docker buildx bake -f docker-bake.hcl ${{ matrix.images }} --push
             echo "DONE: Build success >> exit with 0"
             exit 0
-          else
-            echo "FAILED: Image with tag ${VERSION} do not presented on docker.hub >> build will not started >> exit with 1"
-            exit 1
-          fi
         shell: bash
 
   build-nonexample:
@@ -88,8 +90,11 @@ jobs:
       - name: build image
         run: |
           set -eux
+          VERSION=${{ github.event.inputs.tag }}
+          RELEASE_NUMBER=${{ github.event.inputs.release_number }}
+          export PULL_TAG=${VERSION%.*}.${RELEASE_NUMBER}
           export PRODUCT_EDITION=${{ matrix.edition }}
-          export TAG=${{ github.event.inputs.tag }}
+          export TAG=${VERSION%.*}.${RELEASE_NUMBER}
           docker buildx bake -f docker-bake.hcl ${{ matrix.images }} --push
         shell: bash
 
@@ -119,12 +124,14 @@ jobs:
       - name: build UCS
         run: |
            set -eux
+           VERSION=${{ github.event.inputs.tag }}
+           RELEASE_NUMBER=${{ github.event.inputs.release_number }}
            export PRODUCT_EDITION=${{ matrix.edition }}
-           export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL_OLD }}/testing/ubuntu
+           export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}
            export DOCKERFILE=Dockerfile
            export BASE_IMAGE=ubuntu:20.04
            export PG_VERSION=12
-           export TAG=${{ github.event.inputs.tag }}
-           export PACKAGE_VERSION=$( echo ${TAG} |  sed -E 's/(.*)\./\1-/')
+           export TAG=${VERSION%.*}.${RELEASE_NUMBER}
+           export PACKAGE_VERSION=$( echo ${VERSION} |  sed -E 's/(.*)\./\1-/')
            docker buildx bake -f docker-bake.hcl documentserver-ucs --push
         shell: bash

@@ -1,5 +1,14 @@
 ### This workflow setup instance then build and push images ###
 name: 4testing multiarch-build
+run-name: >-
+  Build #${{ inputs.build }} [
+  ${{ inputs.amd64 && 'AMD64' || '-' }}
+  ${{ inputs.arm64 && 'ARM64' || '-' }}
+  ] [
+  ${{ inputs.community && 'CE' || '-' }}
+  ${{ inputs.developer && 'DE' || '-' }}
+  ${{ inputs.enterprise && 'EE' || '-' }}
+  ]
 
 on:
   workflow_dispatch:
@@ -61,7 +70,7 @@ jobs:
             echo "None of the editions are selected."
             exit 1
           fi
-          echo "::set-output name=editions::$(jq -n -c --arg s "${EDITIONS[*]}" '($s|split(" "))')"
+          echo "editions=$(jq -n -c --arg s "${EDITIONS[*]}" '($s|split(" "))')" >> $GITHUB_OUTPUT
     outputs:
       editions: ${{ steps.matrix.outputs.editions }}
 
@@ -92,6 +101,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Build 4testing
+        id: build-ds
         run: |
           set -eux
 
@@ -124,8 +134,8 @@ jobs:
           BUILD_NUMBER=${{ github.event.inputs.build }}
 
           export PRODUCT_EDITION
-          export PACKAGE_VERSION=${PRODUCT_VERSION}-${BUILD_NUMBER}~stretch
-          export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}/${BUILD_CHANNEL}
+          export PACKAGE_VERSION=${PRODUCT_VERSION}-${BUILD_NUMBER}
+          export PACKAGE_BASEURL=${{ secrets.REPO_BASEURL }}
           export BUILD_CHANNEL
           export PLATFORM
           export DOCKERFILE=Dockerfile
@@ -136,4 +146,29 @@ jobs:
 
           docker buildx bake -f docker-bake.hcl ${{ matrix.image }} --push
           echo "DONE: Build success"
+
+          ### Set output for Zap scanner
+          ### NOTE: Output will be used only in release/hotfix branches
+          
+          echo "version=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
         shell: bash
+
+      # Run scanner only when edition is community 
+      # and branch hit release/ or hotfix/
+      - name: Trigger zap manualy
+        if: >-
+             matrix.edition == 'community' &&
+             (startsWith(steps.build-ds.outputs.branch, 'release/') ||
+              startsWith(steps.build-ds.outputs.branch, 'hotfix/'))
+        env:
+          VERSION: ${{ steps.build-ds.outputs.version }}
+          BRANCH: ${{ steps.build-ds.outputs.branch }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+            gh workflow run zap-ds.yaml \
+                 --repo ${{ github.repository }} \
+                 -f branch=${BRANCH} \
+                 -f version=${VERSION}
+        shell: bash
+

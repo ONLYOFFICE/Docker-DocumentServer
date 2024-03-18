@@ -11,6 +11,7 @@
         + [Installation of the SSL Certificates](#installation-of-the-ssl-certificates)
         + [Available Configuration Parameters](#available-configuration-parameters)
 * [Installing ONLYOFFICE Document Server integrated with Community and Mail Servers](#installing-onlyoffice-document-server-integrated-with-community-and-mail-servers)
+* [ONLYOFFICE Document Server ipv6 setup](#onlyoffice-document-server-ipv6-setup)
 * [Issues](#issues)
     - [Docker Issues](#docker-issues)
     - [Document Server usage Issues](#document-server-usage-issues)
@@ -25,7 +26,7 @@ Starting from version 6.0, Document Server is distributed as ONLYOFFICE Docs. It
 
 ONLYOFFICE Docs can be used as a part of ONLYOFFICE Workspace or with third-party sync&share solutions (e.g. Nextcloud, ownCloud, Seafile) to enable collaborative editing within their interface.
 
-***Important*** Please update `docker-enginge` to latest version (`20.10.21` as of writing this doc) before using it. We use `ubuntu:22.04` as base image and it older versions of docker have compatibility problems with it
+***Important*** Please update `docker-engine` to latest version (`20.10.21` as of writing this doc) before using it. We use `ubuntu:22.04` as base image and it older versions of docker have compatibility problems with it
 
 ## Functionality ##
 * ONLYOFFICE Document Editor
@@ -177,6 +178,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **SSL_KEY_PATH**: The path to the SSL certificate's private key. Defaults to `/var/www/onlyoffice/Data/certs/tls.key`.
 - **SSL_DHPARAM_PATH**: The path to the Diffie-Hellman parameter. Defaults to `/var/www/onlyoffice/Data/certs/dhparam.pem`.
 - **SSL_VERIFY_CLIENT**: Enable verification of client certificates using the `CA_CERTIFICATES_PATH` file. Defaults to `false`
+- **NODE_EXTRA_CA_CERTS**: The [NODE_EXTRA_CA_CERTS](https://nodejs.org/api/cli.html#node_extra_ca_certsfile "Node.js documentation") to extend CAs with the extra certificates for Node.js. Defaults to `/var/www/onlyoffice/Data/certs/extra-ca-certs.pem`.
 - **DB_TYPE**: The database type. Supported values are `postgres`, `mariadb` or `mysql`. Defaults to `postgres`.
 - **DB_HOST**: The IP address or the name of the host where the database server is running.
 - **DB_PORT**: The database server port number.
@@ -190,12 +192,14 @@ Below is the complete list of parameters that can be set using environment varia
 - **REDIS_SERVER_PASS**: The Redis server password. The password is not set by default.
 - **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
 - **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process.
-- **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](http://nginx.org/ru/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.
-- **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `false`.
-- **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to `secret`.
+- **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](https://nginx.org/en/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.
+- **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `true`.
+- **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to random value.
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
 - **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
 - **WOPI_ENABLED**: Specifies the enabling the wopi handlers. Defaults to `false`.
+- **ALLOW_META_IP_ADDRESS**: Defines if it is allowed to connect meta IP address or not. Defaults to `false`.
+- **ALLOW_PRIVATE_IP_ADDRESS**: Defines if it is allowed to connect private IP address or not. Defaults to `false`.
 - **USE_UNAUTHORIZED_STORAGE**: Set to `true`if using selfsigned certificates for your storage server e.g. Nextcloud. Defaults to `false`
 - **GENERATE_FONTS**: When 'true' regenerates fonts list and the fonts thumbnails etc. at each start. Defaults to `true`
 - **METRICS_ENABLED**: Specifies the enabling StatsD for ONLYOFFICE Document Server. Defaults to `false`.
@@ -220,18 +224,28 @@ Then launch containers on it using the 'docker run --net onlyoffice' option:
 
 Follow [these steps](#installing-mysql) to install MySQL server.
 
-**STEP 3**: Install ONLYOFFICE Document Server.
+**STEP 3**: Generate JWT Secret
+
+JWT secret defines the secret key to validate the JSON Web Token in the request to the **ONLYOFFICE Document Server**. You can specify it yourself or easily get it using the command:
+```
+JWT_SECRET=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 12);
+```
+
+**STEP 4**: Install ONLYOFFICE Document Server.
 
 ```bash
 sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-document-server \
-	-v /app/onlyoffice/DocumentServer/logs:/var/log/onlyoffice  \
-	-v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  \
-	-v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice \
-	-v /app/onlyoffice/DocumentServer/db:/var/lib/postgresql \
-	onlyoffice/documentserver
+ -e JWT_ENABLED=true \
+ -e JWT_SECRET=${JWT_SECRET} \
+ -e JWT_HEADER=AuthorizationJwt \
+ -v /app/onlyoffice/DocumentServer/logs:/var/log/onlyoffice  \
+ -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  \
+ -v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice \
+ -v /app/onlyoffice/DocumentServer/db:/var/lib/postgresql \
+ onlyoffice/documentserver
 ```
 
-**STEP 4**: Install ONLYOFFICE Mail Server. 
+**STEP 5**: Install ONLYOFFICE Mail Server. 
 
 For the mail server correct work you need to specify its hostname 'yourdomain.com'.
 
@@ -253,10 +267,10 @@ The additional parameters for mail server are available [here](https://github.co
 
 To learn more, refer to the [ONLYOFFICE Mail Server documentation](https://github.com/ONLYOFFICE/Docker-MailServer "ONLYOFFICE Mail Server documentation").
 
-**STEP 5**: Install ONLYOFFICE Community Server
+**STEP 6**: Install ONLYOFFICE Community Server
 
 ```bash
-sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-community-server -p 80:80 -p 443:443 -p 5222:5222 \
+sudo docker run --net onlyoffice -i -t -d --privileged --restart=always --name onlyoffice-community-server -p 80:80 -p 443:443 -p 5222:5222 --cgroupns=host \
  -e MYSQL_SERVER_ROOT_PASSWORD=my-secret-pw \
  -e MYSQL_SERVER_DB_NAME=onlyoffice \
  -e MYSQL_SERVER_HOST=onlyoffice-mysql-server \
@@ -264,6 +278,9 @@ sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-com
  -e MYSQL_SERVER_PASS=onlyoffice_pass \
  
  -e DOCUMENT_SERVER_PORT_80_TCP_ADDR=onlyoffice-document-server \
+ -e DOCUMENT_SERVER_JWT_ENABLED=true \
+ -e DOCUMENT_SERVER_JWT_SECRET=${JWT_SECRET} \
+ -e DOCUMENT_SERVER_JWT_HEADER=AuthorizationJwt \
  
  -e MAIL_SERVER_API_HOST=${MAIL_SERVER_IP} \
  -e MAIL_SERVER_DB_HOST=onlyoffice-mysql-server \
@@ -274,12 +291,14 @@ sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-com
  
  -v /app/onlyoffice/CommunityServer/data:/var/www/onlyoffice/Data \
  -v /app/onlyoffice/CommunityServer/logs:/var/log/onlyoffice \
+ -v /app/onlyoffice/CommunityServer/letsencrypt:/etc/letsencrypt \
+ -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
  onlyoffice/communityserver
 ```
 
 Where `${MAIL_SERVER_IP}` is the IP address for **ONLYOFFICE Mail Server**. You can easily get it using the command:
 ```
-docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' onlyoffice-mail-server
+MAIL_SERVER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' onlyoffice-mail-server)
 ```
 
 Alternatively, you can use an automatic installation script to install the whole ONLYOFFICE Community Edition at once. For the mail server correct work you need to specify its hostname 'yourdomain.com'.
@@ -302,6 +321,30 @@ Or, use [docker-compose](https://docs.docker.com/compose/install "docker-compose
 wget https://raw.githubusercontent.com/ONLYOFFICE/Docker-CommunityServer/master/docker-compose.groups.yml
 docker-compose up -d
 ```
+
+## ONLYOFFICE Document Server ipv6 setup
+
+(Works and is supported only for Linux hosts)
+
+Docker does not currently provide ipv6 addresses to containers by default. This function is experimental now.
+
+To set up interaction via ipv6, you need to enable support for this feature in your Docker. For this you need:
+- create the `/etc/docker/daemon.json` file with the following content:
+
+```
+{
+"ipv6": true,
+"fixed-cidr-v6": "2001:db8:abc1::/64"
+}
+```
+- restart docker with the following command: `systemctl restart docker`
+
+After that, all running containers receive an ipv6 address and have an inet6 interface.
+
+You can check your default bridge network and see the field there
+`EnableIPv6=true`. A new ipv6 subnet will also be added.
+
+For more information, visit the official [Docker manual site](https://docs.docker.com/config/daemon/ipv6/)
 
 ## Issues
 

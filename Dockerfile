@@ -11,20 +11,16 @@ ARG ONLYOFFICE_VALUE=onlyoffice
 
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get -y update && \
-    apt-get -yq install wget apt-transport-https gnupg locales && \
-    mkdir -p $HOME/.gnupg && \
-    gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/onlyoffice.gpg --keyserver keyserver.ubuntu.com --recv-keys 0x8320ca65cb2de8e5 && \
-    chmod 644 /etc/apt/trusted.gpg.d/onlyoffice.gpg && \
+    apt-get -yq install wget apt-transport-https gnupg locales lsb-release && \
     locale-gen en_US.UTF-8 && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
-    wget -O - https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | bash && \
     apt-get -yq install \
         adduser \
         apt-utils \
         bomstrip \
         certbot \
+        cron \
         curl \
-        gconf-service \
         htop \
         libasound2 \
         libboost-regex-dev \
@@ -46,7 +42,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         postgresql \
         postgresql-client \
         pwgen \
-        rabbitmq-server=3.10* \
+        rabbitmq-server \
         redis-server \
         software-properties-common \
         sudo \
@@ -61,9 +57,8 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     sed 's|\(application\/zip.*\)|\1\n    application\/wasm wasm;|' -i /etc/nginx/mime.types && \
     pg_conftool $PG_VERSION main set listen_addresses 'localhost' && \
     service postgresql restart && \
-    sudo -u postgres psql -c "CREATE DATABASE $ONLYOFFICE_VALUE;" && \
     sudo -u postgres psql -c "CREATE USER $ONLYOFFICE_VALUE WITH password '$ONLYOFFICE_VALUE';" && \
-    sudo -u postgres psql -c "GRANT ALL privileges ON DATABASE $ONLYOFFICE_VALUE TO $ONLYOFFICE_VALUE;" && \ 
+    sudo -u postgres psql -c "CREATE DATABASE $ONLYOFFICE_VALUE OWNER $ONLYOFFICE_VALUE;" && \
     service postgresql stop && \
     service redis-server stop && \
     service rabbitmq-server stop && \
@@ -71,7 +66,8 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service nginx stop && \
     rm -rf /var/lib/apt/lists/*
 
-COPY config /app/ds/setup/config/
+COPY config/supervisor/supervisor /etc/init.d/
+COPY config/supervisor/ds/*.conf /etc/supervisor/conf.d/
 COPY run-document-server.sh /app/ds/run-document-server.sh
 
 EXPOSE 80 443
@@ -94,6 +90,8 @@ RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VER
     service postgresql start && \
     apt-get -yq install /tmp/$PACKAGE_FILE && \
     service postgresql stop && \
+    chmod 755 /etc/init.d/supervisor && \
+    sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i /etc/supervisor/conf.d/*.conf && \
     service supervisor stop && \
     chmod 755 /app/ds/*.sh && \
     rm -f /tmp/$PACKAGE_FILE && \
