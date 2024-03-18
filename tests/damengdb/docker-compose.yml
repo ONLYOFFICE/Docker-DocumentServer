@@ -2,6 +2,10 @@ version: '2'
 services:
   onlyoffice-documentserver:
     image: onlyoffice/documentserver-ee:${VERSION}
+    build:
+      context: ../../.
+      dockerfile: Dockerfile
+      target: documentserver
     container_name: onlyoffice-documentserver
     depends_on:
       - onlyoffice-dameng
