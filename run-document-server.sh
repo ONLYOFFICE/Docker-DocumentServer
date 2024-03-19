@@ -76,7 +76,7 @@ elif [[ -f ${SSL_CERTIFICATE_PATH} ]]; then
 fi
 
 if [[ -n $NODE_EXTRA_ENVIRONMENT ]]; then
-  sed -i "s|^environment=.*$|&${NODE_EXTRA_ENVIRONMENT}|" /etc/supervisor/conf.d/*.conf
+  sed -i "s|^environment=.*$|&,NODE_EXTRA_CA_CERTS=${NODE_EXTRA_ENVIRONMENT}|" /etc/supervisor/conf.d/*.conf
 fi
 
 CA_CERTIFICATES_PATH=${CA_CERTIFICATES_PATH:-${SSL_CERTIFICATES_DIR}/ca-certificates.pem}
