@@ -66,4 +66,4 @@ services:
 
 volumes:
   dameng_data:
-  disql:
+  
