@@ -1,7 +1,6 @@
 version: '2'
 services:
   onlyoffice-documentserver:
-    image: onlyoffice/documentserver-ee:${VERSION}
     build:
       context: ../../.
       dockerfile: Dockerfile
@@ -44,7 +43,6 @@ services:
 
   onlyoffice-dameng:
     container_name: onlyoffice-dameng
-    image: onlyoffice/damengdb:8.1.2
     build:
       context: .
       dockerfile: damengdb.Dockerfile
