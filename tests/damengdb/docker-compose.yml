@@ -43,8 +43,8 @@ services:
       - '5672'
 
   onlyoffice-dameng:
-    image: onlyoffice/damengdb:8.1.2
     container_name: onlyoffice-dameng
+    image: onlyoffice/damengdb:8.1.2
     build:
       context: .
       dockerfile: damengdb.Dockerfile
