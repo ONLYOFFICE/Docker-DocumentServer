@@ -15,7 +15,7 @@ function wait_dm_ready() {
   cd /opt/dmdbms/bin
   for i in `seq 1  10`; do
     echo `./disql /nolog <<EOF
-CONN SYSDBA/${CONN_PWD}@localhost
+CONN SYSDBA/SYSDBA001@localhost
 exit
 EOF` | grep  "connection failure" > /dev/null 2>&1
     if [ $? -eq 0 ]; then
