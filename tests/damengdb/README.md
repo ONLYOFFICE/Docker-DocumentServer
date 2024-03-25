@@ -2,8 +2,6 @@
 
 ### How it works
 
-#### Deploy stand
-
 For deploy stand, you need:
 
 **STEP 1**: Build you own images, do it with command:
