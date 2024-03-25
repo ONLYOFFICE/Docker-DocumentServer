@@ -173,6 +173,9 @@ read_setting(){
     "mariadb"|"mysql")
       DB_PORT=${DB_PORT:-"3306"}
       ;;
+    "dameng")
+      DB_PORT=${DB_PORT:-"5236"}
+      ;;
     "")
       DB_PORT=${DB_PORT:-${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}}
       ;;
