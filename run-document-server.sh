@@ -23,6 +23,7 @@ DS_LOG_DIR="${LOG_DIR}/documentserver"
 LIB_DIR="/var/lib/${COMPANY_NAME}"
 DS_LIB_DIR="${LIB_DIR}/documentserver"
 CONF_DIR="/etc/${COMPANY_NAME}/documentserver"
+SUPERVISOR_CONF_DIR="/etc/supervisor/conf.d"
 IS_UPGRADE="false"
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
@@ -275,6 +276,7 @@ update_statsd_settings(){
   ${JSON} -I -e "this.statsd.host = '${METRICS_HOST}'"
   ${JSON} -I -e "this.statsd.port = '${METRICS_PORT}'"
   ${JSON} -I -e "this.statsd.prefix = '${METRICS_PREFIX}'"
+  sed -i -E "s/(autostart|autorestart)=.*$/\1=${METRICS_ENABLED}/g" ${SUPERVISOR_CONF_DIR}/ds-metrics.conf
 }
 
 update_db_settings(){
