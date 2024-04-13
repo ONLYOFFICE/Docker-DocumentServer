@@ -78,11 +78,13 @@ ARG PRODUCT_EDITION=
 ARG PACKAGE_VERSION=
 ARG TARGETARCH
 ARG PACKAGE_BASEURL="http://download.onlyoffice.com/install/documentserver/linux"
+ARG MSSQL_PASSWORD="Onlyoffice1!"
 
 ENV COMPANY_NAME=$COMPANY_NAME \
     PRODUCT_NAME=$PRODUCT_NAME \
     PRODUCT_EDITION=$PRODUCT_EDITION \
-    DS_DOCKER_INSTALLATION=true
+    DS_DOCKER_INSTALLATION=true \
+    MSSQL_PASSWORD=$MSSQL_PASSWORD
 
 RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
     wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
@@ -94,6 +96,16 @@ RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VER
     sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i /etc/supervisor/conf.d/*.conf && \
     service supervisor stop && \
     chmod 755 /app/ds/*.sh && \
+    apt-get -yq install libaio1 && \
+    echo "" >> /var/www/onlyoffice/documentserver/server/schema/mssql/createdb.sql && \
+    echo "GO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/createdb.sql && \
+    echo "" >> /var/www/onlyoffice/documentserver/server/schema/mssql/removetbl.sql && \
+    echo "GO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/removetbl.sql && \
+    curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update --allow-insecure-repositories && \
+    ACCEPT_EULA=Y apt-get -yq --allow-unauthenticated install mssql-tools18 unixodbc-dev && \
+    rm -f /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update && \
     rm -f /tmp/$PACKAGE_FILE && \
     rm -rf /var/log/$COMPANY_NAME && \
     rm -rf /var/lib/apt/lists/*

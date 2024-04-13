@@ -177,6 +177,9 @@ read_setting(){
     "dameng")
       DB_PORT=${DB_PORT:-"5236"}
       ;;
+    "mssql")
+      DB_PORT=${DB_PORT:-"1433"}
+      ;;
     "")
       DB_PORT=${DB_PORT:-${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}}
       ;;
@@ -397,6 +400,15 @@ create_postgresql_db(){
   sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
 }
 
+create_mssql_db(){
+  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT"
+
+  SA_PWD=$MSSQL_PASSWORD
+
+  $MSSQL -U SA -P "$SA_PWD" -C -Q "IF NOT EXISTS (SELECT * FROM sys.sql_logins WHERE name = '$DB_USER') BEGIN CREATE LOGIN $DB_USER WITH PASSWORD = '$DB_PWD' , CHECK_POLICY = OFF; ALTER SERVER ROLE [dbcreator] ADD MEMBER [$DB_USER]; END"
+  $MSSQL -U $DB_USER -P "$DB_PWD" -C -Q "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '$DB_NAME') BEGIN CREATE DATABASE $DB_NAME; END"
+}
+
 create_db_tbl() {
   case $DB_TYPE in
     "postgres")
@@ -404,6 +416,9 @@ create_db_tbl() {
     ;;
     "mariadb"|"mysql")
       create_mysql_tbl
+    ;;
+    "mssql")
+      create_mssql_tbl
     ;;
   esac
 }
@@ -415,6 +430,9 @@ upgrade_db_tbl() {
     ;;
     "mariadb"|"mysql")
       upgrade_mysql_tbl
+    ;;
+    "mssql")
+      upgrade_mssql_tbl
     ;;
   esac
 }
@@ -438,6 +456,14 @@ upgrade_mysql_tbl() {
   $MYSQL $DB_NAME < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
 }
 
+upgrade_mssql_tbl() {
+  CONN_PARAMS="-U $DB_USER -P "$DB_PWD" -C"
+  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT $CONN_PARAMS"
+
+  $MSSQL < "$APP_DIR/server/schema/mssql/removetbl.sql" >/dev/null 2>&1
+  $MSSQL < "$APP_DIR/server/schema/mssql/createdb.sql" >/dev/null 2>&1
+}
+
 create_postgresql_tbl() {
   if [ -n "$DB_PWD" ]; then
     export PGPASSWORD=$DB_PWD
@@ -455,6 +481,15 @@ create_mysql_tbl() {
   $MYSQL -e "CREATE DATABASE IF NOT EXISTS $DB_NAME DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null 2>&1
 
   $MYSQL $DB_NAME < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
+}
+
+create_mssql_tbl() {  
+  create_mssql_db
+
+  CONN_PARAMS="-U $DB_USER -P "$DB_PWD" -C"
+  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT $CONN_PARAMS"
+
+  $MSSQL < "$APP_DIR/server/schema/mssql/createdb.sql" >/dev/null 2>&1
 }
 
 update_welcome_page() {
