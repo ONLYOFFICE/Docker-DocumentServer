@@ -78,15 +78,16 @@ ARG PRODUCT_EDITION=
 ARG PACKAGE_VERSION=
 ARG TARGETARCH
 ARG PACKAGE_BASEURL="http://download.onlyoffice.com/install/documentserver/linux"
+ARG MSSQL_PASSWORD="Onlyoffice1!"
 
 ENV COMPANY_NAME=$COMPANY_NAME \
     PRODUCT_NAME=$PRODUCT_NAME \
     PRODUCT_EDITION=$PRODUCT_EDITION \
-    DS_DOCKER_INSTALLATION=true
+    DS_DOCKER_INSTALLATION=true \
+    MSSQL_PASSWORD=$MSSQL_PASSWORD
 
-RUN PACKAGE_FILE="onlyoffice-documentserver_8.0.0-39_amd64.deb" && \
-    wget -P /tmp "https://getfile.dokpub.com/yandex/get/https://disk.yandex.ru/d/44eMWuuo474ZqA" && \
-    mv "/tmp/44eMWuuo474ZqA" /tmp/$PACKAGE_FILE && \
+RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
+    wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
     apt-get -y update && \
     service postgresql start && \
     apt-get -yq install /tmp/$PACKAGE_FILE && \
@@ -104,7 +105,9 @@ RUN PACKAGE_FILE="onlyoffice-documentserver_8.0.0-39_amd64.deb" && \
     sed -i -e "s/.RTN./\n/g" /usr/bin/sqlplus && \
     chmod 755 /usr/bin/sqlplus && \
     apt-get -yq install libaio1 && \
+    echo "" >> /var/www/onlyoffice/documentserver/server/schema/mssql/createdb.sql && \
     echo "GO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/createdb.sql && \
+    echo "" >> /var/www/onlyoffice/documentserver/server/schema/mssql/removetbl.sql && \
     echo "GO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/removetbl.sql && \
     echo "exit" >> /var/www/onlyoffice/documentserver/server/schema/oracle/createdb.sql && \
     echo "" >> /var/www/onlyoffice/documentserver/server/schema/oracle/removetbl.sql && \

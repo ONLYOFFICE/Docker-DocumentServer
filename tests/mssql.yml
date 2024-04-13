@@ -23,7 +23,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-CU9-ubuntu-20.04
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${MSSQL_PASSWORD:-Onlyoffice1!}
+      - MSSQL_SA_PASSWORD=${MSSQL_PASSWORD}
     restart: always
     volumes:
       - mssql_data:/var/opt/mssql
