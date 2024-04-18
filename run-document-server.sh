@@ -403,9 +403,6 @@ create_postgresql_db(){
 create_mssql_db(){
   MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT"
 
-  SA_PWD=$MSSQL_PASSWORD
-
-  $MSSQL -U SA -P "$SA_PWD" -C -Q "IF NOT EXISTS (SELECT * FROM sys.sql_logins WHERE name = '$DB_USER') BEGIN CREATE LOGIN $DB_USER WITH PASSWORD = '$DB_PWD' , CHECK_POLICY = OFF; ALTER SERVER ROLE [dbcreator] ADD MEMBER [$DB_USER]; END"
   $MSSQL -U $DB_USER -P "$DB_PWD" -C -Q "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '$DB_NAME') BEGIN CREATE DATABASE $DB_NAME; END"
 }
 

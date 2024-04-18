@@ -1,0 +1,34 @@
+version: '2'
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    build:
+      context: ../../.
+      dockerfile: Dockerfile
+    depends_on:
+      - onlyoffice-mssql
+    environment:
+      - DB_TYPE=mssql
+      - DB_HOST=onlyoffice-mssql
+      - DB_PORT=1433
+      - DB_NAME=onlyoffice
+      - DB_USER=onlyoffice
+      - DB_PWD=onlyoffice
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+
+  onlyoffice-mssql:
+    container_name: onlyoffice-mssql
+    build:
+      context: .
+      dockerfile: mssql.Dockerfile
+    restart: always
+    volumes:
+      - mssql_data:/var/opt/mssql
+    expose:
+      - '1433'
+
+volumes:
+  mssql_data:
