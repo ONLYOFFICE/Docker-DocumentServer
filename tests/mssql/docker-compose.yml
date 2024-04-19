@@ -1,4 +1,4 @@
-version: '2'
+version: '2.1'
 services:
   onlyoffice-documentserver:
     container_name: onlyoffice-documentserver
@@ -8,12 +8,12 @@ services:
     depends_on:
       - onlyoffice-mssql
     environment:
-      - DB_TYPE=mssql
-      - DB_HOST=onlyoffice-mssql
-      - DB_PORT=1433
-      - DB_NAME=onlyoffice
-      - DB_USER=onlyoffice
-      - DB_PWD=onlyoffice
+      - DB_TYPE=${DB_TYPE:-mssql}
+      - DB_HOST=${DB_HOST:-onlyoffice-mssql}
+      - DB_PORT=${DB_PORT:-1433}
+      - DB_NAME=${DB_NAME:-onlyoffice}
+      - DB_USER=${DB_USER:-onlyoffice}
+      - DB_PWD=${DB_PWD:-onlyoffice}
     stdin_open: true
     restart: always
     ports:

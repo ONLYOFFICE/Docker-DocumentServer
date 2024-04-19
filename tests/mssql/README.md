@@ -2,18 +2,16 @@
 
 ### How it works
 
-For deploy stand, you need:
+For deploy stand:
 
-**STEP 1**: Build you own images, do it with command:
+**STEP 1**: Build you own images:
    
 ```bash
 sudo docker-compose build
 ```
 
-**STEP 2**: Wait build and when it finish deploy with command:
+**STEP 2**: Wait build complete and when:
 
 ```bash
 sudo docker-compose up -d 
 ```
-
-Thats all.
