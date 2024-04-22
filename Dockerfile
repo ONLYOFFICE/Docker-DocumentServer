@@ -64,6 +64,12 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service rabbitmq-server stop && \
     service supervisor stop && \
     service nginx stop && \
+    apt-get -yq install libaio1 && \
+    curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update --allow-insecure-repositories && \
+    ACCEPT_EULA=Y apt-get -yq --allow-unauthenticated install mssql-tools18 unixodbc-dev && \
+    rm -f /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY config/supervisor/supervisor /etc/init.d/
@@ -94,14 +100,8 @@ RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VER
     sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i /etc/supervisor/conf.d/*.conf && \
     service supervisor stop && \
     chmod 755 /app/ds/*.sh && \
-    apt-get -yq install libaio1 && \
     printf "\nGO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/createdb.sql && \
     printf "\nGO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/removetbl.sql && \
-    curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list && \
-    apt-get update --allow-insecure-repositories && \
-    ACCEPT_EULA=Y apt-get -yq --allow-unauthenticated install mssql-tools18 unixodbc-dev && \
-    rm -f /etc/apt/sources.list.d/mssql-release.list && \
-    apt-get update && \
     rm -f /tmp/$PACKAGE_FILE && \
     rm -rf /var/log/$COMPANY_NAME && \
     rm -rf /var/lib/apt/lists/*
