@@ -24,6 +24,10 @@ services:
     build:
       context: .
       dockerfile: mssql.Dockerfile
+      args:
+        - MSSQL_DATABASE=${DB_NAME:-onlyoffice}
+        - MSSQL_USER=${DB_USER:-onlyoffice}
+        - MSSQL_PASSWORD=${DB_PWD:-onlyoffice}
     restart: always
     volumes:
       - mssql_data:/var/opt/mssql
