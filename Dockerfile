@@ -12,9 +12,12 @@ ARG ONLYOFFICE_VALUE=onlyoffice
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get -y update && \
     apt-get -yq install wget apt-transport-https gnupg locales lsb-release && \
+    wget -q -O /etc/apt/sources.list.d/mssql-release.list https://packages.microsoft.com/config/ubuntu/22.04/prod.list && \
+    wget -q -O - https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    apt-get -y update && \
     locale-gen en_US.UTF-8 && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
-    apt-get -yq install \
+    ACCEPT_EULA=Y apt-get -yq install \
         adduser \
         apt-utils \
         bomstrip \
@@ -22,6 +25,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         cron \
         curl \
         htop \
+        libaio1 \
         libasound2 \
         libboost-regex-dev \
         libcairo2 \
@@ -34,6 +38,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         libxml2 \
         libxss1 \
         libxtst6 \
+        mssql-tools18 \
         mysql-client \
         nano \
         net-tools \
@@ -48,6 +53,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         sudo \
         supervisor \
         ttf-mscorefonts-installer \
+        unixodbc-dev \
         xvfb \
         zlib1g && \
     if [  $(ls -l /usr/share/fonts/truetype/msttcorefonts | wc -l) -ne 61 ]; \
@@ -64,11 +70,6 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service rabbitmq-server stop && \
     service supervisor stop && \
     service nginx stop && \
-    apt-get -yq install libaio1 && \
-    curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list && \
-    apt-get update --allow-insecure-repositories && \
-    ACCEPT_EULA=Y apt-get -yq --allow-unauthenticated install mssql-tools18 unixodbc-dev && \
-    rm -f /etc/apt/sources.list.d/mssql-release.list && \
     apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
