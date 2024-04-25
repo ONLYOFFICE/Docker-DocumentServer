@@ -3,16 +3,19 @@ ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE} as documentserver
 LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 
+ARG BASE_IMAGE
 ARG PG_VERSION=14
 
-ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=${PG_VERSION}
+ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=${PG_VERSION} BASE_IMAGE=${BASE_IMAGE}
 
 ARG ONLYOFFICE_VALUE=onlyoffice
 
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get -y update && \
     apt-get -yq install wget apt-transport-https gnupg locales lsb-release && \
-    wget -q -O /etc/apt/sources.list.d/mssql-release.list https://packages.microsoft.com/config/ubuntu/22.04/prod.list && \
+    export BASE_VERSION=$(echo ${BASE_IMAGE} | egrep -o "[0-9].*$") && \
+    if [ $(wget --spider https://packages.microsoft.com/config/ubuntu/$BASE_VERSION/prod.list 2>&1 | grep "200 OK"  | wc -l) -eq "0" ]; then export BASE_VERSION="22.04"; fi && \
+    wget -q -O /etc/apt/sources.list.d/mssql-release.list https://packages.microsoft.com/config/ubuntu/$BASE_VERSION/prod.list && \
     wget -q -O - https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
     apt-get -y update && \
     locale-gen en_US.UTF-8 && \
