@@ -68,6 +68,10 @@ variable "BASE_IMAGE" {
     default     = ""
 }
 
+variable "BASE_VERSION" {
+    default     = ""
+}
+
 variable "PG_VERSION" {
     default     = ""
 }
