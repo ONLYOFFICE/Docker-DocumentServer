@@ -57,6 +57,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         supervisor \
         ttf-mscorefonts-installer \
         unixodbc-dev \
+        unzip \
         xvfb \
         zlib1g && \
     if [  $(ls -l /usr/share/fonts/truetype/msttcorefonts | wc -l) -ne 61 ]; \
@@ -68,6 +69,12 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service postgresql restart && \
     sudo -u postgres psql -c "CREATE USER $ONLYOFFICE_VALUE WITH password '$ONLYOFFICE_VALUE';" && \
     sudo -u postgres psql -c "CREATE DATABASE $ONLYOFFICE_VALUE OWNER $ONLYOFFICE_VALUE;" && \
+    wget -O basic.zip https://download.oracle.com/otn_software/linux/instantclient/2112000/instantclient-basic-linux.x64-21.12.0.0.0dbru.zip && \
+    wget -O sqlplus.zip https://download.oracle.com/otn_software/linux/instantclient/2112000/instantclient-sqlplus-linux.x64-21.12.0.0.0dbru.zip && \
+    unzip -d /usr/share basic.zip && \
+    unzip -d /usr/share sqlplus.zip && \
+    printf "#!/bin/sh\nCLIENTDIR=/usr/share/instantclient_21_12\nexport LD_LIBRARY_PATH=\$CLIENTDIR\n\$CLIENTDIR/sqlplus \$@" > /usr/bin/sqlplus && \
+    chmod 755 /usr/bin/sqlplus && \
     service postgresql stop && \
     service redis-server stop && \
     service rabbitmq-server stop && \
@@ -105,6 +112,8 @@ RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VER
     chmod 755 /app/ds/*.sh && \
     printf "\nGO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/createdb.sql && \
     printf "\nGO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/removetbl.sql && \
+    printf "\nexit" >> /var/www/onlyoffice/documentserver/server/schema/oracle/createdb.sql && \
+    printf "\nexit" >> /var/www/onlyoffice/documentserver/server/schema/oracle/removetbl.sql && \
     rm -f /tmp/$PACKAGE_FILE && \
     rm -rf /var/log/$COMPANY_NAME && \
     rm -rf /var/lib/apt/lists/*

@@ -179,7 +179,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **SSL_DHPARAM_PATH**: The path to the Diffie-Hellman parameter. Defaults to `/var/www/onlyoffice/Data/certs/dhparam.pem`.
 - **SSL_VERIFY_CLIENT**: Enable verification of client certificates using the `CA_CERTIFICATES_PATH` file. Defaults to `false`
 - **NODE_EXTRA_CA_CERTS**: The [NODE_EXTRA_CA_CERTS](https://nodejs.org/api/cli.html#node_extra_ca_certsfile "Node.js documentation") to extend CAs with the extra certificates for Node.js. Defaults to `/var/www/onlyoffice/Data/certs/extra-ca-certs.pem`.
-- **DB_TYPE**: The database type. Supported values are `postgres`, `mariadb`, `mysql` or `mssql`. Defaults to `postgres`.
+- **DB_TYPE**: The database type. Supported values are `postgres`, `mariadb`, `mysql`, `mssql` or `oracle`. Defaults to `postgres`.
 - **DB_HOST**: The IP address or the name of the host where the database server is running.
 - **DB_PORT**: The database server port number.
 - **DB_NAME**: The name of a database to use. Should be existing on container startup.
