@@ -8,6 +8,8 @@ LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 ARG BASE_VERSION
 ARG PG_VERSION=14
 
+ARG ORACLE_DOWNLOAD_URL=https://download.oracle.com/otn_software/linux/instantclient/2112000
+
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=${PG_VERSION} BASE_VERSION=${BASE_VERSION}
 
 ARG ONLYOFFICE_VALUE=onlyoffice
@@ -69,12 +71,11 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service postgresql restart && \
     sudo -u postgres psql -c "CREATE USER $ONLYOFFICE_VALUE WITH password '$ONLYOFFICE_VALUE';" && \
     sudo -u postgres psql -c "CREATE DATABASE $ONLYOFFICE_VALUE OWNER $ONLYOFFICE_VALUE;" && \
-    wget -O basic.zip https://download.oracle.com/otn_software/linux/instantclient/2112000/instantclient-basic-linux.x64-21.12.0.0.0dbru.zip && \
-    wget -O sqlplus.zip https://download.oracle.com/otn_software/linux/instantclient/2112000/instantclient-sqlplus-linux.x64-21.12.0.0.0dbru.zip && \
+    wget -O basic.zip $ORACLE_DOWNLOAD_URL/instantclient-basic-linux.x64-21.12.0.0.0dbru.zip && \
+    wget -O sqlplus.zip $ORACLE_DOWNLOAD_URL/instantclient-sqlplus-linux.x64-21.12.0.0.0dbru.zip && \
     unzip -d /usr/share basic.zip && \
     unzip -d /usr/share sqlplus.zip && \
-    printf "#!/bin/sh\nCLIENTDIR=/usr/share/instantclient_21_12\nexport LD_LIBRARY_PATH=\$CLIENTDIR\n\$CLIENTDIR/sqlplus \$@" > /usr/bin/sqlplus && \
-    chmod 755 /usr/bin/sqlplus && \
+    mv /usr/share/instantclient_21_12 /usr/share/instantclient && \
     service postgresql stop && \
     service redis-server stop && \
     service rabbitmq-server stop && \
@@ -85,6 +86,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
 COPY config/supervisor/supervisor /etc/init.d/
 COPY config/supervisor/ds/*.conf /etc/supervisor/conf.d/
 COPY run-document-server.sh /app/ds/run-document-server.sh
+COPY oracle/sqlplus /usr/bin/sqlplus
 
 EXPOSE 80 443
 

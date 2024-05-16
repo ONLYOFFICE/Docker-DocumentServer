@@ -264,17 +264,17 @@ waiting_for_connection(){
 waiting_for_db_ready(){
   case $DB_TYPE in
     "oracle")
-      waiting_for_oracle_ready
+      PDB="XEPDB1"
+      ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB"
+      DB_TEST="echo \"SELECT version FROM V\$INSTANCE;\" | $ORACLE_SQL 2>/dev/null | grep \"Connected\" | wc -l"
+      ;;
+    *)
+      return
       ;;
   esac
-}
-
-waiting_for_oracle_ready(){
-  PDB="XEPDB1"
-  ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB"
 
   for (( i=1; i <= 10; i++ )); do
-    RES=$(echo "SELECT version FROM V\$INSTANCE;" | $ORACLE_SQL 2>/dev/null | grep "Connected" | wc -l)
+    RES=$(eval $DB_TEST)
     if [ "$RES" -ne "0" ]; then
       echo "Database is ready"
       break
