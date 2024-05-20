@@ -373,8 +373,18 @@ update_ds_settings(){
   fi
 
   if [ "${WOPI_ENABLED}" == "true" ]; then
+    WOPI_PRIVATE_KEY="${DATA_DIR}/wopi_private.key"
+    WOPI_PUBLIC_KEY="${DATA_DIR}/wopi_public.key"
+
+    [ ! -f "${WOPI_PRIVATE_KEY}" ] && echo -n "Generating WOPI private key..." && openssl genpkey -algorithm RSA -outform PEM -out "${WOPI_PRIVATE_KEY}" && echo "Done"
+    [ ! -f "${WOPI_PUBLIC_KEY}" ] && echo -n "Generating WOPI public key..." && openssl rsa -pubout -in "${WOPI_PRIVATE_KEY}" -outform PEM -out "${WOPI_PUBLIC_KEY}" && echo "Done"
+    WOPI_MODULUS=$(openssl rsa -pubin -inform PEM -modulus -noout -in "${WOPI_PUBLIC_KEY}" | sed 's/Modulus=//')
+
     ${JSON} -I -e "if(this.wopi===undefined)this.wopi={}"
     ${JSON} -I -e "this.wopi.enable = true"
+    ${JSON} -I -e "this.wopi.privateKey = '$(base64 -w0 ${WOPI_PRIVATE_KEY})'"
+    ${JSON} -I -e "this.wopi.publicKey = '$(base64 -w0 ${WOPI_PUBLIC_KEY})'"
+    ${JSON} -I -e "this.wopi.modulus = '${WOPI_MODULUS}'"
   fi
 
   if [ "${ALLOW_META_IP_ADDRESS}" = "true" ] || [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ]; then
