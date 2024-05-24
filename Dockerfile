@@ -8,15 +8,15 @@ LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 ARG BASE_VERSION
 ARG PG_VERSION=14
 
-ENV OC_MAJOR_VER=21
-ENV OC_MINOR_VER=12
-ENV OC_PATCH_VER=0
-ENV OC_BUILD_VER=0
-ENV OC_BUILD2_VER=0dbru
-ENV OC_VER_PATH=${OC_MAJOR_VER}${OC_MINOR_VER}000
-ENV OC_VER_FILE=${OC_MAJOR_VER}.${OC_MINOR_VER}.${OC_PATCH_VER}.${OC_BUILD_VER}.${OC_BUILD2_VER}
-ENV OC_VER_DIR=${OC_MAJOR_VER}_${OC_MINOR_VER}
-ENV OC_DOWNLOAD_URL=https://download.oracle.com/otn_software/linux/instantclient/${OC_VER_PATH}
+ENV OC_RELEASE_NUM=21
+ENV OC_RU_VER=12
+ENV OC_RU_REVISION_VER=0
+ENV OC_RESERVED_NUM=0
+ENV OC_RU_DATE=0
+ENV OC_PATH=${OC_RELEASE_NUM}${OC_RU_VER}000
+ENV OC_FILE_SUFFIX=${OC_RELEASE_NUM}.${OC_RU_VER}.${OC_RU_REVISION_VER}.${OC_RESERVED_NUM}.${OC_RU_DATE}${OC_FILE_SUFFIX}dbru
+ENV OC_VER_DIR=${OC_RELEASE_NUM}_${OC_RU_VER}
+ENV OC_DOWNLOAD_URL=https://download.oracle.com/otn_software/linux/instantclient/${OC_PATH}
 
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=${PG_VERSION} BASE_VERSION=${BASE_VERSION}
 
@@ -79,8 +79,8 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service postgresql restart && \
     sudo -u postgres psql -c "CREATE USER $ONLYOFFICE_VALUE WITH password '$ONLYOFFICE_VALUE';" && \
     sudo -u postgres psql -c "CREATE DATABASE $ONLYOFFICE_VALUE OWNER $ONLYOFFICE_VALUE;" && \
-    wget -O basic.zip ${OC_DOWNLOAD_URL}/instantclient-basic-linux.x64-${OC_VER_FILE}.zip && \
-    wget -O sqlplus.zip ${OC_DOWNLOAD_URL}/instantclient-sqlplus-linux.x64-${OC_VER_FILE}.zip && \
+    wget -O basic.zip ${OC_DOWNLOAD_URL}/instantclient-basic-linux.x64-${OC_FILE_SUFFIX}.zip && \
+    wget -O sqlplus.zip ${OC_DOWNLOAD_URL}/instantclient-sqlplus-linux.x64-${OC_FILE_SUFFIX}.zip && \
     unzip -d /usr/share basic.zip && \
     unzip -d /usr/share sqlplus.zip && \
     mv /usr/share/instantclient_${OC_VER_DIR} /usr/share/instantclient && \
