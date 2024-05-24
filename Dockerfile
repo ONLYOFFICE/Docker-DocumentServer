@@ -8,10 +8,15 @@ LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 ARG BASE_VERSION
 ARG PG_VERSION=14
 
-ARG ORACLE_CLIENT_VERSION_PATH=2112000
-ARG ORACLE_CLIENT_VERSION_FILE=21.12.0.0.0dbru
-ARG ORACLE_CLIENT_VERSION_DIR=21_12
-ARG ORACLE_DOWNLOAD_URL=https://download.oracle.com/otn_software/linux/instantclient/$ORACLE_CLIENT_VERSION_PATH
+ENV OC_MAJOR_VER=21
+ENV OC_MINOR_VER=12
+ENV OC_PATCH_VER=0
+ENV OC_BUILD_VER=0
+ENV OC_BUILD2_VER=0dbru
+ENV OC_VER_PATH=${OC_MAJOR_VER}${OC_MINOR_VER}000
+ENV OC_VER_FILE=${OC_MAJOR_VER}.${OC_MINOR_VER}.${OC_PATCH_VER}.${OC_BUILD_VER}.${OC_BUILD2_VER}
+ENV OC_VER_DIR=${OC_MAJOR_VER}_${OC_MINOR_VER}
+ENV OC_DOWNLOAD_URL=https://download.oracle.com/otn_software/linux/instantclient/${OC_VER_PATH}
 
 ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=${PG_VERSION} BASE_VERSION=${BASE_VERSION}
 
@@ -74,11 +79,11 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service postgresql restart && \
     sudo -u postgres psql -c "CREATE USER $ONLYOFFICE_VALUE WITH password '$ONLYOFFICE_VALUE';" && \
     sudo -u postgres psql -c "CREATE DATABASE $ONLYOFFICE_VALUE OWNER $ONLYOFFICE_VALUE;" && \
-    wget -O basic.zip $ORACLE_DOWNLOAD_URL/instantclient-basic-linux.x64-$ORACLE_CLIENT_VERSION_FILE.zip && \
-    wget -O sqlplus.zip $ORACLE_DOWNLOAD_URL/instantclient-sqlplus-linux.x64-$ORACLE_CLIENT_VERSION_FILE.zip && \
+    wget -O basic.zip ${OC_DOWNLOAD_URL}/instantclient-basic-linux.x64-${OC_VER_FILE}.zip && \
+    wget -O sqlplus.zip ${OC_DOWNLOAD_URL}/instantclient-sqlplus-linux.x64-${OC_VER_FILE}.zip && \
     unzip -d /usr/share basic.zip && \
     unzip -d /usr/share sqlplus.zip && \
-    mv /usr/share/instantclient_$ORACLE_CLIENT_VERSION_DIR /usr/share/instantclient && \
+    mv /usr/share/instantclient_${OC_VER_DIR} /usr/share/instantclient && \
     service postgresql stop && \
     service redis-server stop && \
     service rabbitmq-server stop && \
