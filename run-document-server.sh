@@ -180,6 +180,9 @@ read_setting(){
     "mssql")
       DB_PORT=${DB_PORT:-"1433"}
       ;;
+    "oracle")
+      DB_PORT=${DB_PORT:-"1521"}
+      ;;
     "")
       DB_PORT=${DB_PORT:-${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}}
       ;;
@@ -258,8 +261,31 @@ waiting_for_connection(){
   done
 }
 
+waiting_for_db_ready(){
+  case $DB_TYPE in
+    "oracle")
+      PDB="XEPDB1"
+      ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB"
+      DB_TEST="echo \"SELECT version FROM V\$INSTANCE;\" | $ORACLE_SQL 2>/dev/null | grep \"Connected\" | wc -l"
+      ;;
+    *)
+      return
+      ;;
+  esac
+
+  for (( i=1; i <= 10; i++ )); do
+    RES=$(eval $DB_TEST)
+    if [ "$RES" -ne "0" ]; then
+      echo "Database is ready"
+      break
+    fi
+    sleep 5
+  done
+}
+
 waiting_for_db(){
   waiting_for_connection $DB_HOST $DB_PORT
+  waiting_for_db_ready
 }
 
 waiting_for_amqp(){
@@ -427,6 +453,9 @@ create_db_tbl() {
     "mssql")
       create_mssql_tbl
     ;;
+    "oracle")
+      create_oracle_tbl
+    ;;
   esac
 }
 
@@ -440,6 +469,9 @@ upgrade_db_tbl() {
     ;;
     "mssql")
       upgrade_mssql_tbl
+    ;;
+    "oracle")
+      upgrade_oracle_tbl
     ;;
   esac
 }
@@ -471,6 +503,14 @@ upgrade_mssql_tbl() {
   $MSSQL < "$APP_DIR/server/schema/mssql/createdb.sql" >/dev/null 2>&1
 }
 
+upgrade_oracle_tbl() {
+  PDB="XEPDB1"
+  ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB"
+
+  $ORACLE_SQL @$APP_DIR/server/schema/oracle/removetbl.sql >/dev/null 2>&1
+  $ORACLE_SQL @$APP_DIR/server/schema/oracle/createdb.sql >/dev/null 2>&1
+}
+
 create_postgresql_tbl() {
   if [ -n "$DB_PWD" ]; then
     export PGPASSWORD=$DB_PWD
@@ -497,6 +537,13 @@ create_mssql_tbl() {
   MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT $CONN_PARAMS"
 
   $MSSQL < "$APP_DIR/server/schema/mssql/createdb.sql" >/dev/null 2>&1
+}
+
+create_oracle_tbl() {
+  PDB="XEPDB1"
+  ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB"
+
+  $ORACLE_SQL @$APP_DIR/server/schema/oracle/createdb.sql >/dev/null 2>&1
 }
 
 update_welcome_page() {
