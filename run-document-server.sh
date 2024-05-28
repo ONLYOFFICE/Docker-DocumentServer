@@ -398,20 +398,24 @@ update_ds_settings(){
     ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults.rejectUnauthorized===undefined)this.services.CoAuthoring.requestDefaults.rejectUnauthorized=false"
   fi
 
-  if [ "${WOPI_ENABLED}" == "true" ]; then
-    WOPI_PRIVATE_KEY="${DATA_DIR}/wopi_private.key"
-    WOPI_PUBLIC_KEY="${DATA_DIR}/wopi_public.key"
+  WOPI_PRIVATE_KEY="${DATA_DIR}/wopi_private.key"
+  WOPI_PUBLIC_KEY="${DATA_DIR}/wopi_public.key"
 
-    [ ! -f "${WOPI_PRIVATE_KEY}" ] && echo -n "Generating WOPI private key..." && openssl genpkey -algorithm RSA -outform PEM -out "${WOPI_PRIVATE_KEY}" && echo "Done"
-    [ ! -f "${WOPI_PUBLIC_KEY}" ] && echo -n "Generating WOPI public key..." && openssl rsa -pubout -in "${WOPI_PRIVATE_KEY}" -outform PEM -out "${WOPI_PUBLIC_KEY}" && echo "Done"
-    WOPI_MODULUS=$(openssl rsa -pubin -inform PEM -modulus -noout -in "${WOPI_PUBLIC_KEY}" | sed 's/Modulus=//')
-
-    ${JSON} -I -e "if(this.wopi===undefined)this.wopi={}"
-    ${JSON} -I -e "this.wopi.enable = true"
-    ${JSON} -I -e "this.wopi.privateKey = '$(base64 -w0 ${WOPI_PRIVATE_KEY})'"
-    ${JSON} -I -e "this.wopi.publicKey = '$(base64 -w0 ${WOPI_PUBLIC_KEY})'"
-    ${JSON} -I -e "this.wopi.modulus = '${WOPI_MODULUS}'"
-  fi
+  [ ! -f "${WOPI_PRIVATE_KEY}" ] && echo -n "Generating WOPI private key..." && openssl genpkey -algorithm RSA -outform PEM -out "${WOPI_PRIVATE_KEY}" >/dev/null 2>&1 && echo "Done"
+  [ ! -f "${WOPI_PUBLIC_KEY}" ] && echo -n "Generating WOPI public key..." && openssl rsa -RSAPublicKey_out -in "${WOPI_PRIVATE_KEY}" -outform "MS PUBLICKEYBLOB" -out "${WOPI_PUBLIC_KEY}" >/dev/null 2>&1  && echo "Done"
+  WOPI_MODULUS=$(openssl rsa -pubin -inform "MS PUBLICKEYBLOB" -modulus -noout -in "${WOPI_PUBLIC_KEY}" | sed 's/Modulus=//')
+  WOPI_EXPONENT=$(openssl rsa -pubin -inform "MS PUBLICKEYBLOB" -text -noout -in "${WOPI_PUBLIC_KEY}" | grep -oP '(?<=Exponent: )\d+')
+  
+  ${JSON} -e "if(this.wopi===undefined)this.wopi={};"
+  ${JSON} -e "this.wopi.enable = ${WOPI_ENABLED}"
+  ${JSON} -e "this.wopi.privateKey = '$(openssl base64 -in ${WOPI_PRIVATE_KEY} -A)'"
+  ${JSON} -e "this.wopi.privateKeyOld = '$(openssl base64 -in ${WOPI_PRIVATE_KEY} -A)'"
+  ${JSON} -e "this.wopi.publicKey = '$(openssl base64 -in ${WOPI_PUBLIC_KEY} -A)'"
+  ${JSON} -e "this.wopi.publicKeyOld = '$(openssl base64 -in ${WOPI_PUBLIC_KEY} -A)'"
+  ${JSON} -e "this.wopi.modulus = '${WOPI_MODULUS}'"
+  ${JSON} -e "this.wopi.modulusOld = '${WOPI_MODULUS}'"
+  ${JSON} -e "this.wopi.exponent = '${WOPI_EXPONENT}'"
+  ${JSON} -e "this.wopi.exponentOld = '${WOPI_EXPONENT}'"
 
   if [ "${ALLOW_META_IP_ADDRESS}" = "true" ] || [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ]; then
     ${JSON} -I -e "if(this.services.CoAuthoring['request-filtering-agent']===undefined)this.services.CoAuthoring['request-filtering-agent']={}"
