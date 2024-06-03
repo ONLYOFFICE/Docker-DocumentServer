@@ -408,14 +408,14 @@ update_ds_settings(){
   
   ${JSON} -e "if(this.wopi===undefined)this.wopi={};"
   ${JSON} -e "this.wopi.enable = ${WOPI_ENABLED}"
-  ${JSON} -e "this.wopi.privateKey = '$(openssl base64 -in ${WOPI_PRIVATE_KEY} -A)'"
-  ${JSON} -e "this.wopi.privateKeyOld = '$(openssl base64 -in ${WOPI_PRIVATE_KEY} -A)'"
+  ${JSON} -e "this.wopi.privateKey = '$(awk '{printf "%s\\n", $0}' ${WOPI_PRIVATE_KEY})'"
+  ${JSON} -e "this.wopi.privateKeyOld = '$(awk '{printf "%s\\n", $0}' ${WOPI_PRIVATE_KEY})'"
   ${JSON} -e "this.wopi.publicKey = '$(openssl base64 -in ${WOPI_PUBLIC_KEY} -A)'"
   ${JSON} -e "this.wopi.publicKeyOld = '$(openssl base64 -in ${WOPI_PUBLIC_KEY} -A)'"
   ${JSON} -e "this.wopi.modulus = '${WOPI_MODULUS}'"
   ${JSON} -e "this.wopi.modulusOld = '${WOPI_MODULUS}'"
-  ${JSON} -e "this.wopi.exponent = '${WOPI_EXPONENT}'"
-  ${JSON} -e "this.wopi.exponentOld = '${WOPI_EXPONENT}'"
+  ${JSON} -e "this.wopi.exponent = ${WOPI_EXPONENT}"
+  ${JSON} -e "this.wopi.exponentOld = ${WOPI_EXPONENT}"
 
   if [ "${ALLOW_META_IP_ADDRESS}" = "true" ] || [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ]; then
     ${JSON} -I -e "if(this.services.CoAuthoring['request-filtering-agent']===undefined)this.services.CoAuthoring['request-filtering-agent']={}"
