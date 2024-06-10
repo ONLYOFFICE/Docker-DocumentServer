@@ -645,7 +645,7 @@ for i in ${DS_LIB_DIR}/App_Data/cache/files ${DS_LIB_DIR}/App_Data/docbuilder ${
 done
 
 # change folder rights
-for i in ${LOG_DIR} ${LIB_DIR}; do
+for i in ${DS_LOG_DIR} ${DS_LOG_DIR}-example ${LIB_DIR}; do
   chown -R ds:ds "$i"
   chmod -R 755 "$i"
 done
