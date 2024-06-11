@@ -120,10 +120,10 @@ RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VER
     sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i /etc/supervisor/conf.d/*.conf && \
     service supervisor stop && \
     chmod 755 /app/ds/*.sh && \
-    printf "\nGO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/createdb.sql && \
-    printf "\nGO" >> /var/www/onlyoffice/documentserver/server/schema/mssql/removetbl.sql && \
-    printf "\nexit" >> /var/www/onlyoffice/documentserver/server/schema/oracle/createdb.sql && \
-    printf "\nexit" >> /var/www/onlyoffice/documentserver/server/schema/oracle/removetbl.sql && \
+    printf "\nGO" >> /var/www/$COMPANY_NAME/documentserver/server/schema/mssql/createdb.sql && \
+    printf "\nGO" >> /var/www/$COMPANY_NAME/documentserver/server/schema/mssql/removetbl.sql && \
+    printf "\nexit" >> /var/www/$COMPANY_NAME/documentserver/server/schema/oracle/createdb.sql && \
+    printf "\nexit" >> /var/www/$COMPANY_NAME/documentserver/server/schema/oracle/removetbl.sql && \
     rm -f /tmp/$PACKAGE_FILE && \
     rm -rf /var/log/$COMPANY_NAME && \
     rm -rf /var/lib/apt/lists/*
