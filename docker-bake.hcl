@@ -64,7 +64,7 @@ variable "LATEST" {
 
 ### ↓ Variables for UCS build ↓
 
-variable "BASE_IMAGE" {
+variable "BASE_VERSION" {
     default     = ""
 }
 
@@ -130,7 +130,7 @@ target "documentserver-ucs" {
         "COMPANY_NAME": "${COMPANY_NAME}"
         "PACKAGE_VERSION": "${PACKAGE_VERSION}"
         "PACKAGE_BASEURL": "${PACKAGE_BASEURL}"
-        "BASE_IMAGE": "${BASE_IMAGE}"
+        "BASE_VERSION": "${BASE_VERSION}"
         "PG_VERSION": "${PG_VERSION}"
     }
 }
