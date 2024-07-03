@@ -2,20 +2,22 @@ version: '2'
 services:
   onlyoffice-documentserver:
     build:
-      context: .
+      context: ../../.
+      dockerfile: Dockerfile
+      target: documentserver
     container_name: onlyoffice-documentserver
     depends_on:
-      - onlyoffice-postgresql
+      - onlyoffice-dameng
       - onlyoffice-rabbitmq
     environment:
-      - DB_TYPE=postgres
-      - DB_HOST=onlyoffice-postgresql
-      - DB_PORT=5432
+      - DB_TYPE=dameng
+      - DB_HOST=onlyoffice-dameng
+      - DB_PORT=5236
       - DB_NAME=onlyoffice
       - DB_USER=onlyoffice
       - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
-      # Uncomment strings below to enable the JSON Web Token validation.
-      #- JWT_ENABLED=true
+      # Costomize the JSON Web Token validation parameters if needed.
+      #- JWT_ENABLED=false
       #- JWT_SECRET=secret
       #- JWT_HEADER=Authorization
       #- JWT_IN_BODY=true
@@ -39,18 +41,27 @@ services:
     expose:
       - '5672'
 
-  onlyoffice-postgresql:
-    container_name: onlyoffice-postgresql
-    image: postgres:12
+  onlyoffice-dameng:
+    container_name: onlyoffice-dameng
+    build:
+      context: .
+      dockerfile: damengdb.Dockerfile
+      target: damengdb
+      args:
+        DM8_USER: SYSDBA
+        DM8_PASS: SYSDBA001
+        DB_HOST: localhost
+        DB_PORT: 5236
     environment:
-      - POSTGRES_DB=onlyoffice
-      - POSTGRES_USER=onlyoffice
-      - POSTGRES_HOST_AUTH_METHOD=trust
+      - PAGE_SIZE=16
+      - LD_LIBRARY_PATH=/opt/dmdbms/bin
+      - INSTANCE_NAME=dm8_01
     restart: always
     expose:
-      - '5432'
+      - '5236'
     volumes:
-      - postgresql_data:/var/lib/postgresql
+      - dameng_data:/opt/dmdbms/data
 
 volumes:
-  postgresql_data:
+  dameng_data:
+  

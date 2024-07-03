@@ -1,0 +1,70 @@
+---
+name: Scanning DocumentServer with ZAP
+
+run-name: > 
+      ZAP DocumentServer ver: ${{ github.event.inputs.version }} from branch: ${{ github.event.inputs.branch }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Set DocumentServer version that will be deployed'
+        type: string
+        required: true
+      branch:
+        description: 'The branch from which the scan will be performed'
+        type: string
+        required: true
+jobs:
+  zap:
+    name: "Zap scanning DocumentServer"
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run DS
+        id: run-ds
+        env:
+          TAG: ${{ github.event.inputs.version }}
+        run: |
+           # Create ssl certs
+           openssl genrsa -out tls.key 2048
+           openssl req -new -key tls.key -out tls.csr -subj "/C=RU/ST=NizhObl/L=NizhNov/O=RK-Tech/OU=TestUnit/CN=TestName"
+           openssl x509 -req -days 365 -in tls.csr -signkey tls.key -out tls.crt
+           openssl dhparam -out dhparam.pem 2048
+           sudo mkdir -p /app/onlyoffice/DocumentServer/data/certs
+           sudo cp ./tls.key /app/onlyoffice/DocumentServer/data/certs/
+           sudo cp ./tls.crt /app/onlyoffice/DocumentServer/data/certs/
+           sudo cp ./dhparam.pem /app/onlyoffice/DocumentServer/data/certs/
+           sudo chmod 400 /app/onlyoffice/DocumentServer/data/certs/tls.key
+           rm ./tls.key ./tls.crt ./dhparam.pem
+
+           # Run Ds with enabled ssl
+           export CONTAINER_NAME="documentserver"
+           sudo docker run -itd \
+                           --name ${CONTAINER_NAME} \
+                           -p 80:80 \
+                           -p 443:443 \
+                           -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data \
+                           onlyoffice/4testing-documentserver:${TAG}
+           sleep 60
+           sudo docker exec ${CONTAINER_NAME} sudo supervisorctl start ds:example
+           LOCAL_IP=$(hostname -I | awk '{print $1}')
+           echo "local-ip=${LOCAL_IP}" >> "$GITHUB_OUTPUT"
+
+      # Scan DocumentServer with ZAP.
+      # NOTE: Full scan get a lot of time.
+      # If you want make scan more faster (but less accurate) remove `cmd options` field
+      # -j mean that scanning use AJAX Spider, with this spider the scan takes approximately an hour
+      # Without any cmd options will be used default spider and the scan takes approximately ~10-15 minutes
+      - name: ZAP Scan
+        uses: zaproxy/action-full-scan@v0.8.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          docker_name: 'ghcr.io/zaproxy/zaproxy:stable'
+          target: 'https://${{ steps.run-ds.outputs.local-ip }}/'
+          allow_issue_writing: false
+          cmd_options: '-j'
