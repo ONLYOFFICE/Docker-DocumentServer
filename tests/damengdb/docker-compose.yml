@@ -1,0 +1,67 @@
+version: '2'
+services:
+  onlyoffice-documentserver:
+    build:
+      context: ../../.
+      dockerfile: Dockerfile
+      target: documentserver
+    container_name: onlyoffice-documentserver
+    depends_on:
+      - onlyoffice-dameng
+      - onlyoffice-rabbitmq
+    environment:
+      - DB_TYPE=dameng
+      - DB_HOST=onlyoffice-dameng
+      - DB_PORT=5236
+      - DB_NAME=onlyoffice
+      - DB_USER=onlyoffice
+      - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
+      # Costomize the JSON Web Token validation parameters if needed.
+      #- JWT_ENABLED=false
+      #- JWT_SECRET=secret
+      #- JWT_HEADER=Authorization
+      #- JWT_IN_BODY=true
+    ports:
+      - '80:80'
+      - '443:443'
+    stdin_open: true
+    restart: always
+    stop_grace_period: 60s
+    volumes:
+       - /var/www/onlyoffice/Data
+       - /var/log/onlyoffice
+       - /var/lib/onlyoffice/documentserver/App_Data/cache/files
+       - /var/www/onlyoffice/documentserver-example/public/files
+       - /usr/share/fonts
+       
+  onlyoffice-rabbitmq:
+    container_name: onlyoffice-rabbitmq
+    image: rabbitmq
+    restart: always
+    expose:
+      - '5672'
+
+  onlyoffice-dameng:
+    container_name: onlyoffice-dameng
+    build:
+      context: .
+      dockerfile: damengdb.Dockerfile
+      target: damengdb
+      args:
+        DM8_USER: SYSDBA
+        DM8_PASS: SYSDBA001
+        DB_HOST: localhost
+        DB_PORT: 5236
+    environment:
+      - PAGE_SIZE=16
+      - LD_LIBRARY_PATH=/opt/dmdbms/bin
+      - INSTANCE_NAME=dm8_01
+    restart: always
+    expose:
+      - '5236'
+    volumes:
+      - dameng_data:/opt/dmdbms/data
+
+volumes:
+  dameng_data:
+  
