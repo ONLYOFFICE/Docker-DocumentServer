@@ -2,14 +2,21 @@
 
 umask 0022
 
+start_process() {
+  "$@" &
+  CHILD=$!; wait "$CHILD"; CHILD="";
+}
+
 function clean_exit {
+  [[ -z "$CHILD" ]] || kill -s SIGTERM "$CHILD" 2>/dev/null
   if [ ${ONLYOFFICE_DATA_CONTAINER} == "false" ] && \
   [ ${ONLYOFFICE_DATA_CONTAINER_HOST} == "localhost" ]; then
     /usr/bin/documentserver-prepare4shutdown.sh
   fi
+  exit
 }
 
-trap clean_exit SIGTERM
+trap clean_exit SIGTERM SIGQUIT SIGABRT SIGINT
 
 # Define '**' behavior explicitly
 shopt -s globstar
@@ -616,7 +623,7 @@ update_nginx_settings(){
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_CONF}
   fi
 
-  documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
+  start_process documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
 }
 
 update_log_settings(){
@@ -758,17 +765,16 @@ service nginx start
 
 if [ "${LETS_ENCRYPT_DOMAIN}" != "" -a "${LETS_ENCRYPT_MAIL}" != "" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
-    documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
+    start_process documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
   fi
 fi
 
 # Regenerate the fonts list and the fonts thumbnails
 if [ "${GENERATE_FONTS}" == "true" ]; then
-  documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
+  start_process documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
 fi
-documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
+start_process documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
 echo "${JWT_MESSAGE}" 
 
-tail -f /var/log/${COMPANY_NAME}/**/*.log &
-wait $!
+start_process tail -f /var/log/${COMPANY_NAME}/**/*.log
