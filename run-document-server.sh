@@ -104,7 +104,9 @@ NGINX_ONLYOFFICE_EXAMPLE_CONF="${NGINX_ONLYOFFICE_EXAMPLE_PATH}/includes/ds-exam
 NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
 # Limiting the maximum number of simultaneous connections due to possible memory shortage
-[ $(ulimit -n) -gt 1048576 ] && NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-1048576} || NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
+LIMIT=$(ulimit -n); [ $LIMIT -gt 1048576 ] && LIMIT=1048576
+NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$LIMIT}
+RABBIT_CONNECTIONS=${RABBIT_CONNECTIONS:-$LIMIT}
 
 JWT_ENABLED=${JWT_ENABLED:-true}
 
@@ -698,6 +700,8 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     if [ -f ${RABBITMQ_DATA}/.erlang.cookie ]; then
         chmod 400 ${RABBITMQ_DATA}/.erlang.cookie
     fi
+
+    echo "ulimit -n $RABBIT_CONNECTIONS" >> /etc/default/rabbitmq-server
 
     LOCAL_SERVICES+=("rabbitmq-server")
     # allow Rabbitmq startup after container kill
