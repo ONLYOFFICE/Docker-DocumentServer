@@ -62,7 +62,6 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         pwgen \
         rabbitmq-server \
         redis-server \
-        software-properties-common \
         sudo \
         supervisor \
         ttf-mscorefonts-installer \
