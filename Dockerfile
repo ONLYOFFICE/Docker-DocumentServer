@@ -69,6 +69,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         unixodbc-dev \
         unzip \
         xvfb \
+        xxd \
         zlib1g && \
     if [  $(ls -l /usr/share/fonts/truetype/msttcorefonts | wc -l) -ne 61 ]; \
         then echo 'msttcorefonts failed to download'; exit 1; fi  && \
@@ -108,6 +109,7 @@ ARG PACKAGE_BASEURL="http://download.onlyoffice.com/install/documentserver/linux
 ENV COMPANY_NAME=$COMPANY_NAME \
     PRODUCT_NAME=$PRODUCT_NAME \
     PRODUCT_EDITION=$PRODUCT_EDITION \
+    DS_PLUGIN_INSTALLATION=false \
     DS_DOCKER_INSTALLATION=true
 
 RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
