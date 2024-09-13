@@ -25,6 +25,7 @@ DS_LIB_DIR="${LIB_DIR}/documentserver"
 CONF_DIR="/etc/${COMPANY_NAME}/documentserver"
 SUPERVISOR_CONF_DIR="/etc/supervisor/conf.d"
 IS_UPGRADE="false"
+PLUGINS_ENABLED=${PLUGINS_ENABLED:-false}
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
 ONLYOFFICE_DATA_CONTAINER_HOST=${ONLYOFFICE_DATA_CONTAINER_HOST:-localhost}
@@ -766,6 +767,13 @@ fi
 if [ "${GENERATE_FONTS}" == "true" ]; then
   documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
 fi
+
+if [ "${PLUGINS_ENABLED}" = "true" ]; then
+  echo -n Installing plugins, please wait...
+  documentserver-pluginsmanager.sh -r false --update=\"${APP_DIR}/sdkjs-plugins/plugin-list-default.json\" >/dev/null
+  echo Done
+fi
+
 documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
 echo "${JWT_MESSAGE}" 
