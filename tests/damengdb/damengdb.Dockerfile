@@ -32,6 +32,14 @@ wait_dm_ready
 
 EOF
 
+COPY <<"EOF" /permissions.sql
+
+CREATE SYNONYM onlyoffice.DOC_CHANGES FOR sysdba.DOC_CHANGES;
+CREATE SYNONYM onlyoffice.TASK_RESULT FOR sysdba.TASK_RESULT;
+GRANT ALL PRIVILEGES ON sysdba.DOC_CHANGES TO onlyoffice;
+GRANT ALL PRIVILEGES ON sysdba.TASK_RESULT TO onlyoffice;
+
+EOF
 
 RUN   bash /opt/startup.sh > /dev/null 2>&1 \
    &  mkdir -p /schema/damengdb \
@@ -41,6 +49,9 @@ RUN   bash /opt/startup.sh > /dev/null 2>&1 \
    && cd ${DISQL_BIN} \
    && ./disql $DM8_USER/$DM8_PASS@$DB_HOST:$DB_PORT -e \
       "create user "onlyoffice" identified by "onlyoffice" password_policy 0;" \
+   && ./disql $DM8_USER/$DM8_PASS@$DB_HOST:$DB_PORT -e \
+      "GRANT SELECT ON DBA_TAB_COLUMNS TO onlyoffice;" \
    && echo "EXIT" | tee -a /schema/dameng/createdb.sql \
    && ./disql $DM8_USER/$DM8_PASS@$DB_HOST:$DB_PORT \`/schema/dameng/createdb.sql \
+   && ./disql $DM8_USER/$DM8_PASS@$DB_HOST:$DB_PORT \`/permissions.sql \
    && sleep 10
