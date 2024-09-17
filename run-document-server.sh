@@ -100,6 +100,10 @@ NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
 # Limiting the maximum number of simultaneous connections due to possible memory shortage
 [ $(ulimit -n) -gt 1048576 ] && NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-1048576} || NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
 
+FORCESAVE_ENABLE=${FORCESAVE_ENABLE:-false}
+FORCESAVE_INTERVAL=${FORCESAVE_INTERVAL:-5m}
+FORCESAVE_STEP=${FORCESAVE_STEP:-1m}
+
 JWT_ENABLED=${JWT_ENABLED:-true}
 
 # validate user's vars before usinig in json
@@ -387,6 +391,11 @@ update_ds_settings(){
 
   ${JSON} -I -e "this.services.CoAuthoring.token.inbox.inBody = ${JWT_IN_BODY}"
   ${JSON} -I -e "this.services.CoAuthoring.token.outbox.inBody = ${JWT_IN_BODY}"
+
+  ${JSON} -I -e "if(this.services.CoAuthoring.autoAssembly===undefined)this.services.CoAuthoring.autoAssembly={};"
+  ${JSON} -I -e "this.services.CoAuthoring.autoAssembly.enable = ${FORCESAVE_ENABLE}"
+  ${JSON} -I -e "this.services.CoAuthoring.autoAssembly.interval = '${FORCESAVE_INTERVAL}'"
+  ${JSON} -I -e "this.services.CoAuthoring.autoAssembly.step = '${FORCESAVE_STEP}'"
 
   if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ]; then
     ${JSON_EXAMPLE} -I -e "this.server.token.enable = ${JWT_ENABLED}"
