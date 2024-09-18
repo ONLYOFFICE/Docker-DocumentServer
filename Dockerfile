@@ -2,7 +2,7 @@ ARG BASE_VERSION=22.04
 
 ARG BASE_IMAGE=ubuntu:$BASE_VERSION
 
-FROM ${BASE_IMAGE} as documentserver
+FROM ${BASE_IMAGE} AS documentserver
 LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 
 ARG BASE_VERSION
