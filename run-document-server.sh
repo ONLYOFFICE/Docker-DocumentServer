@@ -764,6 +764,9 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   service cron start
 fi
 
+# Fix to resolve the `unknown "cache_tag" variable` error
+start_process documentserver-flush-cache.sh -r false
+
 # nginx used as a proxy, and as data container status service.
 # it run in all cases.
 service nginx start
