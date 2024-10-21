@@ -2,14 +2,21 @@
 
 umask 0022
 
+start_process() {
+  "$@" &
+  CHILD=$!; wait "$CHILD"; CHILD="";
+}
+
 function clean_exit {
+  [[ -z "$CHILD" ]] || kill -s SIGTERM "$CHILD" 2>/dev/null
   if [ ${ONLYOFFICE_DATA_CONTAINER} == "false" ] && \
   [ ${ONLYOFFICE_DATA_CONTAINER_HOST} == "localhost" ]; then
     /usr/bin/documentserver-prepare4shutdown.sh
   fi
+  exit
 }
 
-trap clean_exit SIGTERM
+trap clean_exit SIGTERM SIGQUIT SIGABRT SIGINT
 
 # Define '**' behavior explicitly
 shopt -s globstar
@@ -25,7 +32,7 @@ DS_LIB_DIR="${LIB_DIR}/documentserver"
 CONF_DIR="/etc/${COMPANY_NAME}/documentserver"
 SUPERVISOR_CONF_DIR="/etc/supervisor/conf.d"
 IS_UPGRADE="false"
-PLUGINS_ENABLED=${PLUGINS_ENABLED:-false}
+PLUGINS_ENABLED=${PLUGINS_ENABLED:-true}
 
 ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
 ONLYOFFICE_DATA_CONTAINER_HOST=${ONLYOFFICE_DATA_CONTAINER_HOST:-localhost}
@@ -98,7 +105,9 @@ NGINX_ONLYOFFICE_EXAMPLE_CONF="${NGINX_ONLYOFFICE_EXAMPLE_PATH}/includes/ds-exam
 NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
 # Limiting the maximum number of simultaneous connections due to possible memory shortage
-[ $(ulimit -n) -gt 1048576 ] && NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-1048576} || NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$(ulimit -n)}
+LIMIT=$(ulimit -n); [ $LIMIT -gt 1048576 ] && LIMIT=1048576
+NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$LIMIT}
+RABBIT_CONNECTIONS=${RABBIT_CONNECTIONS:-$LIMIT}
 
 JWT_ENABLED=${JWT_ENABLED:-true}
 
@@ -617,7 +626,7 @@ update_nginx_settings(){
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_CONF}
   fi
 
-  documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
+  start_process documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
 }
 
 update_log_settings(){
@@ -693,6 +702,8 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
         chmod 400 ${RABBITMQ_DATA}/.erlang.cookie
     fi
 
+    echo "ulimit -n $RABBIT_CONNECTIONS" >> /etc/default/rabbitmq-server
+
     LOCAL_SERVICES+=("rabbitmq-server")
     # allow Rabbitmq startup after container kill
     rm -rf /var/run/rabbitmq
@@ -753,30 +764,32 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
   service cron start
 fi
 
+# Fix to resolve the `unknown "cache_tag" variable` error
+start_process documentserver-flush-cache.sh -r false
+
 # nginx used as a proxy, and as data container status service.
 # it run in all cases.
 service nginx start
 
 if [ "${LETS_ENCRYPT_DOMAIN}" != "" -a "${LETS_ENCRYPT_MAIL}" != "" ]; then
   if [ ! -f "${SSL_CERTIFICATE_PATH}" -a ! -f "${SSL_KEY_PATH}" ]; then
-    documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
+    start_process documentserver-letsencrypt.sh ${LETS_ENCRYPT_MAIL} ${LETS_ENCRYPT_DOMAIN}
   fi
 fi
 
 # Regenerate the fonts list and the fonts thumbnails
 if [ "${GENERATE_FONTS}" == "true" ]; then
-  documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
+  start_process documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
 fi
 
 if [ "${PLUGINS_ENABLED}" = "true" ]; then
   echo -n Installing plugins, please wait...
-  documentserver-pluginsmanager.sh -r false --update=\"${APP_DIR}/sdkjs-plugins/plugin-list-default.json\" >/dev/null
+  start_process documentserver-pluginsmanager.sh -r false --update=\"${APP_DIR}/sdkjs-plugins/plugin-list-default.json\" >/dev/null
   echo Done
 fi
 
-documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
+start_process documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
 echo "${JWT_MESSAGE}" 
 
-tail -f /var/log/${COMPANY_NAME}/**/*.log &
-wait $!
+start_process tail -f /var/log/${COMPANY_NAME}/**/*.log
