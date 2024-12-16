@@ -131,6 +131,7 @@ jobs:
            export DOCKERFILE=Dockerfile
            export BASE_VERSION=20.04
            export PG_VERSION=12
+           export PACKAGE_SUFFIX=
            export TAG=${VERSION%.*}.${RELEASE_NUMBER}
            export PACKAGE_VERSION=$( echo ${VERSION} |  sed -E 's/(.*)\./\1-/')
            docker buildx bake -f docker-bake.hcl documentserver-ucs --push
