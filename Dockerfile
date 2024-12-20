@@ -72,7 +72,8 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         unzip \
         xvfb \
         xxd \
-        zlib1g && \
+        zlib1g || dpkg --configure -a && \
+    # Added dpkg --configure -a to handle installation issues with rabbitmq-server on arm64 architecture
     if [  $(ls -l /usr/share/fonts/truetype/msttcorefonts | wc -l) -ne 61 ]; \
         then echo 'msttcorefonts failed to download'; exit 1; fi  && \
     echo "SERVER_ADDITIONAL_ERL_ARGS=\"+S 1:1\"" | tee -a /etc/rabbitmq/rabbitmq-env.conf && \
