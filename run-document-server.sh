@@ -792,4 +792,4 @@ start_process documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
 echo "${JWT_MESSAGE}" 
 
-start_process tail -f /var/log/${COMPANY_NAME}/**/*.log
+start_process find "$DS_LOG_DIR" "$DS_LOG_DIR-example" -type f -name "*.log" | xargs tail -f
