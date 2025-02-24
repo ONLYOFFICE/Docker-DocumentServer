@@ -1,4 +1,4 @@
-ARG BASE_VERSION=22.04
+ARG BASE_VERSION=24.04
 
 ARG BASE_IMAGE=ubuntu:$BASE_VERSION
 
@@ -6,7 +6,8 @@ FROM ${BASE_IMAGE} AS documentserver
 LABEL maintainer Ascensio System SIA <support@onlyoffice.com>
 
 ARG BASE_VERSION
-ARG PG_VERSION=14
+ARG PG_VERSION=16
+ARG PACKAGE_SUFFIX=t64
 
 ENV OC_RELEASE_NUM=21
 ENV OC_RU_VER=12
@@ -25,8 +26,10 @@ ARG ONLYOFFICE_VALUE=onlyoffice
 RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get -y update && \
     apt-get -yq install wget apt-transport-https gnupg locales lsb-release && \
-    wget -q -O /etc/apt/sources.list.d/mssql-release.list https://packages.microsoft.com/config/ubuntu/$BASE_VERSION/prod.list && \
-    wget -q -O - https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    wget -q -O /etc/apt/sources.list.d/mssql-release.list "https://packages.microsoft.com/config/ubuntu/$BASE_VERSION/prod.list" && \
+    wget -q -O /tmp/microsoft.asc https://packages.microsoft.com/keys/microsoft.asc && \
+    apt-key add /tmp/microsoft.asc && \
+    gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg < /tmp/microsoft.asc && \
     apt-get -y update && \
     locale-gen en_US.UTF-8 && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
@@ -38,8 +41,8 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         cron \
         curl \
         htop \
-        libaio1 \
-        libasound2 \
+        libaio1${PACKAGE_SUFFIX} \
+        libasound2${PACKAGE_SUFFIX} \
         libboost-regex-dev \
         libcairo2 \
         libcurl3-gnutls \
@@ -69,7 +72,8 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
         unzip \
         xvfb \
         xxd \
-        zlib1g && \
+        zlib1g || dpkg --configure -a && \
+    # Added dpkg --configure -a to handle installation issues with rabbitmq-server on arm64 architecture
     if [  $(ls -l /usr/share/fonts/truetype/msttcorefonts | wc -l) -ne 61 ]; \
         then echo 'msttcorefonts failed to download'; exit 1; fi  && \
     echo "SERVER_ADDITIONAL_ERL_ARGS=\"+S 1:1\"" | tee -a /etc/rabbitmq/rabbitmq-env.conf && \
@@ -121,10 +125,10 @@ RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VER
     sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i /etc/supervisor/conf.d/*.conf && \
     service supervisor stop && \
     chmod 755 /app/ds/*.sh && \
-    printf "\nGO" >> /var/www/$COMPANY_NAME/documentserver/server/schema/mssql/createdb.sql && \
-    printf "\nGO" >> /var/www/$COMPANY_NAME/documentserver/server/schema/mssql/removetbl.sql && \
-    printf "\nexit" >> /var/www/$COMPANY_NAME/documentserver/server/schema/oracle/createdb.sql && \
-    printf "\nexit" >> /var/www/$COMPANY_NAME/documentserver/server/schema/oracle/removetbl.sql && \
+    printf "\nGO" >> "/var/www/$COMPANY_NAME/documentserver/server/schema/mssql/createdb.sql" && \
+    printf "\nGO" >> "/var/www/$COMPANY_NAME/documentserver/server/schema/mssql/removetbl.sql" && \
+    printf "\nexit" >> "/var/www/$COMPANY_NAME/documentserver/server/schema/oracle/createdb.sql" && \
+    printf "\nexit" >> "/var/www/$COMPANY_NAME/documentserver/server/schema/oracle/removetbl.sql" && \
     rm -f /tmp/$PACKAGE_FILE && \
     rm -rf /var/log/$COMPANY_NAME && \
     rm -rf /var/lib/apt/lists/*
