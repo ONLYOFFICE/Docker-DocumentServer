@@ -176,6 +176,7 @@ read_setting(){
   METRICS_PREFIX="${METRICS_PREFIX:-.ds}"
 
   DB_HOST=${DB_HOST:-${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}}
+  DB_HOST=${DB_HOST:-localhost}
   DB_TYPE=${DB_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
   case $DB_TYPE in
     "postgres")
@@ -195,6 +196,7 @@ read_setting(){
       ;;
     "")
       DB_PORT=${DB_PORT:-${POSTGRESQL_SERVER_PORT:-$(${JSON} services.CoAuthoring.sql.dbPort)}}
+      DB_PORT=${DB_PORT:-5432}
       ;;
     *)
       echo "ERROR: unknown database type"
@@ -208,6 +210,7 @@ read_setting(){
   RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
   AMQP_URI=${AMQP_URI:-${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}}
   AMQP_TYPE=${AMQP_TYPE:-${AMQP_SERVER_TYPE:-rabbitmq}}
+  AMQP_URI=${AMQP_URI:-"amqp://localhost:5672"}
   parse_rabbitmq_url ${AMQP_URI}
 
   REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}
@@ -309,93 +312,108 @@ waiting_for_datacontainer(){
   waiting_for_connection ${ONLYOFFICE_DATA_CONTAINER_HOST} ${ONLYOFFICE_DATA_CONTAINER_PORT}
 }
 
+update_json() {
+  ${JSON} -e "$1" > /tmp/local.json
+  cp /tmp/local.json "$ONLYOFFICE_DEFAULT_CONFIG"
+}
+
 update_statsd_settings(){
-  ${JSON} -I -e "if(this.statsd===undefined)this.statsd={};"
-  ${JSON} -I -e "this.statsd.useMetrics = '${METRICS_ENABLED}'"
-  ${JSON} -I -e "this.statsd.host = '${METRICS_HOST}'"
-  ${JSON} -I -e "this.statsd.port = '${METRICS_PORT}'"
-  ${JSON} -I -e "this.statsd.prefix = '${METRICS_PREFIX}'"
+  update_json "if(this.statsd===undefined)this.statsd={};"
+  update_json "this.statsd.useMetrics = '${METRICS_ENABLED}'"
+  update_json "this.statsd.host = '${METRICS_HOST}'"
+  update_json "this.statsd.port = '${METRICS_PORT}'"
+  update_json "this.statsd.prefix = '${METRICS_PREFIX}'"
   sed -i -E "s/(autostart|autorestart)=.*$/\1=${METRICS_ENABLED}/g" ${SUPERVISOR_CONF_DIR}/ds-metrics.conf
 }
 
 update_db_settings(){
-  ${JSON} -I -e "this.services.CoAuthoring.sql.type = '${DB_TYPE}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbHost = '${DB_HOST}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPort = '${DB_PORT}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbName = '${DB_NAME}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbUser = '${DB_USER}'"
-  ${JSON} -I -e "this.services.CoAuthoring.sql.dbPass = '${DB_PWD}'"
+  update_json "this.services.CoAuthoring.sql.type = '${DB_TYPE}'"
+  update_json "this.services.CoAuthoring.sql.dbHost = '${DB_HOST}'"
+  update_json "this.services.CoAuthoring.sql.dbPort = '${DB_PORT}'"
+  update_json "this.services.CoAuthoring.sql.dbName = '${DB_NAME}'"
+  update_json "this.services.CoAuthoring.sql.dbUser = '${DB_USER}'"
+  update_json "this.services.CoAuthoring.sql.dbPass = '${DB_PWD}'"
 }
 
 update_rabbitmq_setting(){
   if [ "${AMQP_TYPE}" == "rabbitmq" ]; then
-    ${JSON} -I -e "if(this.queue===undefined)this.queue={};"
-    ${JSON} -I -e "this.queue.type = 'rabbitmq'"
-    ${JSON} -I -e "this.rabbitmq.url = '${AMQP_URI}'"
+    update_json "if(this.queue===undefined)this.queue={};"
+    update_json "this.queue.type = 'rabbitmq'"
+    update_json "this.rabbitmq.url = '${AMQP_URI}'"
   fi
   
   if [ "${AMQP_TYPE}" == "activemq" ]; then
-    ${JSON} -I -e "if(this.queue===undefined)this.queue={};"
-    ${JSON} -I -e "this.queue.type = 'activemq'"
-    ${JSON} -I -e "if(this.activemq===undefined)this.activemq={};"
-    ${JSON} -I -e "if(this.activemq.connectOptions===undefined)this.activemq.connectOptions={};"
+    update_json "if(this.queue===undefined)this.queue={};"
+    update_json "this.queue.type = 'activemq'"
+    update_json "if(this.activemq===undefined)this.activemq={};"
+    update_json "if(this.activemq.connectOptions===undefined)this.activemq.connectOptions={};"
 
-    ${JSON} -I -e "this.activemq.connectOptions.host = '${AMQP_SERVER_HOST}'"
+    update_json "this.activemq.connectOptions.host = '${AMQP_SERVER_HOST}'"
 
     if [ ! "${AMQP_SERVER_PORT}" == "" ]; then
-      ${JSON} -I -e "this.activemq.connectOptions.port = '${AMQP_SERVER_PORT}'"
+      update_json "this.activemq.connectOptions.port = '${AMQP_SERVER_PORT}'"
     else
-      ${JSON} -I -e "delete this.activemq.connectOptions.port"
+      update_json "delete this.activemq.connectOptions.port"
     fi
 
     if [ ! "${AMQP_SERVER_USER}" == "" ]; then
-      ${JSON} -I -e "this.activemq.connectOptions.username = '${AMQP_SERVER_USER}'"
+      update_json "this.activemq.connectOptions.username = '${AMQP_SERVER_USER}'"
     else
-      ${JSON} -I -e "delete this.activemq.connectOptions.username"
+      update_json "delete this.activemq.connectOptions.username"
     fi
 
     if [ ! "${AMQP_SERVER_PASS}" == "" ]; then
-      ${JSON} -I -e "this.activemq.connectOptions.password = '${AMQP_SERVER_PASS}'"
+      update_json "this.activemq.connectOptions.password = '${AMQP_SERVER_PASS}'"
     else
-      ${JSON} -I -e "delete this.activemq.connectOptions.password"
+      update_json "delete this.activemq.connectOptions.password"
     fi
 
     case "${AMQP_SERVER_PROTO}" in
       amqp+ssl|amqps)
-        ${JSON} -I -e "this.activemq.connectOptions.transport = 'tls'"
+        update_json "this.activemq.connectOptions.transport = 'tls'"
         ;;
       *)
-        ${JSON} -I -e "delete this.activemq.connectOptions.transport"
+        update_json "delete this.activemq.connectOptions.transport"
         ;;
     esac 
   fi
 }
 
 update_redis_settings(){
-  ${JSON} -I -e "if(this.services.CoAuthoring.redis===undefined)this.services.CoAuthoring.redis={};"
-  ${JSON} -I -e "this.services.CoAuthoring.redis.host = '${REDIS_SERVER_HOST}'"
-  ${JSON} -I -e "this.services.CoAuthoring.redis.port = '${REDIS_SERVER_PORT}'"
+  update_json "if(this.services.CoAuthoring.redis===undefined)this.services.CoAuthoring.redis={};"
+  update_json "this.services.CoAuthoring.redis.host = '${REDIS_SERVER_HOST}'"
+  update_json "this.services.CoAuthoring.redis.port = '${REDIS_SERVER_PORT}'"
 
   if [ -n "${REDIS_SERVER_PASS}" ]; then
-    ${JSON} -I -e "this.services.CoAuthoring.redis.options = {'password':'${REDIS_SERVER_PASS}'}"
+    update_json "this.services.CoAuthoring.redis.options = {'password':'${REDIS_SERVER_PASS}'}"
   fi
 
 }
 
 update_ds_settings(){
-  ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}"
-  ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.inbox = ${JWT_ENABLED}"
-  ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.outbox = ${JWT_ENABLED}"
+  update_json "if(this.services.CoAuthoring.token===undefined)this.services.CoAuthoring.token={}"
 
-  ${JSON} -I -e "this.services.CoAuthoring.secret.inbox.string = '${JWT_SECRET}'"
-  ${JSON} -I -e "this.services.CoAuthoring.secret.outbox.string = '${JWT_SECRET}'"
-  ${JSON} -I -e "this.services.CoAuthoring.secret.session.string = '${JWT_SECRET}'"
+  update_json "if(this.services.CoAuthoring.token.enable===undefined)this.services.CoAuthoring.token.enable={}"
+  update_json "if(this.services.CoAuthoring.token.enable.request===undefined)this.services.CoAuthoring.token.enable.request={}"
+  update_json "this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}"
+  update_json "this.services.CoAuthoring.token.enable.request.inbox = ${JWT_ENABLED}"
+  update_json "this.services.CoAuthoring.token.enable.request.outbox = ${JWT_ENABLED}"
 
-  ${JSON} -I -e "this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'"
-  ${JSON} -I -e "this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'"
+  update_json "if(this.services.CoAuthoring.token.inbox===undefined)this.services.CoAuthoring.token.inbox={}"
+  update_json "this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'"
+  update_json "this.services.CoAuthoring.token.inbox.inBody = ${JWT_IN_BODY}"
 
-  ${JSON} -I -e "this.services.CoAuthoring.token.inbox.inBody = ${JWT_IN_BODY}"
-  ${JSON} -I -e "this.services.CoAuthoring.token.outbox.inBody = ${JWT_IN_BODY}"
+  update_json "if(this.services.CoAuthoring.token.outbox===undefined)this.services.CoAuthoring.token.outbox={}"
+  update_json "this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'"
+  update_json "this.services.CoAuthoring.token.outbox.inBody = ${JWT_IN_BODY}"
+
+  update_json "if(this.services.CoAuthoring.secret===undefined)this.services.CoAuthoring.secret={}"
+  update_json "if(this.services.CoAuthoring.secret.inbox===undefined)this.services.CoAuthoring.secret.inbox={}"
+  update_json "this.services.CoAuthoring.secret.inbox.string = '${JWT_SECRET}'"
+  update_json "if(this.services.CoAuthoring.secret.outbox===undefined)this.services.CoAuthoring.secret.outbox={}"
+  update_json "this.services.CoAuthoring.secret.outbox.string = '${JWT_SECRET}'"
+  update_json "if(this.services.CoAuthoring.secret.session===undefined)this.services.CoAuthoring.secret.session={}"
+  update_json "this.services.CoAuthoring.secret.session.string = '${JWT_SECRET}'"
 
   if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ]; then
     ${JSON_EXAMPLE} -I -e "this.server.token.enable = ${JWT_ENABLED}"
@@ -404,8 +422,8 @@ update_ds_settings(){
   fi
  
   if [ "${USE_UNAUTHORIZED_STORAGE}" == "true" ]; then
-    ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults===undefined)this.services.CoAuthoring.requestDefaults={}"
-    ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults.rejectUnauthorized===undefined)this.services.CoAuthoring.requestDefaults.rejectUnauthorized=false"
+    update_json "if(this.services.CoAuthoring.requestDefaults===undefined)this.services.CoAuthoring.requestDefaults={}"
+    update_json "if(this.services.CoAuthoring.requestDefaults.rejectUnauthorized===undefined)this.services.CoAuthoring.requestDefaults.rejectUnauthorized=false"
   fi
 
   WOPI_PRIVATE_KEY="${DATA_DIR}/wopi_private.key"
@@ -415,22 +433,22 @@ update_ds_settings(){
   [ ! -f "${WOPI_PUBLIC_KEY}" ] && echo -n "Generating WOPI public key..." && openssl rsa -RSAPublicKey_out -in "${WOPI_PRIVATE_KEY}" -outform "MS PUBLICKEYBLOB" -out "${WOPI_PUBLIC_KEY}" >/dev/null 2>&1  && echo "Done"
   WOPI_MODULUS=$(openssl rsa -pubin -inform "MS PUBLICKEYBLOB" -modulus -noout -in "${WOPI_PUBLIC_KEY}" | sed 's/Modulus=//' | xxd -r -p | openssl base64 -A)
   WOPI_EXPONENT=$(openssl rsa -pubin -inform "MS PUBLICKEYBLOB" -text -noout -in "${WOPI_PUBLIC_KEY}" | grep -oP '(?<=Exponent: )\d+')
-  
-  ${JSON} -I -e "if(this.wopi===undefined)this.wopi={};"
-  ${JSON} -I -e "this.wopi.enable = ${WOPI_ENABLED}"
-  ${JSON} -I -e "this.wopi.privateKey = '$(awk '{printf "%s\\n", $0}' ${WOPI_PRIVATE_KEY})'"
-  ${JSON} -I -e "this.wopi.privateKeyOld = '$(awk '{printf "%s\\n", $0}' ${WOPI_PRIVATE_KEY})'"
-  ${JSON} -I -e "this.wopi.publicKey = '$(openssl base64 -in ${WOPI_PUBLIC_KEY} -A)'"
-  ${JSON} -I -e "this.wopi.publicKeyOld = '$(openssl base64 -in ${WOPI_PUBLIC_KEY} -A)'"
-  ${JSON} -I -e "this.wopi.modulus = '${WOPI_MODULUS}'"
-  ${JSON} -I -e "this.wopi.modulusOld = '${WOPI_MODULUS}'"
-  ${JSON} -I -e "this.wopi.exponent = ${WOPI_EXPONENT}"
-  ${JSON} -I -e "this.wopi.exponentOld = ${WOPI_EXPONENT}"
+
+  update_json "if(this.wopi===undefined)this.wopi={};"
+  update_json "this.wopi.enable = ${WOPI_ENABLED}"
+  update_json "this.wopi.privateKey = '$(awk '{printf "%s\\n", $0}' ${WOPI_PRIVATE_KEY})'"
+  update_json "this.wopi.privateKeyOld = '$(awk '{printf "%s\\n", $0}' ${WOPI_PRIVATE_KEY})'"
+  update_json "this.wopi.publicKey = '$(openssl base64 -in ${WOPI_PUBLIC_KEY} -A)'"
+  update_json "this.wopi.publicKeyOld = '$(openssl base64 -in ${WOPI_PUBLIC_KEY} -A)'"
+  update_json "this.wopi.modulus = '${WOPI_MODULUS}'"
+  update_json "this.wopi.modulusOld = '${WOPI_MODULUS}'"
+  update_json "this.wopi.exponent = ${WOPI_EXPONENT}"
+  update_json "this.wopi.exponentOld = ${WOPI_EXPONENT}"
 
   if [ "${ALLOW_META_IP_ADDRESS}" = "true" ] || [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ]; then
-    ${JSON} -I -e "if(this.services.CoAuthoring['request-filtering-agent']===undefined)this.services.CoAuthoring['request-filtering-agent']={}"
-    [ "${ALLOW_META_IP_ADDRESS}" = "true" ] && ${JSON} -I -e "this.services.CoAuthoring['request-filtering-agent'].allowMetaIPAddress = true"
-    [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ] && ${JSON} -I -e "this.services.CoAuthoring['request-filtering-agent'].allowPrivateIPAddress = true"
+    update_json "if(this.services.CoAuthoring['request-filtering-agent']===undefined)this.services.CoAuthoring['request-filtering-agent']={}"
+    [ "${ALLOW_META_IP_ADDRESS}" = "true" ] && update_json "this.services.CoAuthoring['request-filtering-agent'].allowMetaIPAddress = true"
+    [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ] && update_json "this.services.CoAuthoring['request-filtering-agent'].allowPrivateIPAddress = true"
   fi
 }
 
@@ -630,7 +648,8 @@ update_nginx_settings(){
 }
 
 update_log_settings(){
-   ${JSON_LOG} -I -e "this.categories.default.level = '${DS_LOG_LEVEL}'"
+   ${JSON_LOG} -e "this.categories.default.level = '${DS_LOG_LEVEL}'" > /tmp/log.json
+   cp /tmp/log.json "$ONLYOFFICE_LOG4JS_CONFIG"
 }
 
 update_logrotate_settings(){
