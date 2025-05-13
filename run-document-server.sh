@@ -510,7 +510,7 @@ upgrade_mysql_tbl() {
 }
 
 upgrade_mssql_tbl() {
-  CONN_PARAMS="-U $DB_USER -P "$DB_PWD" -C"
+  CONN_PARAMS="-d $DB_NAME -U $DB_USER -P "$DB_PWD" -C"
   MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT $CONN_PARAMS"
 
   $MSSQL < "$APP_DIR/server/schema/mssql/removetbl.sql" >/dev/null 2>&1
@@ -547,7 +547,7 @@ create_mysql_tbl() {
 create_mssql_tbl() {  
   create_mssql_db
 
-  CONN_PARAMS="-U $DB_USER -P "$DB_PWD" -C"
+  CONN_PARAMS="-d $DB_NAME -U $DB_USER -P "$DB_PWD" -C"
   MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT $CONN_PARAMS"
 
   $MSSQL < "$APP_DIR/server/schema/mssql/createdb.sql" >/dev/null 2>&1
