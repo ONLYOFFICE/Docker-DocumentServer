@@ -88,7 +88,7 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     unzip -d /usr/share basic.zip && \
     unzip -d /usr/share sqlplus.zip && \
     mv /usr/share/instantclient_${OC_VER_DIR} /usr/share/instantclient && \
-    ln -s /usr/lib/x86_64-linux-gnu/libaio.so.1t64 /usr/lib/x86_64-linux-gnu/libaio.so.1 && \
+    find /usr/lib /lib -name "libaio.so.1$PACKAGE_SUFFIX" -exec bash -c 'ln -sf "$0" "$(dirname "$0")/libaio.so.1"' {} \; && \
     service postgresql stop && \
     service redis-server stop && \
     service rabbitmq-server stop && \
