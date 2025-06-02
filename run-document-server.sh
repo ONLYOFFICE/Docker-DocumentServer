@@ -136,7 +136,8 @@ else
   REDIS_ENABLED=true
 fi
 
-ONLYOFFICE_DEFAULT_CONFIG=${CONF_DIR}/local.json
+ONLYOFFICE_LOCAL_CONFIG=${CONF_DIR}/local.json
+ONLYOFFICE_DEFAULT_CONFIG=${DATA_DIR}/local.json
 ONLYOFFICE_LOG4JS_CONFIG=${CONF_DIR}/log4js/production.json
 ONLYOFFICE_EXAMPLE_CONFIG=${CONF_DIR}-example/local.json
 
@@ -144,6 +145,12 @@ JSON_BIN=${APP_DIR}/npm/json
 JSON="${JSON_BIN} -q -f ${ONLYOFFICE_DEFAULT_CONFIG}"
 JSON_LOG="${JSON_BIN} -q -f ${ONLYOFFICE_LOG4JS_CONFIG}"
 JSON_EXAMPLE="${JSON_BIN} -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
+
+if [ ! -s "${ONLYOFFICE_DEFAULT_CONFIG}" ] || ! ${JSON_BIN} -f "${ONLYOFFICE_DEFAULT_CONFIG}" . >/dev/null 2>&1; then
+  echo "{}" > "${ONLYOFFICE_DEFAULT_CONFIG}"
+fi
+
+ln -sf ${ONLYOFFICE_DEFAULT_CONFIG} ${ONLYOFFICE_LOCAL_CONFIG}
 
 LOCAL_SERVICES=()
 
@@ -175,8 +182,10 @@ read_setting(){
   METRICS_PORT="${METRICS_PORT:-8125}"
   METRICS_PREFIX="${METRICS_PREFIX:-.ds}"
 
-  DB_HOST=${DB_HOST:-${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}}
-  DB_TYPE=${DB_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}
+  ${JSON} -I -e "if(this.services===undefined)this.services={};"
+  ${JSON} -I -e "if(this.services.CoAuthoring===undefined)this.services.CoAuthoring={};"
+  DB_HOST=${DB_HOST:-${POSTGRESQL_SERVER_HOST:-$(${JSON} services.CoAuthoring.sql.dbHost)}}; DB_HOST=${DB_HOST:-"localhost"}
+  DB_TYPE=${DB_TYPE:-$(${JSON} services.CoAuthoring.sql.type)}; DB_TYPE=${DB_TYPE:-"postgres"}
   case $DB_TYPE in
     "postgres")
       DB_PORT=${DB_PORT:-"5432"}
@@ -201,17 +210,17 @@ read_setting(){
       exit 1
       ;;
   esac
-  DB_NAME=${DB_NAME:-${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}}
-  DB_USER=${DB_USER:-${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}}
-  DB_PWD=${DB_PWD:-${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}}
+  DB_NAME=${DB_NAME:-${POSTGRESQL_SERVER_DB_NAME:-$(${JSON} services.CoAuthoring.sql.dbName)}}; DB_NAME=${DB_NAME:-"onlyoffice"}
+  DB_USER=${DB_USER:-${POSTGRESQL_SERVER_USER:-$(${JSON} services.CoAuthoring.sql.dbUser)}}; DB_USER=${DB_USER:-"onlyoffice"}
+  DB_PWD=${DB_PWD:-${POSTGRESQL_SERVER_PASS:-$(${JSON} services.CoAuthoring.sql.dbPass)}}; DB_PWD=${DB_PWD:-"onlyoffice"}
 
-  RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
+  RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}; RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-"amqp://guest:guest@localhost"}
   AMQP_URI=${AMQP_URI:-${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}}
-  AMQP_TYPE=${AMQP_TYPE:-${AMQP_SERVER_TYPE:-rabbitmq}}
+  AMQP_TYPE=${AMQP_TYPE:-${AMQP_SERVER_TYPE:-"rabbitmq"}}
   parse_rabbitmq_url ${AMQP_URI}
 
-  REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}
-  REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-6379}
+  REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-$(${JSON} services.CoAuthoring.redis.host)}; REDIS_SERVER_HOST=${REDIS_SERVER_HOST:-"localhost"}
+  REDIS_SERVER_PORT=${REDIS_SERVER_PORT:-"6379"}
 
   DS_LOG_LEVEL=${DS_LOG_LEVEL:-$(${JSON_LOG} categories.default.level)}
 }
@@ -318,6 +327,7 @@ update_statsd_settings(){
 }
 
 update_db_settings(){
+  ${JSON} -I -e "if(this.services.CoAuthoring.sql===undefined)this.services.CoAuthoring.sql={};"
   ${JSON} -I -e "this.services.CoAuthoring.sql.type = '${DB_TYPE}'"
   ${JSON} -I -e "this.services.CoAuthoring.sql.dbHost = '${DB_HOST}'"
   ${JSON} -I -e "this.services.CoAuthoring.sql.dbPort = '${DB_PORT}'"
@@ -329,6 +339,7 @@ update_db_settings(){
 update_rabbitmq_setting(){
   if [ "${AMQP_TYPE}" == "rabbitmq" ]; then
     ${JSON} -I -e "if(this.queue===undefined)this.queue={};"
+    ${JSON} -I -e "if(this.rabbitmq===undefined)this.rabbitmq={};"
     ${JSON} -I -e "this.queue.type = 'rabbitmq'"
     ${JSON} -I -e "this.rabbitmq.url = '${AMQP_URI}'"
   fi
@@ -382,6 +393,15 @@ update_redis_settings(){
 }
 
 update_ds_settings(){
+  ${JSON} -I -e "
+  [ 'services.CoAuthoring.token.inbox',
+    'services.CoAuthoring.token.outbox',
+    'services.CoAuthoring.token.enable.request',
+    'services.CoAuthoring.secret.inbox',
+    'services.CoAuthoring.secret.outbox',
+    'services.CoAuthoring.secret.session'
+  ].forEach(path => path.split('.').reduce((obj, key) => (obj[key] = obj[key] || {}), this));"
+
   ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}"
   ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.inbox = ${JWT_ENABLED}"
   ${JSON} -I -e "this.services.CoAuthoring.token.enable.request.outbox = ${JWT_ENABLED}"
@@ -403,7 +423,7 @@ update_ds_settings(){
   fi
  
   if [ "${USE_UNAUTHORIZED_STORAGE}" == "true" ]; then
-    ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults===undefined)this.services.CoAuthoring.requestDefaults={}"
+    ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults===undefined)this.services.CoAuthoring.requestDefaults={};"
     ${JSON} -I -e "if(this.services.CoAuthoring.requestDefaults.rejectUnauthorized===undefined)this.services.CoAuthoring.requestDefaults.rejectUnauthorized=false"
   fi
 
@@ -623,7 +643,7 @@ update_nginx_settings(){
     sed 's/linux/docker/' -i ${NGINX_ONLYOFFICE_EXAMPLE_CONF}
   fi
 
-  start_process documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
+  LOCAL_CONF=${ONLYOFFICE_DEFAULT_CONFIG} start_process documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
 }
 
 update_log_settings(){
@@ -672,8 +692,8 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   update_ds_settings
 
   # update settings by env variables
+  update_db_settings
   if [ $DB_HOST != "localhost" ]; then
-    update_db_settings
     waiting_for_db
     create_db_tbl
   else
@@ -689,9 +709,8 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
     LOCAL_SERVICES+=("postgresql")
   fi
 
-  if [ ${AMQP_SERVER_HOST} != "localhost" ]; then
-    update_rabbitmq_setting
-  else
+  update_rabbitmq_setting
+  if [ ${AMQP_SERVER_HOST} = "localhost" ]; then
     # change rights for rabbitmq directory
     chown -R rabbitmq:rabbitmq ${RABBITMQ_DATA}
     chmod -R go=rX,u=rwX ${RABBITMQ_DATA}
@@ -707,9 +726,8 @@ if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
   fi
 
   if [ ${REDIS_ENABLED} = "true" ]; then
-    if [ ${REDIS_SERVER_HOST} != "localhost" ]; then
-      update_redis_settings
-    else
+    update_redis_settings
+    if [ ${REDIS_SERVER_HOST} = "localhost" ]; then
       # change rights for redis directory
       chown -R redis:redis ${REDIS_DATA}
       chmod -R 750 ${REDIS_DATA}
