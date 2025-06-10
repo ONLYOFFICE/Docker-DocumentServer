@@ -51,10 +51,10 @@ if [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ]; then
   fi
 fi
 
-SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"
-mkdir -p ${SSL_CERTIFICATES_DIR}
-if find "${DATA_DIR}/certs" -type f \( -name "*.crt" -o -name "*.pem" \) -print -quit >/dev/null 2>&1; then
-  cp -f ${DATA_DIR}/certs/* ${SSL_CERTIFICATES_DIR}
+SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"; mkdir -p ${SSL_CERTIFICATES_DIR}
+CERTIFICATE_FILES=( ${DATA_DIR}/certs/*.{crt,pem,key} )
+if [ ${#CERTIFICATE_FILES[@]} -gt 0 ]; then
+  cp -f "${CERTIFICATE_FILES[@]}" "${SSL_CERTIFICATES_DIR}/"
   chmod 644 ${SSL_CERTIFICATES_DIR}/*.{crt,pem} 2>/dev/null
   chmod 400 ${SSL_CERTIFICATES_DIR}/*.key 2>/dev/null
 fi
