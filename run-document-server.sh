@@ -52,7 +52,7 @@ if [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ]; then
 fi
 
 SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"; mkdir -p ${SSL_CERTIFICATES_DIR}
-CERTIFICATE_FILES=( ${DATA_DIR}/certs/*.{crt,pem,key} )
+shopt -s nullglob extglob; CERTIFICATE_FILES=( ${DATA_DIR}/certs/*.{crt,pem} ); shopt -u nullglob extglob
 if [ ${#CERTIFICATE_FILES[@]} -gt 0 ]; then
   cp -f "${CERTIFICATE_FILES[@]}" "${SSL_CERTIFICATES_DIR}/"
   chmod 644 ${SSL_CERTIFICATES_DIR}/*.{crt,pem} 2>/dev/null
