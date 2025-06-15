@@ -52,11 +52,10 @@ if [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ]; then
 fi
 
 SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"; mkdir -p ${SSL_CERTIFICATES_DIR}
-shopt -s nullglob extglob; CERTIFICATE_FILES=( ${DATA_DIR}/certs/*.{crt,pem} ); shopt -u nullglob extglob
-if [ ${#CERTIFICATE_FILES[@]} -gt 0 ]; then
-  cp -f "${CERTIFICATE_FILES[@]}" "${SSL_CERTIFICATES_DIR}/"
-  chmod 644 ${SSL_CERTIFICATES_DIR}/*.{crt,pem} 2>/dev/null
-  chmod 400 ${SSL_CERTIFICATES_DIR}/*.key 2>/dev/null
+find "${DATA_DIR}/certs" -type f \( -iname '*.crt' -o -iname '*.pem' -o -iname '*.key' \) -exec cp -f {} "${SSL_CERTIFICATES_DIR}"/ \;
+if find "${SSL_CERTIFICATES_DIR}" -maxdepth 1 -type f | read _; then
+  find "${SSL_CERTIFICATES_DIR}" -type f \( -iname '*.crt' -o -iname '*.pem' \) -exec chmod 644 {} \;
+  find "${SSL_CERTIFICATES_DIR}" -type f -iname '*.key' -exec chmod 400 {} \;
 fi
 
 if [[ -z $SSL_CERTIFICATE_PATH ]] && [[ -f ${SSL_CERTIFICATES_DIR}/${COMPANY_NAME}.crt ]]; then
