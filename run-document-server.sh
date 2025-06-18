@@ -51,12 +51,11 @@ if [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ]; then
   fi
 fi
 
-SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"
-mkdir -p ${SSL_CERTIFICATES_DIR}
-if find "${DATA_DIR}/certs" -type f \( -name "*.crt" -o -name "*.pem" \) -print -quit >/dev/null 2>&1; then
-  cp -f ${DATA_DIR}/certs/* ${SSL_CERTIFICATES_DIR}
-  chmod 644 ${SSL_CERTIFICATES_DIR}/*.{crt,pem} 2>/dev/null
-  chmod 400 ${SSL_CERTIFICATES_DIR}/*.key 2>/dev/null
+SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"; mkdir -p ${SSL_CERTIFICATES_DIR}
+find "${DATA_DIR}/certs" -type f \( -iname '*.crt' -o -iname '*.pem' -o -iname '*.key' \) -exec cp -f {} "${SSL_CERTIFICATES_DIR}"/ \;
+if find "${SSL_CERTIFICATES_DIR}" -maxdepth 1 -type f | read _; then
+  find "${SSL_CERTIFICATES_DIR}" -type f \( -iname '*.crt' -o -iname '*.pem' \) -exec chmod 644 {} \;
+  find "${SSL_CERTIFICATES_DIR}" -type f -iname '*.key' -exec chmod 400 {} \;
 fi
 
 if [[ -z $SSL_CERTIFICATE_PATH ]] && [[ -f ${SSL_CERTIFICATES_DIR}/${COMPANY_NAME}.crt ]]; then
@@ -274,8 +273,7 @@ waiting_for_connection(){
 waiting_for_db_ready(){
   case $DB_TYPE in
     "oracle")
-      PDB="XEPDB1"
-      ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB"
+      ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/${DB_NAME}"
       DB_TEST="echo \"SELECT version FROM V\$INSTANCE;\" | $ORACLE_SQL 2>/dev/null | grep \"Connected\" | wc -l"
       ;;
     *)
@@ -510,7 +508,7 @@ upgrade_mysql_tbl() {
 }
 
 upgrade_mssql_tbl() {
-  CONN_PARAMS="-U $DB_USER -P "$DB_PWD" -C"
+  CONN_PARAMS="-d $DB_NAME -U $DB_USER -P "$DB_PWD" -C"
   MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT $CONN_PARAMS"
 
   $MSSQL < "$APP_DIR/server/schema/mssql/removetbl.sql" >/dev/null 2>&1
@@ -518,8 +516,7 @@ upgrade_mssql_tbl() {
 }
 
 upgrade_oracle_tbl() {
-  PDB="XEPDB1"
-  ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB"
+  ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/${DB_NAME}"
 
   $ORACLE_SQL @$APP_DIR/server/schema/oracle/removetbl.sql >/dev/null 2>&1
   $ORACLE_SQL @$APP_DIR/server/schema/oracle/createdb.sql >/dev/null 2>&1
@@ -547,15 +544,14 @@ create_mysql_tbl() {
 create_mssql_tbl() {  
   create_mssql_db
 
-  CONN_PARAMS="-U $DB_USER -P "$DB_PWD" -C"
+  CONN_PARAMS="-d $DB_NAME -U $DB_USER -P "$DB_PWD" -C"
   MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT $CONN_PARAMS"
 
   $MSSQL < "$APP_DIR/server/schema/mssql/createdb.sql" >/dev/null 2>&1
 }
 
 create_oracle_tbl() {
-  PDB="XEPDB1"
-  ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$PDB"
+  ORACLE_SQL="sqlplus $DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/${DB_NAME}"
 
   $ORACLE_SQL @$APP_DIR/server/schema/oracle/createdb.sql >/dev/null 2>&1
 }
@@ -655,6 +651,7 @@ for i in ${DS_LIB_DIR}/App_Data/cache/files ${DS_LIB_DIR}/App_Data/docbuilder ${
 done
 
 # change folder rights
+chown ds:ds "${DATA_DIR}"
 for i in ${DS_LOG_DIR} ${DS_LOG_DIR}-example ${LIB_DIR}; do
   chown -R ds:ds "$i"
   chmod -R 755 "$i"
@@ -792,4 +789,4 @@ start_process documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
 echo "${JWT_MESSAGE}" 
 
-start_process tail -f /var/log/${COMPANY_NAME}/**/*.log
+start_process find "$DS_LOG_DIR" "$DS_LOG_DIR-example" -type f -name "*.log" | xargs tail -f
