@@ -9,13 +9,13 @@ ARG BASE_VERSION
 ARG PG_VERSION=16
 ARG PACKAGE_SUFFIX=t64
 
-ENV OC_RELEASE_NUM=21
-ENV OC_RU_VER=12
+ENV OC_RELEASE_NUM=23
+ENV OC_RU_VER=7
 ENV OC_RU_REVISION_VER=0
-ENV OC_RESERVED_NUM=0
-ENV OC_RU_DATE=0
-ENV OC_PATH=${OC_RELEASE_NUM}${OC_RU_VER}000
-ENV OC_FILE_SUFFIX=${OC_RELEASE_NUM}.${OC_RU_VER}.${OC_RU_REVISION_VER}.${OC_RESERVED_NUM}.${OC_RU_DATE}${OC_FILE_SUFFIX}dbru
+ENV OC_RESERVED_NUM=25
+ENV OC_RU_DATE=01
+ENV OC_PATH=${OC_RELEASE_NUM}${OC_RU_VER}0000
+ENV OC_FILE_SUFFIX=${OC_RELEASE_NUM}.${OC_RU_VER}.${OC_RU_REVISION_VER}.${OC_RESERVED_NUM}.${OC_RU_DATE}
 ENV OC_VER_DIR=${OC_RELEASE_NUM}_${OC_RU_VER}
 ENV OC_DOWNLOAD_URL=https://download.oracle.com/otn_software/linux/instantclient/${OC_PATH}
 
@@ -83,11 +83,12 @@ RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     service postgresql restart && \
     sudo -u postgres psql -c "CREATE USER $ONLYOFFICE_VALUE WITH password '$ONLYOFFICE_VALUE';" && \
     sudo -u postgres psql -c "CREATE DATABASE $ONLYOFFICE_VALUE OWNER $ONLYOFFICE_VALUE;" && \
-    wget -O basic.zip ${OC_DOWNLOAD_URL}/instantclient-basic-linux.x64-${OC_FILE_SUFFIX}.zip && \
-    wget -O sqlplus.zip ${OC_DOWNLOAD_URL}/instantclient-sqlplus-linux.x64-${OC_FILE_SUFFIX}.zip && \
-    unzip -d /usr/share basic.zip && \
-    unzip -d /usr/share sqlplus.zip && \
+    wget -O basic.zip ${OC_DOWNLOAD_URL}/instantclient-basic-linux.$(dpkg --print-architecture | sed 's/amd64/x64/')-${OC_FILE_SUFFIX}.zip && \
+    wget -O sqlplus.zip ${OC_DOWNLOAD_URL}/instantclient-sqlplus-linux.$(dpkg --print-architecture | sed 's/amd64/x64/')-${OC_FILE_SUFFIX}.zip && \
+    unzip -o basic.zip -d /usr/share && \
+    unzip -o sqlplus.zip -d /usr/share && \
     mv /usr/share/instantclient_${OC_VER_DIR} /usr/share/instantclient && \
+    find /usr/lib /lib -name "libaio.so.1$PACKAGE_SUFFIX" -exec bash -c 'ln -sf "$0" "$(dirname "$0")/libaio.so.1"' {} \; && \
     service postgresql stop && \
     service redis-server stop && \
     service rabbitmq-server stop && \

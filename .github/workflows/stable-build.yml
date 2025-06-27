@@ -14,12 +14,18 @@ on:
         type: string
         required: true
         default: '1'
+      latest:
+        description: 'Push latest tag?'
+        type: boolean
+        required: true
+        default: true
 
 env:
   COMPANY_NAME: "onlyoffice"
   PRODUCT_NAME: "documentserver"
   VERSION: ${{ github.event.inputs.tag }}
   RELEASE_NUMBER: ${{ github.event.inputs.release_number }}
+  LATEST: ${{ github.event.inputs.latest }}
 
 jobs:
   build:

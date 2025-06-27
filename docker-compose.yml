@@ -2,6 +2,7 @@ services:
   onlyoffice-documentserver:
     build:
       context: .
+    image: onlyoffice/documentserver #[-de,-ee]
     container_name: onlyoffice-documentserver
     depends_on:
       - onlyoffice-postgresql
@@ -21,6 +22,12 @@ services:
     ports:
       - '80:80'
       - '443:443'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/info/info.json"]
+      interval: 30s
+      retries: 5
+      start_period: 60s
+      timeout: 10s
     stdin_open: true
     restart: always
     stop_grace_period: 60s
@@ -33,14 +40,20 @@ services:
        
   onlyoffice-rabbitmq:
     container_name: onlyoffice-rabbitmq
-    image: rabbitmq
+    image: rabbitmq:3
     restart: always
     expose:
       - '5672'
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 10s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
 
   onlyoffice-postgresql:
     container_name: onlyoffice-postgresql
-    image: postgres:12
+    image: postgres:15
     environment:
       - POSTGRES_DB=onlyoffice
       - POSTGRES_USER=onlyoffice
@@ -50,6 +63,12 @@ services:
       - '5432'
     volumes:
       - postgresql_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onlyoffice"]
+      interval: 10s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
 
 volumes:
   postgresql_data:
