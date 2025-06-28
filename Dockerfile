@@ -23,7 +23,8 @@ ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=nonint
 
 ARG ONLYOFFICE_VALUE=onlyoffice
 
-RUN echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
+RUN set -eux && \
+    echo "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d && \
     apt-get -y update && \
     apt-get -yq install wget apt-transport-https gnupg locales lsb-release && \
     wget -q -O /etc/apt/sources.list.d/mssql-release.list "https://packages.microsoft.com/config/ubuntu/$BASE_VERSION/prod.list" && \
@@ -116,7 +117,8 @@ ENV COMPANY_NAME=$COMPANY_NAME \
     DS_PLUGIN_INSTALLATION=false \
     DS_DOCKER_INSTALLATION=true
 
-RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
+RUN set -eux && \
+    env PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
     wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
     apt-get -y update && \
     service postgresql start && \
