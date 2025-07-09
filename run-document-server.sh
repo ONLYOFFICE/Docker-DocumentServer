@@ -623,6 +623,8 @@ update_nginx_settings(){
   fi
 
   start_process documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
+  # force HTTPS scheme inside proxy headers
+  sed -i "s|default \$scheme;|default https;|" "$NGINX_ONLYOFFICE_PATH/includes/http-common.conf"
 }
 
 update_log_settings(){
