@@ -24,7 +24,7 @@ ONLYOFFICE Docs (Document Server) is an open-source office suite that comprises 
 
 Starting from version 6.0, Document Server is distributed as ONLYOFFICE Docs. It has [three editions](https://github.com/ONLYOFFICE/DocumentServer#onlyoffice-docs-editions). With this image, you will install the free Community version. 
 
-ONLYOFFICE Docs can be used as a part of [ONLYOFFICE DocSpace](https://www.onlyoffice.com/docspace.aspx) and ONLYOFFICE Workspace, or with [third-party sync&share solutions](https://www.onlyoffice.com/all-connectors.aspx) (e.g. Odoo, Moodle, Nextcloud, ownCloud, Seafile, etc.) to enable collaborative editing within their interface.
+ONLYOFFICE Docs can be used as a part of [ONLYOFFICE DocSpace](https://www.onlyoffice.com/docspace.aspx) and ONLYOFFICE Workspace, or with [third-party sync&share solutions](https://www.onlyoffice.com/all-connectors.aspx) (e.g. Odoo, Moodle, Nextcloud, ownCloud, Seafile, etc.) to enable collaborative editing within their interface.
 
 ***Important*** Please update `docker-engine` to latest version (`20.10.21` as of writing this doc) before using it. We use `ubuntu:22.04` as base image and it older versions of docker have compatibility problems with it
 
@@ -39,16 +39,15 @@ Take advantage of the powerful editors included in ONLYOFFICE Docs:
 * [ONLYOFFICE PDF Editor](https://www.onlyoffice.com/pdf-editor.aspx)
 * [ONLYOFFICE Diagram Viewer](https://www.onlyoffice.com/diagram-viewer.aspx) 
 
-The editors empower you to create, edit, save, and export text documents, spreadsheets, presentations, PDFs, create and fill out PDF forms, open diagrams, all while offering additional advanced features such as:
+The editors empower you to create, edit, save, and export text docs, sheets, presentations, PDFs, create and fill out PDF forms, open diagrams, all while offering additional advanced features such as:
 
 * Collaborative editing (review & track changes, comments, chat)
 * [AI-powered assistants](https://www.onlyoffice.com/ai-assistants.aspx) 
 * Spell-checking 
-* Accessibility 
 * Scalable UI options (including dark mode)
-* [Security tools and services](https://www.onlyoffice.com/security.aspx) 
+* [Security tools & services](https://www.onlyoffice.com/security.aspx)
 
-ONLYOFFICE Docs offer support for plugins allowing developers to add specific features to the editors that are not directly related to the OOXML format. For more information, see [our API](https://api.onlyoffice.com/docs/plugin-and-macros/get-started/overview/) or visit the [GitHub plugins repo](https://github.com/ONLYOFFICE/onlyoffice.github.io). Would like to explore the existing plugins in details? You are welcome to visit the [Marketplace](https://www.onlyoffice.com/app-directory).
+ONLYOFFICE Docs offer support for plugins allowing you to add specific features to the editors that are not directly related to the OOXML format. For more details, see [our API](https://api.onlyoffice.com/docs/plugin-and-macros/get-started/overview/) or visit the [plugins repo](https://github.com/ONLYOFFICE/onlyoffice.github.io). Would like to explore the existing plugins? Open the [Marketplace](https://www.onlyoffice.com/app-directory).
 
 ## Recommended System Requirements
 
@@ -297,32 +296,14 @@ The additional parameters for mail server are available [here](https://github.co
 
 To learn more, refer to the [ONLYOFFICE Mail Server documentation](https://github.com/ONLYOFFICE/Docker-MailServer "ONLYOFFICE Mail Server documentation").
 
-<<<<<<< HEAD
 **STEP 6**: Install ONLYOFFICE Community Server
 
 ```bash
 sudo docker run --net onlyoffice -i -t -d --privileged --restart=always --name onlyoffice-community-server -p 80:80 -p 443:443 -p 5222:5222 --cgroupns=host \
-=======
-**STEP 5**: Install ONLYOFFICE Control Panel
-
-```bash
-docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-control-panel \
--v /var/run/docker.sock:/var/run/docker.sock \
--v /app/onlyoffice/CommunityServer/data:/app/onlyoffice/CommunityServer/data \
--v /app/onlyoffice/ControlPanel/data:/var/www/onlyoffice/Data \
--v /app/onlyoffice/ControlPanel/logs:/var/log/onlyoffice onlyoffice/controlpanel
-```
-
-**STEP 6**: Install ONLYOFFICE Community Server
-
-```bash
-sudo docker run --net onlyoffice -i -t -d --privileged --restart=always --name onlyoffice-community-server -p 80:80 -p 443:443 -p 5222:5222 \
->>>>>>> 1b10049c5ad75bb749ae2db968eabb4422a73a34
  -e MYSQL_SERVER_ROOT_PASSWORD=my-secret-pw \
  -e MYSQL_SERVER_DB_NAME=onlyoffice \
  -e MYSQL_SERVER_HOST=onlyoffice-mysql-server \
  -e MYSQL_SERVER_USER=onlyoffice_user \
-<<<<<<< HEAD
  -e MYSQL_SERVER_PASS=onlyoffice_pass \
  
  -e DOCUMENT_SERVER_PORT_80_TCP_ADDR=onlyoffice-document-server \
@@ -330,10 +311,6 @@ sudo docker run --net onlyoffice -i -t -d --privileged --restart=always --name o
  -e DOCUMENT_SERVER_JWT_SECRET=${JWT_SECRET} \
  -e DOCUMENT_SERVER_JWT_HEADER=AuthorizationJwt \
  
-=======
- -e MYSQL_SERVER_PASS=onlyoffice_pass \ 
- -e DOCUMENT_SERVER_PORT_80_TCP_ADDR=onlyoffice-document-server \ 
->>>>>>> 1b10049c5ad75bb749ae2db968eabb4422a73a34
  -e MAIL_SERVER_API_HOST=${MAIL_SERVER_IP} \
  -e MAIL_SERVER_DB_HOST=onlyoffice-mysql-server \
  -e MAIL_SERVER_DB_NAME=onlyoffice_mailserver \
@@ -345,11 +322,7 @@ sudo docker run --net onlyoffice -i -t -d --privileged --restart=always --name o
  -v /app/onlyoffice/CommunityServer/data:/var/www/onlyoffice/Data \
  -v /app/onlyoffice/CommunityServer/logs:/var/log/onlyoffice \
  -v /app/onlyoffice/CommunityServer/letsencrypt:/etc/letsencrypt \
-<<<<<<< HEAD
  -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
-=======
- -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
->>>>>>> 1b10049c5ad75bb749ae2db968eabb4422a73a34
  onlyoffice/communityserver
 ```
 
@@ -375,29 +348,7 @@ workspace-install.sh -md yourdomain.com
 Or, use [docker-compose](https://docs.docker.com/compose/install "docker-compose"). First you need to clone this [GitHub repository](https://github.com/ONLYOFFICE/Docker-CommunityServer/):
 
 ```bash
-<<<<<<< HEAD
 wget https://raw.githubusercontent.com/ONLYOFFICE/Docker-CommunityServer/master/docker-compose.groups.yml
-=======
-git clone https://github.com/ONLYOFFICE/Docker-CommunityServer
-```
-
-After that switch to the repository folder:
-
-```bash
-cd Docker-CommunityServer
-```
-
-For the mail server correct work, open one of the files depending on the product you use:
-
-* [docker-compose.yml](https://github.com/ONLYOFFICE/Docker-CommunityServer/blob/master/docker-compose.groups.yml) for Community Server (distributed as ONLYOFFICE Groups)
-* [docker-compose.yml](https://github.com/ONLYOFFICE/Docker-CommunityServer/blob/master/docker-compose.workspace.yml) for ONLYOFFICE Workspace Community Edition 
-* [docker-compose.yml](https://github.com/ONLYOFFICE/Docker-CommunityServer/blob/master/docker-compose.workspace_enterprise.yml) for ONLYOFFICE Workspace Enterprise Edition
-
-Then replace the `${MAIL_SERVER_HOSTNAME}` variable with your own hostname for the **Mail Server**. After that, assuming you have docker-compose installed, execute the following command:
-
-```bash
-cd link-to-your-modified-docker-compose
->>>>>>> 1b10049c5ad75bb749ae2db968eabb4422a73a34
 docker-compose up -d
 ```
 
@@ -457,9 +408,9 @@ Free version vs commercial builds comparison: https://github.com/ONLYOFFICE/Docu
 
 ## User Feedback and Support
 
-If you face any issues or have questions about this image, please visit our official forum: [forum.onlyoffice.com][1].
+If you face any issues or have questions about this image, visit our official forum: [forum.onlyoffice.com][1].
 
-You are also welcome to ask and answer ONLYOFFICE development questions on [Stack Overflow][2], as well as share your thoughts and suggestions on [feedback.onlyoffice.com](https://feedback.onlyoffice.com/forums/966080-your-voice-matters).
+You are also welcome to ask and answer ONLYOFFICE development questions on [Stack Overflow][2], as well as share your suggestions on [feedback.onlyoffice.com](https://feedback.onlyoffice.com/forums/966080-your-voice-matters).
 
 Join [our Discord community](https://discord.gg/Hcgtf5n4uF) for connecting with fellow developers.
 
