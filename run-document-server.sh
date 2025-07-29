@@ -657,6 +657,10 @@ for i in ${DS_LOG_DIR} ${DS_LOG_DIR}-example ${LIB_DIR}; do
   chmod -R 755 "$i"
 done
 
+# Bug 75324 - Update permissions for runtime.json
+AI_CONFIG_FILE="${DATA_DIR}/runtime.json"
+[ -f "${AI_CONFIG_FILE}" ] && { chown ds:ds "${AI_CONFIG_FILE}" && chmod 644 "${AI_CONFIG_FILE}"; }
+
 if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
   read_setting
