@@ -155,7 +155,7 @@ jobs:
 
           ### ==>> Build and push images at this step ###
 
-          docker buildx bake -f docker-bake.hcl "${IMAGE}" --push
+          docker buildx bake --sbom=true --provenance=mode=max -f docker-bake.hcl "${IMAGE}" --push
           echo "DONE: Build success"
 
           ### Set output for Zap scanner
