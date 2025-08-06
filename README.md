@@ -20,28 +20,34 @@
 
 ## Overview
 
-ONLYOFFICE Document Server is an open-source office suite that comprises all the tools you need to work with documents, spreadsheets, presentations, PDFs, and PDF forms. The suite supports office files of all popular formats (DOCX, ODT, XLSX, ODS, CSV, PPTX, ODP, etc.) and enables collaborative editing in real time.
+ONLYOFFICE Docs (Document Server) is an open-source office suite that comprises all the tools you need to work with documents, spreadsheets, presentations, PDFs, and PDF forms. The suite supports office files of all popular formats (DOCX, ODT, XLSX, ODS, CSV, PPTX, ODP, etc.) and enables collaborative editing in real time.
 
-Starting from version 6.0, Document Server is distributed as ONLYOFFICE Docs. It has [three editions](https://github.com/ONLYOFFICE/DocumentServer#onlyoffice-document-server-editions). With this image, you will install the free Community version. 
+Starting from version 6.0, Document Server is distributed as ONLYOFFICE Docs. It has [three editions](https://github.com/ONLYOFFICE/DocumentServer#onlyoffice-docs-editions). With this image, you will install the free Community version. 
 
-ONLYOFFICE Docs can be used as a part of ONLYOFFICE Workspace or with third-party sync&share solutions (e.g. Nextcloud, ownCloud, Seafile) to enable collaborative editing within their interface.
+ONLYOFFICE Docs can be used as a part of [ONLYOFFICE DocSpace](https://www.onlyoffice.com/docspace.aspx) and ONLYOFFICE Workspace, or with [third-party sync&share solutions](https://www.onlyoffice.com/all-connectors.aspx) (e.g. Odoo, Moodle, Nextcloud, ownCloud, Seafile, etc.) to enable collaborative editing within their interface.
 
 ***Important*** Please update `docker-engine` to latest version (`20.10.21` as of writing this doc) before using it. We use `ubuntu:22.04` as base image and it older versions of docker have compatibility problems with it
 
 ## Functionality ##
-* ONLYOFFICE Document Editor
-* ONLYOFFICE Spreadsheet Editor
-* ONLYOFFICE Presentation Editor
-* ONLYOFFICE Documents application for iOS
-* Collaborative editing
-* Hieroglyph support
-* Support for all the popular formats: DOC, DOCX, TXT, ODT, RTF, ODP, EPUB, ODS, XLS, XLSX, CSV, PPTX, HTML
 
-Integrating it with ONLYOFFICE Community Server you will be able to:
-* view and edit files stored on Drive, Box, Dropbox, OneDrive, OwnCloud connected to ONLYOFFICE;
-* share files;
-* embed documents on a website;
-* manage access rights to documents.
+Take advantage of the powerful editors included in ONLYOFFICE Docs:
+
+* [ONLYOFFICE Document Editor](https://www.onlyoffice.com/document-editor.aspx)
+* [ONLYOFFICE Spreadsheet Editor](https://www.onlyoffice.com/spreadsheet-editor.aspx)
+* [ONLYOFFICE Presentation Editor](https://www.onlyoffice.com/presentation-editor.aspx)
+* [ONLYOFFICE Form Creator](https://www.onlyoffice.com/form-creator.aspx)
+* [ONLYOFFICE PDF Editor](https://www.onlyoffice.com/pdf-editor.aspx)
+* [ONLYOFFICE Diagram Viewer](https://www.onlyoffice.com/diagram-viewer.aspx) 
+
+The editors empower you to create, edit, save, and export text docs, sheets, presentations, PDFs, create and fill out PDF forms, open diagrams, all while offering additional advanced features such as:
+
+* Collaborative editing (review & track changes, comments, chat)
+* [AI-powered assistants](https://www.onlyoffice.com/ai-assistants.aspx) 
+* Spell-checking 
+* Scalable UI options (including dark mode)
+* [Security tools & services](https://www.onlyoffice.com/security.aspx)
+
+ONLYOFFICE Docs offer support for plugins allowing you to add specific features to the editors that are not directly related to the OOXML format. For more details, see [our API](https://api.onlyoffice.com/docs/plugin-and-macros/get-started/overview/) or visit the [plugins repo](https://github.com/ONLYOFFICE/onlyoffice.github.io). Would like to explore the existing plugins? Open the [Marketplace](https://www.onlyoffice.com/app-directory).
 
 ## Recommended System Requirements
 
@@ -210,9 +216,31 @@ Below is the complete list of parameters that can be set using environment varia
 - **LETS_ENCRYPT_MAIL**: Defines the domain administator mail address for Let's Encrypt certificate.
 - **PLUGINS_ENABLED**: Defines whether to enable default plugins. Defaults to `true`.
 
-## Installing ONLYOFFICE Document Server integrated with Community and Mail Servers
+## Installing ONLYOFFICE Document Server using Docker Compose
 
-ONLYOFFICE Document Server is a part of ONLYOFFICE Community Edition that comprises also Community Server and Mail Server. To install them, follow these easy steps:
+You can also install ONLYOFFICE Document Server using [docker-compose](https://docs.docker.com/compose/install "docker-compose"). 
+
+First you need to clone this [GitHub repository](https://github.com/ONLYOFFICE/Docker-DocumentServer/):
+
+```bash
+git clone https://github.com/ONLYOFFICE/Docker-DocumentServer
+```
+
+After that switch to the repository folder:
+
+```bash
+cd Docker-DocumentServer
+```
+
+After that, assuming you have docker-compose installed, execute the following command:
+
+```bash
+docker-compose up -d
+```
+
+## Installing ONLYOFFICE Document Server as a part of ONLYOFFICE Workspace
+
+ONLYOFFICE Document Server is a part of ONLYOFFICE Workspace that comprises also Community Server, Mail Server, and Control Panel. To install them, follow these easy steps:
 
 **STEP 1**: Create the `onlyoffice` network.
 
@@ -288,8 +316,9 @@ sudo docker run --net onlyoffice -i -t -d --privileged --restart=always --name o
  -e MAIL_SERVER_DB_NAME=onlyoffice_mailserver \
  -e MAIL_SERVER_DB_PORT=3306 \
  -e MAIL_SERVER_DB_USER=root \
- -e MAIL_SERVER_DB_PASS=my-secret-pw \
- 
+ -e MAIL_SERVER_DB_PASS=my-secret-pw \ 
+ -e CONTROL_PANEL_PORT_80_TCP=80 \
+ -e CONTROL_PANEL_PORT_80_TCP_ADDR=onlyoffice-control-panel \
  -v /app/onlyoffice/CommunityServer/data:/var/www/onlyoffice/Data \
  -v /app/onlyoffice/CommunityServer/logs:/var/log/onlyoffice \
  -v /app/onlyoffice/CommunityServer/letsencrypt:/etc/letsencrypt \
@@ -302,21 +331,21 @@ Where `${MAIL_SERVER_IP}` is the IP address for **ONLYOFFICE Mail Server**. You 
 MAIL_SERVER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' onlyoffice-mail-server)
 ```
 
-Alternatively, you can use an automatic installation script to install the whole ONLYOFFICE Community Edition at once. For the mail server correct work you need to specify its hostname 'yourdomain.com'.
+Alternatively, you can use an automatic installation script to install ONLYOFFICE Workspace at once. For the mail server correct work you need to specify its hostname 'yourdomain.com'.
 
-**STEP 1**: Download the Community Edition Docker script file
-
-```bash
-wget https://download.onlyoffice.com/install/opensource-install.sh
-```
-
-**STEP 2**: Install ONLYOFFICE Community Edition executing the following command:
+**STEP 1**: Download the ONLYOFFICE Workspace Docker script file
 
 ```bash
-bash opensource-install.sh -md yourdomain.com
+wget https://download.onlyoffice.com/install/workspace-install.sh
 ```
 
-Or, use [docker-compose](https://docs.docker.com/compose/install "docker-compose"). For the mail server correct work you need to specify its hostname 'yourdomain.com'. Assuming you have docker-compose installed, execute the following command:
+**STEP 2**: Install ONLYOFFICE Workspace executing the following command:
+
+```bash
+workspace-install.sh -md yourdomain.com
+```
+
+Or, use [docker-compose](https://docs.docker.com/compose/install "docker-compose"). First you need to clone this [GitHub repository](https://github.com/ONLYOFFICE/Docker-CommunityServer/):
 
 ```bash
 wget https://raw.githubusercontent.com/ONLYOFFICE/Docker-CommunityServer/master/docker-compose.groups.yml
@@ -367,21 +396,23 @@ Please note, that both executing the script and disconnecting users may take a l
 
 ## Project Information
 
-Official website: [https://www.onlyoffice.com](https://www.onlyoffice.com/?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerDS)
+Official website: [www.onlyoffice.com](https://www.onlyoffice.com/?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerDS)
 
-Code repository: [https://github.com/ONLYOFFICE/DocumentServer](https://github.com/ONLYOFFICE/DocumentServer "https://github.com/ONLYOFFICE/DocumentServer")
+Code repository: [github.com/ONLYOFFICE/DocumentServer](https://github.com/ONLYOFFICE/DocumentServer "https://github.com/ONLYOFFICE/DocumentServer")
 
-Docker Image: [https://github.com/ONLYOFFICE/Docker-DocumentServer](https://github.com/ONLYOFFICE/Docker-DocumentServer "https://github.com/ONLYOFFICE/Docker-DocumentServer")
+Docker Image: [github.com/ONLYOFFICE/Docker-DocumentServer](https://github.com/ONLYOFFICE/Docker-DocumentServer "https://github.com/ONLYOFFICE/Docker-DocumentServer")
 
-License: [GNU AGPL v3.0](https://help.onlyoffice.com/products/files/doceditor.aspx?fileid=4358397&doc=K0ZUdlVuQzQ0RFhhMzhZRVN4ZFIvaHlhUjN2eS9XMXpKR1M5WEppUk1Gcz0_IjQzNTgzOTci0 "GNU AGPL v3.0")
+License: [GNU AGPL v3.0](https://onlyo.co/38YZGJh)
 
-Free version vs commercial builds comparison: https://github.com/ONLYOFFICE/DocumentServer#onlyoffice-document-server-editions
-
-SaaS version: [https://www.onlyoffice.com/cloud-office.aspx](https://www.onlyoffice.com/cloud-office.aspx?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerDS)
+Free version vs commercial builds comparison: https://github.com/ONLYOFFICE/DocumentServer#onlyoffice-docs-editions
 
 ## User Feedback and Support
 
-If you have any problems with or questions about this image, please visit our official forum to find answers to your questions: [forum.onlyoffice.com][1] or you can ask and answer ONLYOFFICE development questions on [Stack Overflow][2].
+If you face any issues or have questions about this image, visit our official forum: [forum.onlyoffice.com][1].
+
+You are also welcome to ask and answer ONLYOFFICE development questions on [Stack Overflow][2], as well as share your suggestions on [feedback.onlyoffice.com](https://feedback.onlyoffice.com/forums/966080-your-voice-matters).
+
+Join [our Discord community](https://discord.gg/Hcgtf5n4uF) for connecting with fellow developers.
 
   [1]: https://forum.onlyoffice.com
   [2]: https://stackoverflow.com/questions/tagged/onlyoffice

@@ -1,0 +1,30 @@
+name: Check DockerHub README limit
+
+on:
+  push:
+    paths:
+      - README.md
+
+env:
+  MAX_BYTES: "25000"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Measure size
+        id: measure
+        run: |
+          BYTES=$(wc -c < README.md | tr -d '[:space:]')
+          echo "BYTES=$BYTES" >> "$GITHUB_OUTPUT"
+
+      - name: Fail if oversize
+        run: |
+          BYTES='${{ steps.measure.outputs.BYTES }}'
+          echo "README.md size: $BYTES bytes (limit $MAX_BYTES)"
+          if [ "$BYTES" -gt "$MAX_BYTES" ]; then
+            echo "::error::README.md exceeds Docker Hub 25 KB limit"
+            exit 1
+          fi

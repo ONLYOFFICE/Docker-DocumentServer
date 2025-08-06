@@ -64,7 +64,7 @@ jobs:
             export TAG=${VERSION%.*}.${RELEASE_NUMBER}
             export SHORTER_TAG=${VERSION%.*}
             export SHORTEST_TAG=${VERSION%.*.*}
-            docker buildx bake -f docker-bake.hcl "${TARGET}" --push
+            docker buildx bake --sbom=true --provenance=mode=max -f docker-bake.hcl "${TARGET}" --push
             echo "DONE: Build success >> exit with 0"
             exit 0
         shell: bash
@@ -110,7 +110,7 @@ jobs:
           set -eux
           export PULL_TAG=${VERSION%.*}.${RELEASE_NUMBER}
           export TAG=${VERSION%.*}.${RELEASE_NUMBER}
-          docker buildx bake -f docker-bake.hcl "${TARGET}" --push
+          docker buildx bake --sbom=true --provenance=mode=max -f docker-bake.hcl "${TARGET}" --push
         shell: bash
 
   build-ucs-ubuntu20:
@@ -148,5 +148,5 @@ jobs:
            export PACKAGE_SUFFIX=
            export TAG=${VERSION%.*}.${RELEASE_NUMBER}
            export PACKAGE_VERSION=$( echo ${VERSION} |  sed -E 's/(.*)\./\1-/')
-           docker buildx bake -f docker-bake.hcl documentserver-ucs --push
+           docker buildx bake --sbom=true --provenance=mode=max -f docker-bake.hcl documentserver-ucs --push
         shell: bash
