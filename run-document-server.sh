@@ -651,15 +651,15 @@ for i in ${DS_LIB_DIR}/App_Data/cache/files ${DS_LIB_DIR}/App_Data/docbuilder ${
 done
 
 # change folder rights
-chown ds:ds "${DATA_DIR}"
+chown ds:onlyoffice "${DATA_DIR}"
 for i in ${DS_LOG_DIR} ${DS_LOG_DIR}-example ${LIB_DIR}; do
-  chown -R ds:ds "$i"
+  chown -R ds:onlyoffice "$i"
   chmod -R 755 "$i"
 done
 
 # Bug 75324 - Update permissions for runtime.json
 AI_CONFIG_FILE="${DATA_DIR}/runtime.json"
-[ -f "${AI_CONFIG_FILE}" ] && { chown ds:ds "${AI_CONFIG_FILE}" && chmod 644 "${AI_CONFIG_FILE}"; }
+[ -f "${AI_CONFIG_FILE}" ] && { chown ds:onlyoffice "${AI_CONFIG_FILE}" && chmod 644 "${AI_CONFIG_FILE}"; }
 
 if [ ${ONLYOFFICE_DATA_CONTAINER_HOST} = "localhost" ]; then
 
@@ -732,7 +732,7 @@ else
   update_welcome_page
 fi
 
-find /etc/${COMPANY_NAME} ! -path '*logrotate*' -exec chown ds:ds {} \;
+find /etc/${COMPANY_NAME} ! -path '*logrotate*' -exec chown ds:onlyoffice {} \;
 
 #start needed local services
 for i in ${LOCAL_SERVICES[@]}; do
