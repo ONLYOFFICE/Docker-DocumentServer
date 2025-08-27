@@ -110,7 +110,7 @@ RABBIT_CONNECTIONS=${RABBIT_CONNECTIONS:-$LIMIT}
 
 JWT_ENABLED=${JWT_ENABLED:-true}
 
-# validate user's vars before usinig in json
+# validate user's vars before using in json
 if [ "${JWT_ENABLED}" == "true" ]; then
   JWT_ENABLED="true"
 else
@@ -726,7 +726,7 @@ else
   waiting_for_datacontainer
 
   # read settings after the data container in ready state
-  # to prevent get unconfigureted data
+  # to prevent get unconfigured data
   read_setting
   
   update_welcome_page
