@@ -191,6 +191,9 @@ Below is the complete list of parameters that can be set using environment varia
 - **DB_NAME**: The name of a database to use. Should be existing on container startup.
 - **DB_USER**: The new user name with superuser permissions for the database account.
 - **DB_PWD**: The password set for the database account.
+- **DB_SCHEMA**: Database schema name (optional).  
+  - **PostgreSQL** — schema for [search_path](https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH), default `public`.  
+  - **MSSQL** — schema to set as [DEFAULT_SCHEMA](https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-user-transact-sql?view=sql-server-ver17#default_schema---schema_name--null-), default `dbo`.  
 - **AMQP_URI**: The [AMQP URI](https://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
 - **AMQP_TYPE**: The message broker type. Supported values are `rabbitmq` or `activemq`. Defaults to `rabbitmq`.
 - **REDIS_SERVER_HOST**: The IP address or the name of the host where the Redis server is running.
