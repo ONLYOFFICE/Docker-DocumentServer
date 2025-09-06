@@ -639,7 +639,7 @@ update_release_date(){
 }
 
 # create base folders
-for i in converter docservice metrics; do
+for i in converter docservice metrics adminpanel; do
   mkdir -p "${DS_LOG_DIR}/$i"
 done
 
