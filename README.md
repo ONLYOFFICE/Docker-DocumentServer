@@ -195,7 +195,9 @@ Below is the complete list of parameters that can be set using environment varia
 - **AMQP_TYPE**: The message broker type. Supported values are `rabbitmq` or `activemq`. Defaults to `rabbitmq`.
 - **REDIS_SERVER_HOST**: The IP address or the name of the host where the Redis server is running.
 - **REDIS_SERVER_PORT**:  The Redis server port number.
+- **REDIS_SERVER_USER**: The Redis server username. The username is not set by default.
 - **REDIS_SERVER_PASS**: The Redis server password. The password is not set by default.
+- **REDIS_SERVER_DB**: The Redis database index number to select. Defaults to `0`.  
 - **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
 - **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process.
 - **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](https://nginx.org/en/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.

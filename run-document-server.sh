@@ -374,10 +374,11 @@ update_redis_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.redis.host = '${REDIS_SERVER_HOST}'"
   ${JSON} -I -e "this.services.CoAuthoring.redis.port = '${REDIS_SERVER_PORT}'"
 
-  if [ -n "${REDIS_SERVER_PASS}" ]; then
-    ${JSON} -I -e "this.services.CoAuthoring.redis.options = {'password':'${REDIS_SERVER_PASS}'}"
-  fi
-
+  ${JSON} -I -e  "this.services.CoAuthoring.redis.options = {
+    ${REDIS_SERVER_USER:+username: '${REDIS_SERVER_USER}',}
+    ${REDIS_SERVER_PASS:+password: '${REDIS_SERVER_PASS}',}
+    ${REDIS_SERVER_DB:+database: '${REDIS_SERVER_DB}',}
+  }"
 }
 
 update_ds_settings(){
