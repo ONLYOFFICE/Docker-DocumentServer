@@ -493,7 +493,7 @@ postgresql_check_schema(){
     if [ -n "${DB_SCHEMA}" ]; then
       export PGOPTIONS="-c search_path=${DB_SCHEMA}"
       $PSQL -c "CREATE SCHEMA IF NOT EXISTS ${DB_SCHEMA};" >/dev/null 2>&1
-      ${JSON} -I -e "this.services.CoAuthoring.sql.pgPoolExtraOptions.options = '${PGOPTIONS}'"
+      ${JSON} -I -e "this.services.CoAuthoring.sql.pgPoolExtraOptions ||= {}; this.services.CoAuthoring.sql.pgPoolExtraOptions.options = '${PGOPTIONS}'"
     fi
 }
 
