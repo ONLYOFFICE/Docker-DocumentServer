@@ -103,6 +103,7 @@ NGINX_ONLYOFFICE_EXAMPLE_CONF="${NGINX_ONLYOFFICE_EXAMPLE_PATH}/includes/ds-exam
 
 NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
+NGINX_ACCESS_LOG=${NGINX_ACCESS_LOG:-false}
 # Limiting the maximum number of simultaneous connections due to possible memory shortage
 LIMIT=$(ulimit -n); [ $LIMIT -gt 1048576 ] && LIMIT=1048576
 NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$LIMIT}
@@ -604,7 +605,13 @@ update_nginx_settings(){
   # Set up nginx
   sed 's/^worker_processes.*/'"worker_processes ${NGINX_WORKER_PROCESSES};"'/' -i ${NGINX_CONFIG_PATH}
   sed 's/worker_connections.*/'"worker_connections ${NGINX_WORKER_CONNECTIONS};"'/' -i ${NGINX_CONFIG_PATH}
-  sed 's/access_log.*/'"access_log off;"'/' -i ${NGINX_CONFIG_PATH}
+
+  if [ "${NGINX_ACCESS_LOG}" = "true" ]; then
+    touch "${DS_LOG_DIR}/nginx.access.log"
+    sed -ri 's|^\s*access_log\b.*;|access_log '"${DS_LOG_DIR}"'/nginx.access.log;|' "${NGINX_CONFIG_PATH}" "${NGINX_ONLYOFFICE_PATH}/includes/ds-common.conf" 2>/dev/null
+  else
+    sed -ri 's|^\s*access_log\b.*;|access_log off;|' "${NGINX_CONFIG_PATH}"
+  fi
 
   # setup HTTPS
   if [ -f "${SSL_CERTIFICATE_PATH}" -a -f "${SSL_KEY_PATH}" ]; then
