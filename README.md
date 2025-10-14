@@ -191,13 +191,19 @@ Below is the complete list of parameters that can be set using environment varia
 - **DB_NAME**: The name of a database to use. Should be existing on container startup.
 - **DB_USER**: The new user name with superuser permissions for the database account.
 - **DB_PWD**: The password set for the database account.
+- **DB_SCHEMA**: Database schema name (optional).  
+  - **PostgreSQL** — schema for [search_path](https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH), default `public`.  
+  - **MSSQL** — schema to set as [DEFAULT_SCHEMA](https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-user-transact-sql?view=sql-server-ver17#default_schema---schema_name--null-), default `dbo`.  
 - **AMQP_URI**: The [AMQP URI](https://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
 - **AMQP_TYPE**: The message broker type. Supported values are `rabbitmq` or `activemq`. Defaults to `rabbitmq`.
 - **REDIS_SERVER_HOST**: The IP address or the name of the host where the Redis server is running.
 - **REDIS_SERVER_PORT**:  The Redis server port number.
+- **REDIS_SERVER_USER**: The Redis server username. The username is not set by default.
 - **REDIS_SERVER_PASS**: The Redis server password. The password is not set by default.
+- **REDIS_SERVER_DB**: The Redis database index number to select. Defaults to `0`.  
 - **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
 - **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process.
+- **NGINX_ACCESS_LOG**: Defines whether access logging is enabled. Defaults to `false`.
 - **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](https://nginx.org/en/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.
 - **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `true`.
 - **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to random value.
