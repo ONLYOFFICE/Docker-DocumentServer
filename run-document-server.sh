@@ -623,6 +623,7 @@ update_nginx_settings(){
   fi
 
   start_process documentserver-update-securelink.sh -s ${SECURE_LINK_SECRET:-$(pwgen -s 20)} -r false
+[ -L /etc/nginx/modules-enabled/50-mod-http-perl.conf ] && unlink /etc/nginx/modules-enabled/50-mod-http-perl.conf
 }
 
 update_log_settings(){
