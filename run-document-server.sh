@@ -772,7 +772,8 @@ for i in ${LOCAL_SERVICES[@]}; do
   service $i start
 done
 
-if [ ${PG_NEW_CLUSTER} = "true" ]; then
+PG_DB_EXISTS=$(PGPASSWORD="$DB_PWD" psql -h ${DB_HOST} -p${DB_PORT} -U "${DB_USER}" -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}';" 2>/dev/null)
+if [ ${PG_NEW_CLUSTER} = "true" ] || [ "${PG_DB_EXISTS}" != "1" ]; then
   create_postgresql_db
   create_postgresql_tbl
 fi
