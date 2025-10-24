@@ -791,6 +791,12 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
 
   update_nginx_settings
   
+  if [ "${PLUGINS_ENABLED}" = "true" ]; then
+    echo -n Installing plugins, please wait...
+    start_process documentserver-pluginsmanager.sh -r false --update=\"${APP_DIR}/sdkjs-plugins/plugin-list-default.json\" >/dev/null
+    echo Done
+  fi
+
   service supervisor start
   
   # start cron to enable log rotating
@@ -814,12 +820,6 @@ fi
 # Regenerate the fonts list and the fonts thumbnails
 if [ "${GENERATE_FONTS}" == "true" ]; then
   start_process documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
-fi
-
-if [ "${PLUGINS_ENABLED}" = "true" ]; then
-  echo -n Installing plugins, please wait...
-  start_process documentserver-pluginsmanager.sh -r false --update=\"${APP_DIR}/sdkjs-plugins/plugin-list-default.json\" >/dev/null
-  echo Done
 fi
 
 start_process documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
