@@ -103,6 +103,7 @@ NGINX_ONLYOFFICE_EXAMPLE_CONF="${NGINX_ONLYOFFICE_EXAMPLE_PATH}/includes/ds-exam
 
 NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
 NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
+NGINX_ACCESS_LOG=${NGINX_ACCESS_LOG:-false}
 # Limiting the maximum number of simultaneous connections due to possible memory shortage
 LIMIT=$(ulimit -n); [ $LIMIT -gt 1048576 ] && LIMIT=1048576
 NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$LIMIT}
@@ -374,10 +375,11 @@ update_redis_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.redis.host = '${REDIS_SERVER_HOST}'"
   ${JSON} -I -e "this.services.CoAuthoring.redis.port = '${REDIS_SERVER_PORT}'"
 
-  if [ -n "${REDIS_SERVER_PASS}" ]; then
-    ${JSON} -I -e "this.services.CoAuthoring.redis.options = {'password':'${REDIS_SERVER_PASS}'}"
-  fi
-
+  ${JSON} -I -e  "this.services.CoAuthoring.redis.options = {
+    ${REDIS_SERVER_USER:+username: '${REDIS_SERVER_USER}',}
+    ${REDIS_SERVER_PASS:+password: '${REDIS_SERVER_PASS}',}
+    ${REDIS_SERVER_DB:+database: '${REDIS_SERVER_DB}',}
+  }"
 }
 
 update_ds_settings(){
@@ -388,6 +390,7 @@ update_ds_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.secret.inbox.string = '${JWT_SECRET}'"
   ${JSON} -I -e "this.services.CoAuthoring.secret.outbox.string = '${JWT_SECRET}'"
   ${JSON} -I -e "this.services.CoAuthoring.secret.session.string = '${JWT_SECRET}'"
+  ${JSON} -I -e "this.services.CoAuthoring.secret.browser.string = '${JWT_SECRET}'"
 
   ${JSON} -I -e "this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'"
   ${JSON} -I -e "this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'"
@@ -449,9 +452,7 @@ create_postgresql_db(){
 }
 
 create_mssql_db(){
-  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT"
-
-  $MSSQL -U $DB_USER -P "$DB_PWD" -C -Q "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '$DB_NAME') BEGIN CREATE DATABASE $DB_NAME; END"
+  ${MSSQL/ -d $DB_NAME/} -b -Q "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '$DB_NAME') BEGIN CREATE DATABASE [$DB_NAME]; END"
 }
 
 create_db_tbl() {
@@ -488,6 +489,22 @@ upgrade_db_tbl() {
   esac
 }
 
+postgresql_check_schema(){
+    DB_SCHEMA=${DB_SCHEMA:-$(${JSON} services.CoAuthoring.sql.pgPoolExtraOptions.options 2>/dev/null | sed -n 's/.*search_path=\([^, ]*\).*/\1/p')}
+    if [ -n "${DB_SCHEMA}" ]; then
+      export PGOPTIONS="-c search_path=${DB_SCHEMA}"
+      $PSQL -c "CREATE SCHEMA IF NOT EXISTS ${DB_SCHEMA};" >/dev/null 2>&1
+      ${JSON} -I -e "this.services.CoAuthoring.sql.pgPoolExtraOptions ||= {}; this.services.CoAuthoring.sql.pgPoolExtraOptions.options = '${PGOPTIONS}'"
+    fi
+}
+
+mssql_check_schema(){
+  if [ -n "${DB_SCHEMA}" ]; then
+    ${MSSQL} -b -Q "DECLARE @s sysname=N'${DB_SCHEMA}'; IF SCHEMA_ID(@s) IS NULL BEGIN DECLARE @sql nvarchar(max); SET @sql=N'CREATE SCHEMA '+QUOTENAME(@s)+N' AUTHORIZATION '+QUOTENAME(N'${DB_USER}'); EXEC(@sql); END"
+    ${MSSQL} -b -Q "DECLARE @s sysname=N'${DB_SCHEMA}'; DECLARE @u sysname=N'${DB_USER}'; IF USER_ID(@u) IS NOT NULL BEGIN DECLARE @sql nvarchar(max); SET @sql=N'ALTER USER '+QUOTENAME(@u)+N' WITH DEFAULT_SCHEMA = '+QUOTENAME(@s); EXEC(@sql); END"
+  fi
+}
+
 upgrade_postgresql_tbl() {
   if [ -n "$DB_PWD" ]; then
     export PGPASSWORD=$DB_PWD
@@ -495,6 +512,7 @@ upgrade_postgresql_tbl() {
 
   PSQL="psql -q -h$DB_HOST -p$DB_PORT -d$DB_NAME -U$DB_USER -w"
 
+  postgresql_check_schema
   $PSQL -f "$APP_DIR/server/schema/postgresql/removetbl.sql"
   $PSQL -f "$APP_DIR/server/schema/postgresql/createdb.sql"
 }
@@ -508,9 +526,13 @@ upgrade_mysql_tbl() {
 }
 
 upgrade_mssql_tbl() {
-  CONN_PARAMS="-d $DB_NAME -U $DB_USER -P "$DB_PWD" -C"
-  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT $CONN_PARAMS"
+  if [ -n "$DB_PWD" ]; then
+    export SQLCMDPASSWORD=$DB_PWD
+  fi
 
+  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT -d $DB_NAME -U $DB_USER -C"
+
+  mssql_check_schema
   $MSSQL < "$APP_DIR/server/schema/mssql/removetbl.sql" >/dev/null 2>&1
   $MSSQL < "$APP_DIR/server/schema/mssql/createdb.sql" >/dev/null 2>&1
 }
@@ -528,6 +550,8 @@ create_postgresql_tbl() {
   fi
 
   PSQL="psql -q -h$DB_HOST -p$DB_PORT -d$DB_NAME -U$DB_USER -w"
+
+  postgresql_check_schema
   $PSQL -f "$APP_DIR/server/schema/postgresql/createdb.sql"
 }
 
@@ -542,11 +566,14 @@ create_mysql_tbl() {
 }
 
 create_mssql_tbl() {  
+  if [ -n "$DB_PWD" ]; then
+    export SQLCMDPASSWORD=$DB_PWD
+  fi
+
+  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT -d $DB_NAME -U $DB_USER -C"
+
   create_mssql_db
-
-  CONN_PARAMS="-d $DB_NAME -U $DB_USER -P "$DB_PWD" -C"
-  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT $CONN_PARAMS"
-
+  mssql_check_schema
   $MSSQL < "$APP_DIR/server/schema/mssql/createdb.sql" >/dev/null 2>&1
 }
 
@@ -578,7 +605,13 @@ update_nginx_settings(){
   # Set up nginx
   sed 's/^worker_processes.*/'"worker_processes ${NGINX_WORKER_PROCESSES};"'/' -i ${NGINX_CONFIG_PATH}
   sed 's/worker_connections.*/'"worker_connections ${NGINX_WORKER_CONNECTIONS};"'/' -i ${NGINX_CONFIG_PATH}
-  sed 's/access_log.*/'"access_log off;"'/' -i ${NGINX_CONFIG_PATH}
+
+  if [ "${NGINX_ACCESS_LOG}" = "true" ]; then
+    touch "${DS_LOG_DIR}/nginx.access.log"
+    sed -ri 's|^\s*access_log\b.*;|access_log '"${DS_LOG_DIR}"'/nginx.access.log;|' "${NGINX_CONFIG_PATH}" "${NGINX_ONLYOFFICE_PATH}/includes/ds-common.conf" 2>/dev/null
+  else
+    sed -ri 's|^\s*access_log\b.*;|access_log off;|' "${NGINX_CONFIG_PATH}"
+  fi
 
   # setup HTTPS
   if [ -f "${SSL_CERTIFICATE_PATH}" -a -f "${SSL_KEY_PATH}" ]; then
@@ -639,11 +672,11 @@ update_release_date(){
 }
 
 # create base folders
-for i in converter docservice metrics; do
-  mkdir -p "${DS_LOG_DIR}/$i"
+for i in converter docservice metrics adminpanel; do
+  mkdir -p "$DS_LOG_DIR/$i" && touch "$DS_LOG_DIR/$i"/{out,err}.log
 done
 
-mkdir -p ${DS_LOG_DIR}-example
+mkdir -p "${DS_LOG_DIR}-example" && touch "${DS_LOG_DIR}-example"/{out,err}.log
 
 # create app folders
 for i in ${DS_LIB_DIR}/App_Data/cache/files ${DS_LIB_DIR}/App_Data/docbuilder ${DS_LIB_DIR}-example/files; do
@@ -793,4 +826,4 @@ start_process documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
 echo "${JWT_MESSAGE}" 
 
-start_process find "$DS_LOG_DIR" "$DS_LOG_DIR-example" -type f -name "*.log" | xargs tail -f
+start_process find "$DS_LOG_DIR" "$DS_LOG_DIR-example" -type f -name "*.log" | xargs tail -F
