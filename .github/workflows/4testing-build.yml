@@ -2,8 +2,8 @@
 name: 4testing multiarch-build
 run-name: >-
   Build #${{ inputs.build }} [
-  ${{ inputs.amd64 && 'AMD64' || '-' }}
-  ${{ inputs.arm64 && 'ARM64' || '-' }}
+  ${{ inputs.amd64 && 'AMD64' || '' }}
+  ${{ inputs.arm64 && 'ARM64' || '' }}
   ] [
   ${{ inputs.community && 'CE' || '-' }}
   ${{ inputs.developer && 'DE' || '-' }}
@@ -20,11 +20,11 @@ on:
       amd64:
         type: boolean
         description: 'Build AMD64'
-        default: true
+        default: false
       arm64:
         type: boolean
         description: 'Build ARM64'
-        default: true
+        default: false
       community:
         type: boolean
         description: 'Build Community Edition'
@@ -62,9 +62,9 @@ jobs:
             exit 1
           fi
 
-          [ "${AMD64}" = true ] && PLATFORMS+=("amd64")
-          [ "${ARM64}" = true ] && PLATFORMS+=("arm64")
-          if [ -z ${PLATFORMS} ]; then
+          [ "${AMD64}" = true ] && PLATFORM=("amd64")
+          [ "${ARM64}" = true ] && PLATFORM=("arm64")
+          if [ -z ${PLATFORM} ]; then
             echo "None of the platforms are selected."
             exit 1
           fi
@@ -77,10 +77,10 @@ jobs:
             exit 1
           fi
           echo "editions=$(jq -n -c --arg s "${EDITIONS[*]}" '($s|split(" "))')" >> $GITHUB_OUTPUT
-          echo "platforms=$(jq -c -n '$ARGS.positional' --args "${PLATFORMS[@]}")" >> "$GITHUB_OUTPUT"
+          echo "platform=${PLATFORM}" >> "$GITHUB_OUTPUT"
     outputs:
       editions: ${{ steps.matrix.outputs.editions }}
-      platforms: ${{ steps.matrix.outputs.platforms }}
+      platform: ${{ steps.matrix.outputs.platform }}
 
   build:
     name: "Build ${{ matrix.image }}-${{ matrix.edition }}-${{ matrix.platform }}"
@@ -91,7 +91,7 @@ jobs:
       matrix:
         image: ["documentserver"]
         edition: ${{ fromJSON(needs.prepare.outputs.editions) }}
-        platform: ${{ fromJSON(needs.prepare.outputs.platforms) }}
+        platform: ["${{ needs.prepare.outputs.platform }}"]
     steps:
       - name: Checkout code 
         uses: actions/checkout@v4
