@@ -100,7 +100,7 @@ To change the port, use the -p command. E.g.: to make your portal accessible via
         sudo docker run -i -t -d -p 443:443 \
         -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  onlyoffice/documentserver
 
-Access to the onlyoffice application can be secured using SSL so as to prevent unauthorized access. While a CA certified SSL certificate allows for verification of trust via the CA, a self signed certificates can also provide an equal level of trust verification as long as each client takes some additional steps to verify the identity of your website. Below the instructions on achieving this are provided.
+Access to the ONLYOFFICE application can be secured using SSL so as to prevent unauthorized access. While a CA certified SSL certificate allows for verification of trust via the CA, a self-signed certificate can also provide an equal level of trust verification as long as each client takes some additional steps to verify the identity of your website. Below the instructions on achieving this are provided.
 
 To secure the application via SSL basically two things are needed:
 
@@ -112,7 +112,7 @@ So you need to create and install the following files:
         /app/onlyoffice/DocumentServer/data/certs/tls.key
         /app/onlyoffice/DocumentServer/data/certs/tls.crt
 
-When using CA certified certificates (e.g [Let's encrypt](https://letsencrypt.org)), these files are provided to you by the CA. If you are using self-signed certificates you need to generate these files [yourself](#generation-of-self-signed-certificates).
+When using CA certified certificates (e.g. [Let's Encrypt](https://letsencrypt.org)), these files are provided to you by the CA. If you are using self-signed certificates you need to generate these files [yourself](#generation-of-self-signed-certificates).
 
 #### Using the automatically generated Let's Encrypt SSL Certificates
 
@@ -156,9 +156,9 @@ openssl dhparam -out dhparam.pem 2048
 
 #### Installation of the SSL Certificates
 
-Out of the four files generated above, you need to install the `tls.key`, `tls.crt` and `dhparam.pem` files at the onlyoffice server. The CSR file is not needed, but do make sure you safely backup the file (in case you ever need it again).
+Out of the four files generated above, you need to install the `tls.key`, `tls.crt` and `dhparam.pem` files at the ONLYOFFICE server. The CSR file is not needed, but do make sure you safely backup the file (in case you ever need it again).
 
-The default path that the onlyoffice application is configured to look for the SSL certificates is at `/var/www/onlyoffice/Data/certs`, this can however be changed using the `SSL_KEY_PATH`, `SSL_CERTIFICATE_PATH` and `SSL_DHPARAM_PATH` configuration options.
+The default path that the ONLYOFFICE application is configured to look for the SSL certificates is at `/var/www/onlyoffice/Data/certs`, this can however be changed using the `SSL_KEY_PATH`, `SSL_CERTIFICATE_PATH` and `SSL_DHPARAM_PATH` configuration options.
 
 The `/var/www/onlyoffice/Data/` path is the path of the data store, which means that you have to create a folder named certs inside `/app/onlyoffice/DocumentServer/data/` and copy the files into it and as a measure of security you will update the permission on the `tls.key` file to only be readable by the owner.
 
@@ -179,7 +179,7 @@ You are now just one step away from having our application secured.
 Below is the complete list of parameters that can be set using environment variables.
 
 - **ONLYOFFICE_HTTPS_HSTS_ENABLED**: Advanced configuration option for turning off the HSTS configuration. Applicable only when SSL is in use. Defaults to `true`.
-- **ONLYOFFICE_HTTPS_HSTS_MAXAGE**: Advanced configuration option for setting the HSTS max-age in the onlyoffice nginx vHost configuration. Applicable only when SSL is in use. Defaults to `31536000`.
+- **ONLYOFFICE_HTTPS_HSTS_MAXAGE**: Advanced configuration option for setting the HSTS max-age in the ONLYOFFICE nginx vHost configuration. Applicable only when SSL is in use. Defaults to `31536000`.
 - **SSL_CERTIFICATE_PATH**: The path to the SSL certificate to use. Defaults to `/var/www/onlyoffice/Data/certs/tls.crt`.
 - **SSL_KEY_PATH**: The path to the SSL certificate's private key. Defaults to `/var/www/onlyoffice/Data/certs/tls.key`.
 - **SSL_DHPARAM_PATH**: The path to the Diffie-Hellman parameter. Defaults to `/var/www/onlyoffice/Data/certs/dhparam.pem`.
@@ -212,14 +212,14 @@ Below is the complete list of parameters that can be set using environment varia
 - **WOPI_ENABLED**: Specifies the enabling the wopi handlers. Defaults to `false`.
 - **ALLOW_META_IP_ADDRESS**: Defines if it is allowed to connect meta IP address or not. Defaults to `false`.
 - **ALLOW_PRIVATE_IP_ADDRESS**: Defines if it is allowed to connect private IP address or not. Defaults to `false`.
-- **USE_UNAUTHORIZED_STORAGE**: Set to `true`if using selfsigned certificates for your storage server e.g. Nextcloud. Defaults to `false`
+- **USE_UNAUTHORIZED_STORAGE**: Set to `true` if using self-signed certificates for your storage server e.g. Nextcloud. Defaults to `false`
 - **GENERATE_FONTS**: When 'true' regenerates fonts list and the fonts thumbnails etc. at each start. Defaults to `true`
 - **METRICS_ENABLED**: Specifies the enabling StatsD for ONLYOFFICE Document Server. Defaults to `false`.
 - **METRICS_HOST**: Defines StatsD listening host. Defaults to `localhost`.
 - **METRICS_PORT**: Defines StatsD listening port. Defaults to `8125`.
 - **METRICS_PREFIX**: Defines StatsD metrics prefix for backend services. Defaults to `ds.`.
 - **LETS_ENCRYPT_DOMAIN**: Defines the domain for Let's Encrypt certificate.
-- **LETS_ENCRYPT_MAIL**: Defines the domain administator mail address for Let's Encrypt certificate.
+- **LETS_ENCRYPT_MAIL**: Defines the domain administrator mail address for Let's Encrypt certificate.
 - **PLUGINS_ENABLED**: Defines whether to enable default plugins. Defaults to `true`.
 
 ## Installing ONLYOFFICE Document Server using Docker Compose
@@ -388,7 +388,7 @@ For more information, visit the official [Docker manual site](https://docs.docke
 
 As a relatively new project Docker is being worked on and actively developed by its community. So it's recommended to use the latest version of Docker, because the issues that you encounter might have already been fixed with a newer Docker release.
 
-The known Docker issue with ONLYOFFICE Document Server with rpm-based distributives is that sometimes the processes fail to start inside Docker container. Fedora and RHEL/CentOS users should try disabling selinux with setenforce 0. If it fixes the issue then you can either stick with SELinux disabled which is not recommended by RedHat, or switch to using Ubuntu.
+The known Docker issue with ONLYOFFICE Document Server with rpm-based distributives is that sometimes the processes fail to start inside Docker container. Fedora and RHEL/CentOS users should try disabling SELinux with setenforce 0. If it fixes the issue then you can either stick with SELinux disabled which is not recommended by Red Hat, or switch to using Ubuntu.
 
 ### Document Server usage issues
 
