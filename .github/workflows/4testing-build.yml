@@ -152,10 +152,6 @@ jobs:
               ;;
           esac
 
-          [ "${AMD64}" = true ] && PLATFORMS+=("amd64")
-          [ "${ARM64}" = true ] && PLATFORMS+=("arm64")
-          PLATFORM=$(echo ${PLATFORMS[*]/#/linux/} | tr ' ' ',')
-
           if [ "$BRANCH_NAME" = develop ]; then
             BUILD_CHANNEL=nightly
             PRODUCT_VERSION=99.99.99
