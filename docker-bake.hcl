@@ -90,8 +90,8 @@ target "documentserver" {
     target = "documentserver"
     dockerfile = "${DOCKERFILE}"
     tags = [
-           "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
-           equal("nightly",BUILD_CHANNEL) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
+           "docker.io/danilaworker/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
+           equal("nightly",BUILD_CHANNEL) ? "docker.io/danilaworker/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
            ]
     platforms = ["${PLATFORM}"]
     args = {
@@ -104,70 +104,3 @@ target "documentserver" {
     }
 }
 
-target "documentserver-stable" {
-    target = "documentserver-stable"
-    dockerfile = "production.dockerfile"
-    tags = ["docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
-            "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTER_TAG}",
-            "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTEST_TAG}",
-            equal("true",LATEST) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",]
-    platforms = ["linux/amd64", "linux/arm64"]
-    args = {
-        "PULL_TAG": "${PULL_TAG}"
-        "COMPANY_NAME": "${COMPANY_NAME}"
-        "PRODUCT_NAME": "${PRODUCT_NAME}"
-        "PRODUCT_EDITION": "${PRODUCT_EDITION}"
-    }
-}
-
-target "documentserver-ucs" {
-    target = "documentserver"
-    dockerfile = "${DOCKERFILE}"
-    tags = [
-           "docker.io/${COMPANY_NAME}/${PRODUCT_NAME}${PRODUCT_EDITION}-ucs:${TAG}"
-           ]
-    platforms = ["linux/amd64", "linux/arm64"]
-    args = {
-        "PRODUCT_EDITION": "${PRODUCT_EDITION}"
-        "PRODUCT_NAME": "${PRODUCT_NAME}"
-        "COMPANY_NAME": "${COMPANY_NAME}"
-        "PACKAGE_VERSION": "${PACKAGE_VERSION}"
-        "PACKAGE_BASEURL": "${PACKAGE_BASEURL}"
-        "PACKAGE_SUFFIX": "${PACKAGE_SUFFIX}"
-        "BASE_VERSION": "${BASE_VERSION}"
-        "PG_VERSION": "${PG_VERSION}"
-    }
-}
-
-target "documentserver-nonexample" {
-    target = "documentserver-nonexample"
-    dockerfile = "production.dockerfile"
-    tags = [ "docker.io/${COMPANY_NAME}/${PRODUCT_NAME}${PREFIX_NAME}${PRODUCT_EDITION}:${TAG}-nonexample" ]
-    platforms = ["linux/amd64", "linux/arm64"]
-    args = {
-        "PULL_TAG": "${PULL_TAG}"
-        "COMPANY_NAME": "${COMPANY_NAME}"
-        "PRODUCT_NAME": "${PRODUCT_NAME}"
-        "PRODUCT_EDITION": "${PRODUCT_EDITION}"
-    } 
-}
-
-target "documentserver-stable-rebuild" {
-    target = "documentserver-stable-rebuild"
-    dockerfile = "production.dockerfile"
-    tags = equal("true",UCS_REBUILD) ? ["docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}-ucs:${TAG}",] : [
-                                        "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
-                equal("",PREFIX_NAME) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTER_TAG}": "",
-             equal("true",PUSH_MAJOR) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${SHORTEST_TAG}": "",
-                equal("",PREFIX_NAME) && equal("true",LATEST) ? "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
-         equal("-ee",PRODUCT_EDITION) && equal("",PREFIX_NAME) ? "docker.io/${COMPANY_NAME}4enterprise/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}": "",
-                                 ]
-    platforms = ["linux/amd64", "linux/arm64"]
-    args = {
-        "UCS_PREFIX": "${UCS_PREFIX}"
-        "PULL_TAG": "${PULL_TAG}"
-        "COMPANY_NAME": "${COMPANY_NAME}"
-        "PRODUCT_NAME": "${PRODUCT_NAME}"
-        "PRODUCT_EDITION": "${PRODUCT_EDITION}"
-    }
-}
