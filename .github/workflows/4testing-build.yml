@@ -213,7 +213,7 @@ jobs:
         with:
           path: build-results
 
-      - name: check result
-        run: ls ./build-results
+      - name: Make images
+        run: cat ./build-results/build-result-${{ matrix.edition }}-${{ matrix.platform }}
           
 
