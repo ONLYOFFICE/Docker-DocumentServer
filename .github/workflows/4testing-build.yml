@@ -247,19 +247,19 @@ jobs:
            PUSH_TAGS=()
            
            if [[ "${AMD64_STATUS}" == "success" ]]; then
-              FROM_TAGS+=( "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-amd64" )
+              FROM_TAGS+=( "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-amd64" )
            fi
 
            if [[ "${AMD64_STATUS}" == "success" ]]; then
-              FROM_TAGS+=( "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-arm64" )
+              FROM_TAGS+=( "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-arm64" )
            fi
 
            PUSH_TAGS=(
-               -t "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}
+               -t "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}
            )
 
            if [[ "${BUILD_CHANNEL} == "nightly" ]]; then
-              PUSH_TAGS+=( -t "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:latest" )
+              PUSH_TAGS+=( -t "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:latest" )
            fi
 
             docker buildx imagetools create "${PUSH_TAGS[@]}" "${FROM_TAGS[@]}"
