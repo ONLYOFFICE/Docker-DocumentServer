@@ -214,7 +214,8 @@ jobs:
 
       - name: Make images
         run: |
-           cat ./build-results/build-result-${{ matrix.edition }}-amd64/info.json
-           cat ./build-results/build-result-${{ matrix.edition }}-arm64/info.json
+           amd64_status=$(cat ./build-results/build-result-${{ matrix.edition }}-amd64/info.json | jq -r .status)
+           arm64_status=$(cat ./build-results/build-result-${{ matrix.edition }}-arm64/info.json | jq -r .status)
+           
           
 
