@@ -127,7 +127,7 @@ jobs:
           cp -a /usr/share/fonts/truetype/msttcorefonts/* fonts/msttcorefonts/
 
       - name: Build 4testing
-        id: build-ds-${{ matrix.edition }}-${{ matrix.platform }}
+        id: "build-ds-${{ matrix.edition }}-${{ matrix.platform }}"
         env:
           BRANCH_NAME: ${{ github.ref_name }}
           PLATFORM: linux/${{ matrix.platform }}
