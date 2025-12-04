@@ -229,7 +229,7 @@ jobs:
                PRODUCT_EDITION="-de"
                ;;
            esac
-
+           
            AMD64_STATUS=$(cat ./build-results/build-result-${PRODUCT_EDITION}-amd64/info.json | jq -r .status)
            ARM64_STATUS=$(cat ./build-results/build-result-${PRODUCT_EDITION}-arm64/info.json | jq -r .status)
            
@@ -246,12 +246,36 @@ jobs:
            FROM_TAGS=()
            PUSH_TAGS=()
            
+           check_image() {
+                local img="$1"
+                local timeout=120  
+                local interval=5  
+                local elapsed=0
+              
+                echo "Checking for image: $img"
+              
+                while (( elapsed < timeout )); do
+                  if docker manifest inspect "$img" > /dev/null 2>&1; then
+                    echo "Found image: $img"
+                    FROM_TAGS+=( "$img" )
+                    return 0
+                  fi
+              
+                  echo "Image not found yet, retrying in ${interval}s..."
+                  sleep $interval
+                  elapsed=$(( elapsed + interval ))
+                done
+              
+                echo "ERROR: Image not found after ${timeout}s: $img"
+                return 1
+              }
+
            if [[ "${AMD64_STATUS}" == "success" ]]; then
-              FROM_TAGS+=( "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-amd64" )
+              check_image "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-amd64"
            fi
 
            if [[ "${AMD64_STATUS}" == "success" ]]; then
-              FROM_TAGS+=( "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-arm64" )
+              check_image "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-arm64"
            fi
 
            PUSH_TAGS=(
