@@ -212,7 +212,7 @@ jobs:
         with:
           path: build-results
 
-      - name: "Make images documentserver-${{ matrix-edition }}"
+      - name: "Make images documentserver"
         run: |
            amd64_status=$(cat ./build-results/build-result-${{ matrix.edition }}-amd64/info.json | jq -r .status)
            arm64_status=$(cat ./build-results/build-result-${{ matrix.edition }}-arm64/info.json | jq -r .status)
