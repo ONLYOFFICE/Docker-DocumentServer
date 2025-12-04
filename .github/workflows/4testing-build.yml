@@ -206,7 +206,6 @@ jobs:
       matrix:
         image: ["documentserver"]
         edition: ${{ fromJSON(needs.prepare.outputs.editions) }}
-        platform: ${{ fromJSON(needs.prepare.outputs.platforms) }}
     steps:
       - name: Download all build results
         uses: actions/download-artifact@v4
@@ -214,6 +213,8 @@ jobs:
           path: build-results
 
       - name: Make images
-        run: cat ./build-results/build-result-${{ matrix.edition }}-${{ matrix.platform }}
+        run: |
+           cat ./build-results/build-result-${{ matrix.edition }}-amd64/info.json
+           cat ./build-results/build-result-${{ matrix.edition }}-arm64/info.json
           
 
