@@ -213,9 +213,54 @@ jobs:
           path: build-results
 
       - name: "Make images documentserver"
-        run: |
-           amd64_status=$(cat ./build-results/build-result-${{ matrix.edition }}-amd64/info.json | jq -r .status)
-           arm64_status=$(cat ./build-results/build-result-${{ matrix.edition }}-arm64/info.json | jq -r .status)
-           
-          
+        env:
+          EDITION: ${{ matrix.edition }}
+          BUILD_NUMBER: ${{ github.event.inputs.build }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |    
+           case "${EDITION}" in
+             community)
+               PRODUCT_EDITION=""
+               ;;
+             enterprise)
+               PRODUCT_EDITION="-ee"
+               ;;
+             developer)
+               PRODUCT_EDITION="-de"
+               ;;
+           esac
 
+           AMD64_STATUS=$(cat ./build-results/build-result-${PRODUCT_EDITION}-amd64/info.json | jq -r .status)
+           ARM64_STATUS=$(cat ./build-results/build-result-${PRODUCT_EDITION}-arm64/info.json | jq -r .status)
+           
+           if [ "$BRANCH_NAME" = develop ]; then
+            BUILD_CHANNEL=nightly
+            PRODUCT_VERSION=99.99.99
+           elif [[ "$BRANCH_NAME" =~ hotfix || "$BRANCH_NAME" =~ release ]]; then
+            BUILD_CHANNEL=test
+            PRODUCT_VERSION=${BRANCH_NAME#*/v}
+           fi
+
+           export TAG=${PRODUCT_VERSION}.${BUILD_NUMBER}
+           
+           FROM_TAGS=()
+           PUSH_TAGS=()
+           
+           if [[ "${AMD64_STATUS}" == "success" ]]; then
+              FROM_TAGS+=( "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-amd64" )
+           fi
+
+           if [[ "${AMD64_STATUS}" == "success" ]]; then
+              FROM_TAGS+=( "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-arm64" )
+           fi
+
+           PUSH_TAGS=(
+               -t "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}
+           )
+
+           if [[ "${BUILD_CHANNEL} == "nightly" ]]; then
+              PUSH_TAGS+=( -t "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:latest" )
+           fi
+
+            docker buildx imagetools create "${PUSH_TAGS[@]}" "${FROM_TAGS[@]}"
+           
