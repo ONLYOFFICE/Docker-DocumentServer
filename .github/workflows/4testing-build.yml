@@ -178,8 +178,24 @@ jobs:
           echo "version=${TAG}" >> "$GITHUB_OUTPUT"
           echo "branch=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
         shell: bash
-    outputs:
-      result-${{ matrix.edition }}-${{ matrix-platform }}: ${{ steps.build-ds.outcome }}
+
+      - name: Save build result to file
+        if: always()
+        run: |
+          mkdir -p build-result
+          
+          cat > build-result/info.json <<EOF
+          {
+            "status": "${{ job.status }}"
+          }
+          EOF
+
+      - name: Upload build result artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-result-${{ matrix.edition }}-${{ matrix.platform }}
+          path: build-result
 
   make-images:
     runs-on: ubuntu-latest
@@ -192,10 +208,12 @@ jobs:
         edition: ${{ fromJSON(needs.prepare.outputs.editions) }}
         platform: ${{ fromJSON(needs.prepare.outputs.platforms) }}
     steps:
-      - id: Make images
-        run: |
-          set -ex
-          echo "hello"
-          #echo ${{ needs.build.outputs.result }}
+      - name: Download all build results
+        uses: actions/download-artifact@v4
+        with:
+          path: build-results
+
+      - name: check result
+        run: ls /build-results/
           
 
