@@ -90,8 +90,7 @@ target "documentserver" {
     target = "documentserver"
     dockerfile = "${DOCKERFILE}"
     tags = [
-           "docker.io/danilaworker/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}",
-           equal("nightly",BUILD_CHANNEL) ? "docker.io/danilaworker/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:latest": "",
+           "docker.io/danilaworker/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}"
            ]
     platforms = ["${PLATFORM}"]
     args = {
