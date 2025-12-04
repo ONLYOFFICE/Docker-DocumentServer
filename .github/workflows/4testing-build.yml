@@ -255,7 +255,7 @@ jobs:
            check_image() {
                 local img="$1"
                 local timeout=120  
-                local interval=5  
+                local interval=20  
                 local elapsed=0
               
                 echo "Checking for image: $img"
