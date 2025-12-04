@@ -214,6 +214,6 @@ jobs:
           path: build-results
 
       - name: check result
-        run: ls ./
+        run: ls ./build-results
           
 
