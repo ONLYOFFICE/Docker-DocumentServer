@@ -772,7 +772,8 @@ for i in ${LOCAL_SERVICES[@]}; do
   service $i start
 done
 
-if [ ${PG_NEW_CLUSTER} = "true" ]; then
+PG_DB_EXISTS=$(PGPASSWORD="$DB_PWD" psql -h ${DB_HOST} -p${DB_PORT} -U "${DB_USER}" -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}';" 2>/dev/null)
+if [ ${PG_NEW_CLUSTER} = "true" ] || [ "${PG_DB_EXISTS}" != "1" ]; then
   create_postgresql_db
   create_postgresql_tbl
 fi
@@ -791,6 +792,12 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
 
   update_nginx_settings
   
+  if [ "${PLUGINS_ENABLED}" = "true" ]; then
+    echo -n Installing plugins, please wait...
+    start_process documentserver-pluginsmanager.sh -r false --update=\"${APP_DIR}/sdkjs-plugins/plugin-list-default.json\" >/dev/null
+    echo Done
+  fi
+
   service supervisor start
   
   # start cron to enable log rotating
@@ -816,14 +823,8 @@ if [ "${GENERATE_FONTS}" == "true" ]; then
   start_process documentserver-generate-allfonts.sh ${ONLYOFFICE_DATA_CONTAINER}
 fi
 
-if [ "${PLUGINS_ENABLED}" = "true" ]; then
-  echo -n Installing plugins, please wait...
-  start_process documentserver-pluginsmanager.sh -r false --update=\"${APP_DIR}/sdkjs-plugins/plugin-list-default.json\" >/dev/null
-  echo Done
-fi
-
 start_process documentserver-static-gzip.sh ${ONLYOFFICE_DATA_CONTAINER}
 
 echo "${JWT_MESSAGE}" 
 
-start_process find "$DS_LOG_DIR" "$DS_LOG_DIR-example" -type f -name "*.log" | xargs tail -F
+start_process bash -c "find '$DS_LOG_DIR' '$DS_LOG_DIR-example' -type f -name '*.log' | xargs tail -F"
