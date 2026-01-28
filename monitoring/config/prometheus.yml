@@ -1,0 +1,68 @@
+# ============================================================================
+# Prometheus 配置文件 - ONLYOFFICE Document Server 企业版监控
+# ============================================================================
+
+global:
+  scrape_interval: 30s          # 收集间隔
+  evaluation_interval: 15s      # 评估间隔
+  external_labels:
+    monitor: 'onlyoffice-production'
+    environment: 'production'
+
+# 告警配置
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - localhost:9093
+
+# 告警规则文件
+rule_files:
+  - '/etc/onlyoffice/prometheus/alert_rules.yml'
+
+# 抓取配置
+scrape_configs:
+  # ONLYOFFICE 应用指标
+  - job_name: 'onlyoffice-app'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'documentserver'
+          instance: 'main'
+
+  # Node Exporter 系统指标
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
+        labels:
+          instance: 'server'
+
+  # Docker 容器指标
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['localhost:9323']
+        labels:
+          instance: 'docker-engine'
+
+  # PostgreSQL 数据库指标
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['localhost:9187']
+        labels:
+          instance: 'database'
+
+  # Nginx 指标
+  - job_name: 'nginx'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['localhost:9113']
+        labels:
+          instance: 'proxy'
+
+  # cAdvisor 容器性能指标
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['localhost:8080']
+        labels:
+          instance: 'container-metrics'

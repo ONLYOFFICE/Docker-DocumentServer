@@ -1,0 +1,144 @@
+global:
+  resolve_timeout: 5m
+  # 邮件通知配置
+  smtp_smarthost: 'smtp.example.com:587'
+  smtp_auth_username: 'your-email@example.com'
+  smtp_auth_password: 'your-password'
+  smtp_require_tls: true
+
+# 模板配置
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# 路由配置
+route:
+  # 默认接收器
+  receiver: 'default'
+  # 分组等待时间
+  group_wait: 10s
+  # 分组间隔
+  group_interval: 10s
+  # 重复告警时间
+  repeat_interval: 12h
+  
+  # 子路由规则
+  routes:
+    # 关键告警 -> Slack + 邮件 + SMS
+    - match:
+        severity: critical
+      receiver: 'critical'
+      continue: true
+      group_wait: 0s
+      repeat_interval: 5m
+
+    # 警告告警 -> Slack + 邮件
+    - match:
+        severity: warning
+      receiver: 'warning'
+      repeat_interval: 30m
+
+    # 信息告警 -> 日志
+    - match:
+        severity: info
+      receiver: 'info'
+      repeat_interval: 1h
+
+# 接收器配置
+receivers:
+  # 默认接收器 (使用 Webhook)
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://localhost:5000/alert'  # 自定义应用的告警处理端点
+
+  # 关键告警接收器
+  - name: 'critical'
+    email_configs:
+      - to: 'admin@example.com,oncall@example.com'
+        from: 'alert@example.com'
+        headers:
+          Subject: '[CRITICAL] {{ .GroupLabels.alertname }}'
+        html: |
+          {{ range .Alerts }}
+          <h3>{{ .Labels.alertname }}</h3>
+          <p><strong>严重级别:</strong> {{ .Labels.severity }}</p>
+          <p><strong>实例:</strong> {{ .Labels.instance }}</p>
+          <p><strong>描述:</strong> {{ .Annotations.description }}</p>
+          <p><strong>时间:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}</p>
+          {{ end }}
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-critical'
+        title: '🔴 关键告警'
+        text: '{{ range .Alerts }}{{ .Labels.alertname }}: {{ .Annotations.summary }}\n{{ end }}'
+        actions:
+          - type: button
+            text: '查看 Grafana'
+            url: 'http://grafana:3000/d/your-dashboard-id'
+          - type: button
+            text: '查看 Prometheus'
+            url: 'http://prometheus:9090/graph'
+
+  # 警告告警接收器
+  - name: 'warning'
+    email_configs:
+      - to: 'ops@example.com'
+        from: 'alert@example.com'
+        headers:
+          Subject: '[WARNING] {{ .GroupLabels.alertname }}'
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-warning'
+        title: '🟡 警告告警'
+        text: '{{ range .Alerts }}{{ .Labels.alertname }}: {{ .Annotations.summary }}\n{{ end }}'
+
+  # 信息告警接收器
+  - name: 'info'
+    webhook_configs:
+      - url: 'http://localhost:5000/info'
+
+# 禁止告警规则 (可选)
+inhibit_rules:
+  # 如果实例已关闭，禁止该实例的其他告警
+  - source_match:
+      severity: 'critical'
+      alertname: 'InstanceDown'
+    target_match_re:
+      severity: 'warning|info'
+    equal: ['instance']
+
+  # 如果数据库连接池满，禁止其他数据库告警
+  - source_match:
+      alertname: 'DatabaseConnectionPoolFull'
+    target_match_re:
+      alertname: 'HighDatabaseLatency|SlowDatabaseQueries'
+    equal: ['instance']
+
+# 群组规则 (告警分组方式)
+group_by: ['alertname', 'cluster', 'service']
+
+# 这个块可用于扩展 Alertmanager，用于处理更复杂的规则
+# 例如动态路由、自定义模板等
+
+# 通知配置示例
+#
+# 邮件通知:
+# - smtp_smarthost: 'mail.example.com:25'
+# - smtp_from: 'alerts@example.com'
+#
+# Slack 通知:
+# - api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+# - channel: '#alerts'
+#
+# PagerDuty 通知:
+# - service_key: 'YOUR_SERVICE_KEY'
+#
+# OpsGenie 通知:
+# - api_key: 'YOUR_API_KEY'
+#
+# 钉钉通知:
+# - url: 'https://oapi.dingtalk.com/robot/send?access_token=YOUR_TOKEN'
+#
+# 企业微信通知:
+# - url: 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_KEY'

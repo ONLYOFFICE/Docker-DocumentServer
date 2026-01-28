@@ -1,0 +1,313 @@
+version: '3.8'
+
+# 🚀 ONLYOFFICE Document Server 企业级监控堆栈
+# 包含: Prometheus + Grafana + Alertmanager + ELK Stack
+
+services:
+  # ===== ONLYOFFICE Document Server (改进版) =====
+  documentserver:
+    image: onlyoffice/documentserver:latest
+    container_name: onlyoffice-documentserver
+    ports:
+      - "80:80"
+      - "443:443"
+      - "9090:9090"      # 监控指标端点
+    volumes:
+      - ./run-document-server.sh:/app/ds/run-document-server.sh:ro
+      - ./enterprise-monitoring.sh:/app/ds/enterprise-monitoring.sh:ro
+      - ./enterprise-logging.sh:/app/ds/enterprise-logging.sh:ro
+      - onlyoffice-data:/var/www/onlyoffice/documentserver/files
+      - onlyoffice-logs:/var/log/onlyoffice
+      - onlyoffice-metrics:/var/lib/onlyoffice/monitoring
+    environment:
+      - DS_EDITION=community
+      - POSTGRES_SERVER_HOST=onlyoffice-postgresql
+      - POSTGRES_SERVER_PORT=5432
+      - POSTGRES_SERVER_DB_NAME=onlyoffice
+      - POSTGRES_SERVER_DB_USER=onlyoffice
+      - POSTGRES_SERVER_DB_PASSWORD=onlyoffice
+      - RABBITMQ_SERVER_HOST=onlyoffice-rabbitmq
+      - RABBITMQ_SERVER_PORT=5672
+      - RABBITMQ_SERVER_USER=guest
+      - RABBITMQ_SERVER_PASSWORD=guest
+      - REDIS_SERVER_HOST=onlyoffice-redis
+      - REDIS_SERVER_PORT=6379
+      # 监控和日志环境变量
+      - ONLYOFFICE_MONITORING_ENABLED=true
+      - ONLYOFFICE_LOGGING_ENABLED=true
+      - ONLYOFFICE_DEBUG=false  # 设为 true 启用追踪日志
+    depends_on:
+      - onlyoffice-postgresql
+      - onlyoffice-rabbitmq
+      - onlyoffice-redis
+    networks:
+      - onlyoffice-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # ===== PostgreSQL 数据库 =====
+  onlyoffice-postgresql:
+    image: postgres:15-alpine
+    container_name: onlyoffice-postgresql
+    environment:
+      POSTGRES_DB: onlyoffice
+      POSTGRES_USER: onlyoffice
+      POSTGRES_PASSWORD: onlyoffice
+    volumes:
+      - onlyoffice-postgres-data:/var/lib/postgresql/data
+    networks:
+      - onlyoffice-network
+    restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=256MB"
+
+  # ===== RabbitMQ 消息队列 =====
+  onlyoffice-rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: onlyoffice-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - onlyoffice-rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - onlyoffice-network
+    restart: unless-stopped
+
+  # ===== Redis 缓存 =====
+  onlyoffice-redis:
+    image: redis:7-alpine
+    container_name: onlyoffice-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - onlyoffice-redis-data:/data
+    networks:
+      - onlyoffice-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+
+  # ===== Prometheus (指标存储和查询) =====
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    networks:
+      - onlyoffice-network
+    depends_on:
+      - documentserver
+    restart: unless-stopped
+    labels:
+      - "monitoring=true"
+
+  # ===== Grafana (仪表板和可视化) =====
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-dashboard.json:/etc/grafana/provisioning/dashboards/onlyoffice.json:ro
+      - ./grafana-datasources.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+    networks:
+      - onlyoffice-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # ===== Alertmanager (告警管理) =====
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    networks:
+      - onlyoffice-network
+    restart: unless-stopped
+
+  # ===== Node Exporter (系统指标) =====
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    networks:
+      - onlyoffice-network
+    restart: unless-stopped
+
+  # ===== cAdvisor (容器监控) =====
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - onlyoffice-network
+    restart: unless-stopped
+    privileged: true
+
+  # ===== PostgreSQL Exporter (数据库指标) =====
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://onlyoffice:onlyoffice@onlyoffice-postgresql:5432/onlyoffice?sslmode=disable"
+    networks:
+      - onlyoffice-network
+    depends_on:
+      - onlyoffice-postgresql
+    restart: unless-stopped
+
+  # ===== Elasticsearch (日志存储) =====
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.0.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - onlyoffice-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== Logstash (日志处理) =====
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.0.0
+    container_name: logstash
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - onlyoffice-logs:/var/log/onlyoffice:ro
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+    networks:
+      - onlyoffice-network
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+  # ===== Kibana (日志查询界面) =====
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.0.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    networks:
+      - onlyoffice-network
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+# ===== 网络定义 =====
+networks:
+  onlyoffice-network:
+    driver: bridge
+
+# ===== 数据卷定义 =====
+volumes:
+  # 应用数据
+  onlyoffice-data:
+  onlyoffice-logs:
+  onlyoffice-metrics:
+  
+  # 数据库
+  onlyoffice-postgres-data:
+  onlyoffice-rabbitmq-data:
+  onlyoffice-redis-data:
+  
+  # 监控
+  prometheus-data:
+  grafana-data:
+  alertmanager-data:
+  
+  # 日志分析
+  elasticsearch-data:
+
+# ===== 使用说明 =====
+# 
+# 1. 启动整个堆栈:
+#    docker-compose -f docker-compose-monitoring.yml up -d
+#
+# 2. 访问服务:
+#    - ONLYOFFICE: http://localhost
+#    - Prometheus: http://localhost:9090
+#    - Grafana: http://localhost:3000 (用户: admin, 密码: admin123)
+#    - Alertmanager: http://localhost:9093
+#    - Kibana: http://localhost:5601
+#
+# 3. 查看日志:
+#    docker logs documentserver
+#    docker logs prometheus
+#    docker logs grafana
+#
+# 4. 停止所有服务:
+#    docker-compose -f docker-compose-monitoring.yml down
+#
+# 5. 查看内存使用:
+#    docker stats
+#
+# 6. 访问监控指标:
+#    curl http://localhost:9090/metrics
+#    curl http://localhost:9100/metrics (Node Exporter)
+#    curl http://localhost:9187/metrics (PostgreSQL Exporter)

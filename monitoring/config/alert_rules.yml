@@ -1,0 +1,179 @@
+# ============================================================================
+# Prometheus 告警规则 - ONLYOFFICE Document Server
+# ============================================================================
+
+groups:
+  # 应用级别告警
+  - name: onlyoffice_app
+    interval: 30s
+    rules:
+      # 应用不可用
+      - alert: OnlyofficeApplicationDown
+        expr: up{job="onlyoffice-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: documentserver
+        annotations:
+          summary: "ONLYOFFICE 应用不可用"
+          description: "Document Server 无响应，请立即检查"
+
+      # DocService 进程崩溃
+      - alert: DocServiceProcessDown
+        expr: |
+          onlyoffice_docservice_running{} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: documentserver
+        annotations:
+          summary: "DocService 进程已崩溃"
+          description: "DocService 进程不运行，需要重启服务"
+
+      # HTTP 500 错误频率过高
+      - alert: HighErrorRate
+        expr: |
+          rate(onlyoffice_http_errors[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: documentserver
+        annotations:
+          summary: "HTTP 错误率过高"
+          description: "过去 5 分钟内平均每秒 5+ 个错误"
+
+  # 性能告警
+  - name: onlyoffice_performance
+    interval: 30s
+    rules:
+      # CPU 使用率过高
+      - alert: HighCPUUsage
+        expr: |
+          onlyoffice_cpu_usage > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: documentserver
+        annotations:
+          summary: "CPU 使用率过高 (> 80%)"
+          description: "当前 CPU 使用率：{{ $value }}%"
+
+      # 内存使用率过高
+      - alert: HighMemoryUsage
+        expr: |
+          onlyoffice_memory_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: documentserver
+        annotations:
+          summary: "内存使用率过高 (> 85%)"
+          description: "当前内存使用率：{{ $value }}%"
+
+      # 磁盘使用率过高
+      - alert: HighDiskUsage
+        expr: |
+          onlyoffice_disk_percent > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: documentserver
+        annotations:
+          summary: "磁盘使用率过高 (> 90%)"
+          description: "当前磁盘使用率：{{ $value }}%"
+
+  # 并发告警
+  - name: onlyoffice_concurrency
+    interval: 30s
+    rules:
+      # 并发连接数过高
+      - alert: HighConcurrentConnections
+        expr: |
+          onlyoffice_network_connections > 800
+        for: 5m
+        labels:
+          severity: warning
+          service: documentserver
+        annotations:
+          summary: "并发连接数过高 (> 800)"
+          description: "当前活跃连接数：{{ $value }}"
+
+      # 数据库连接池达到警告级别
+      - alert: DatabaseConnectionPoolAlmostFull
+        expr: |
+          onlyoffice_database_connections > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: documentserver
+        annotations:
+          summary: "数据库连接接近上限"
+          description: "当前数据库连接数：{{ $value }}/100"
+
+      # 数据库连接池满了
+      - alert: DatabaseConnectionPoolFull
+        expr: |
+          onlyoffice_database_connections >= 100
+        for: 1m
+        labels:
+          severity: critical
+          service: documentserver
+        annotations:
+          summary: "数据库连接已满"
+          description: "数据库连接池已达到最大值 (100/100)"
+
+  # 可用性告警
+  - name: onlyoffice_availability
+    interval: 30s
+    rules:
+      # 数据库连接失败
+      - alert: DatabaseConnectivityIssue
+        expr: |
+          up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "无法连接到数据库"
+          description: "PostgreSQL 数据库无响应"
+
+      # Nginx 反向代理宕机
+      - alert: NginxDown
+        expr: |
+          up{job="nginx"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: proxy
+        annotations:
+          summary: "Nginx 反向代理已宕机"
+          description: "Nginx 无法响应，无法转发请求"
+
+  # 请求质量告警
+  - name: onlyoffice_request_quality
+    interval: 1m
+    rules:
+      # 响应时间过长
+      - alert: SlowResponseTime
+        expr: |
+          histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: documentserver
+        annotations:
+          summary: "响应时间过长"
+          description: "P95 响应时间：{{ $value }} 秒"
+
+      # 请求超时率过高
+      - alert: HighTimeoutRate
+        expr: |
+          rate(onlyoffice_requests_timeout_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: documentserver
+        annotations:
+          summary: "请求超时率过高 (> 5%)"
+          description: "超时率：{{ $value }}"

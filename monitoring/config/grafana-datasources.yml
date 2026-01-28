@@ -1,0 +1,35 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://prometheus:9090
+    password: ''
+    user: ''
+    database: ''
+    basicAuth: false
+    isDefault: true
+    jsonData:
+      timeInterval: 30s
+      queryTimeout: 30s
+    editable: true
+
+  - name: Elasticsearch
+    type: elasticsearch
+    access: proxy
+    orgId: 1
+    url: http://elasticsearch:9200
+    password: ''
+    user: ''
+    database: onlyoffice
+    basicAuth: false
+    isDefault: false
+    jsonData:
+      timeField: "@timestamp"
+      esVersion: "8.0.0"
+      logMessageField: "message"
+      logLevelField: "level"
+      timeInterval: 1m
+    editable: true

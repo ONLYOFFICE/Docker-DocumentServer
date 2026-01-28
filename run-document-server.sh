@@ -800,6 +800,10 @@ if [ ${ONLYOFFICE_DATA_CONTAINER} != "true" ]; then
 
   service supervisor start
   
+  # Wait for supervisor to be ready, then start adminpanel and example services
+  sleep 2
+  supervisorctl start ds:adminpanel ds:example
+  
   # start cron to enable log rotating
   update_logrotate_settings
   service cron start

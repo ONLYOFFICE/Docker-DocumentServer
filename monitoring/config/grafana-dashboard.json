@@ -1,0 +1,209 @@
+{
+  "dashboard": {
+    "title": "ONLYOFFICE Document Server - 企业监控仪表板",
+    "tags": ["onlyoffice", "production", "enterprise"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "系统健康状态",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "up{job=\"onlyoffice-app\"}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "并发用户数",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 4
+        },
+        "targets": [
+          {
+            "expr": "onlyoffice_network_connections / 3",
+            "legendFormat": "并发用户数",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "CPU 使用率",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 4
+        },
+        "targets": [
+          {
+            "expr": "onlyoffice_cpu_usage",
+            "legendFormat": "CPU %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "内存使用率",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 12
+        },
+        "targets": [
+          {
+            "expr": "onlyoffice_memory_percent",
+            "legendFormat": "内存 %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "磁盘使用率",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 12
+        },
+        "targets": [
+          {
+            "expr": "onlyoffice_disk_percent",
+            "legendFormat": "磁盘 %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "网络连接状态",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 20
+        },
+        "targets": [
+          {
+            "expr": "onlyoffice_network_connections",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "数据库连接数",
+        "type": "gauge",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 20
+        },
+        "targets": [
+          {
+            "expr": "onlyoffice_database_connections",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "max": 100
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "HTTP 请求统计",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "rate(onlyoffice_http_requests[5m])",
+            "legendFormat": "请求数/秒",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(onlyoffice_http_errors[5m])",
+            "legendFormat": "错误数/秒",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "进程状态",
+        "type": "table",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "count(onlyoffice_docservice_running)",
+            "legendFormat": "DocService",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "告警状态",
+        "type": "alertlist",
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 32
+        }
+      }
+    ]
+  }
+}
