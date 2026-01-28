@@ -240,11 +240,12 @@ jobs:
                ;;
            esac
            
-           AMD64_STATUS=$(cat ./build-results/build-result-${PRODUCT_EDITION}-amd64/info.json | jq -r .status)
-           ARM64_STATUS=$(cat ./build-results/build-result-${PRODUCT_EDITION}-arm64/info.json | jq -r .status)
+           AMD64_STATUS=$(cat ./build-results/build-result-${{ matrix.edition }}-amd64/info.json | jq -r .status)
+           ARM64_STATUS=$(cat ./build-results/build-result-${{ matrix.edition }}-arm64/info.json | jq -r .status)
 
            echo ">>>>>>>>>>>>>>>>>>>"
            echo ${ARM64_STATUS}
+           echo ${AMD64_STATUS}
            
            if [ "$BRANCH_NAME" = develop ]; then
             BUILD_CHANNEL=nightly
