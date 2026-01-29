@@ -289,7 +289,7 @@ jobs:
                -t "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}"
            )
 
-           if [[ "${BUILD_CHANNEL} == "nightly" ]]; then
+           if [[ "${BUILD_CHANNEL}" == "nightly" ]]; then
               PUSH_TAGS+=( -t "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:latest" )
            fi
 
