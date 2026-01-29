@@ -281,7 +281,7 @@ jobs:
               check_image "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-amd64"
            fi
 
-           if [[ "${AMD64_STATUS}" == "success" ]]; then
+           if [[ "${ARM64_STATUS}" == "success" ]]; then
               check_image "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-arm64"
            fi
 
