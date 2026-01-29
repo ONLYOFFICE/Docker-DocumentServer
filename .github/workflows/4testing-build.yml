@@ -286,7 +286,7 @@ jobs:
            fi
 
            PUSH_TAGS=(
-               -t "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}
+               -t "danilaworker/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}"
            )
 
            if [[ "${BUILD_CHANNEL} == "nightly" ]]; then
