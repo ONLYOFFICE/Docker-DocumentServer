@@ -136,7 +136,7 @@ jobs:
           set -eux
 
           ### ==>> At this step build variable declaration ###
-          if [[ "${EDITION}" == "community" ]]; then
+          if [[ "${EDITION}" == "community" && "${PLATFORM}" == "linux/amd64" ]]; then
               exit 1
           fi
           
