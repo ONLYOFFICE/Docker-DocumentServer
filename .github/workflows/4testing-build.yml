@@ -136,7 +136,10 @@ jobs:
           set -eux
 
           ### ==>> At this step build variable declaration ###
-
+          if [[ "${EDITION}" == "community" ]]; then
+              exit 1
+          fi
+          
           case "${EDITION}" in
             community)
               PRODUCT_EDITION=""
