@@ -111,6 +111,9 @@ RABBIT_CONNECTIONS=${RABBIT_CONNECTIONS:-$LIMIT}
 
 JWT_ENABLED=${JWT_ENABLED:-true}
 
+AUTO_ASSEMBLY_ENABLED=${AUTO_ASSEMBLY_ENABLED:-false}
+AUTO_ASSEMBLY_INTERVAL=${AUTO_ASSEMBLY_INTERVAL:-20m}
+
 # validate user's vars before usinig in json
 if [ "${JWT_ENABLED}" == "true" ]; then
   JWT_ENABLED="true"
@@ -432,6 +435,12 @@ update_ds_settings(){
     ${JSON} -I -e "if(this.services.CoAuthoring['request-filtering-agent']===undefined)this.services.CoAuthoring['request-filtering-agent']={}"
     [ "${ALLOW_META_IP_ADDRESS}" = "true" ] && ${JSON} -I -e "this.services.CoAuthoring['request-filtering-agent'].allowMetaIPAddress = true"
     [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ] && ${JSON} -I -e "this.services.CoAuthoring['request-filtering-agent'].allowPrivateIPAddress = true"
+  fi
+    
+  if [ "${AUTO_ASSEMBLY_ENABLED}" == "true" ]; then
+    ${JSON} -I -e "if(this.services.CoAuthoring.autoAssembly===undefined)this.services.CoAuthoring.autoAssembly={};"
+    ${JSON} -I -e "this.services.CoAuthoring.autoAssembly.enable = true"
+    ${JSON} -I -e "this.services.CoAuthoring.autoAssembly.interval = '${AUTO_ASSEMBLY_INTERVAL}'"
   fi
 }
 
