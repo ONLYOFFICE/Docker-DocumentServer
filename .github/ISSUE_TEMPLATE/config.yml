@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: DocumentServer Docker Documentation
+    url: https://helpcenter.onlyoffice.com/docs/installation/developer/docker
+    about: Check the Docker documentation for configuration and deployment guides.
+  - name: Community Forum
+    url: https://community.onlyoffice.com/
+    about: Ask questions and get help from the ONLYOFFICE community.

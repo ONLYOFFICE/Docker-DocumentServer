@@ -38,16 +38,16 @@ jobs:
         edition: ["", "-ee", "-de"]
     steps:
       - name: Checkout code 
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
      
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
@@ -64,10 +64,47 @@ jobs:
             export TAG=${VERSION%.*}.${RELEASE_NUMBER}
             export SHORTER_TAG=${VERSION%.*}
             export SHORTEST_TAG=${VERSION%.*.*}
-            docker buildx bake -f docker-bake.hcl "${TARGET}" --push
+            docker buildx bake --sbom=true --provenance=mode=max -f docker-bake.hcl "${TARGET}" --push
             echo "DONE: Build success >> exit with 0"
             exit 0
         shell: bash
+
+     # Disable for now
+     # Related with issue:
+     # https://github.com/peter-evans/dockerhub-description/issues/294
+     #
+     #- name: Update Docker Hub README
+     #  uses: peter-evans/dockerhub-description@v4
+     #  with:
+     #    username: ${{ secrets.DOCKER_HUB_USERNAME }}
+     #    password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+     #    repository: ${{ env.COMPANY_NAME }}/${{ env.PRODUCT_NAME }}${{ matrix.edition }}
+
+  release_4enterprise:
+    name: "Release image: onlyoffice4enterprise"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME_ENTERPRISE }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN_ENTERPRISE }}
+
+      - name: release 4enterpise
+        shell: bash
+        run: |
+          export TAG=${VERSION%.*}.${RELEASE_NUMBER}
+          docker buildx imagetools create --tag onlyoffice4enterprise/documentserver-ee:${TAG} \
+                                                onlyoffice/4testing-documentserver-ee:${VERSION}
 
   build-nonexample:
     name: "Release image: DocumentServer${{ matrix.edition }}-nonExample"
@@ -81,16 +118,16 @@ jobs:
         edition: ["", "-ee", "-de"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
@@ -103,7 +140,7 @@ jobs:
           set -eux
           export PULL_TAG=${VERSION%.*}.${RELEASE_NUMBER}
           export TAG=${VERSION%.*}.${RELEASE_NUMBER}
-          docker buildx bake -f docker-bake.hcl "${TARGET}" --push
+          docker buildx bake --sbom=true --provenance=mode=max -f docker-bake.hcl "${TARGET}" --push
         shell: bash
 
   build-ucs-ubuntu20:
@@ -113,18 +150,16 @@ jobs:
       fail-fast: false
       matrix:
         edition: ["", "-ee"]
+        platform: ["amd64"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
@@ -133,6 +168,7 @@ jobs:
         env:
           PACKAGE_BASEURL: ${{ secrets.REPO_BASEURL }}
           PRODUCT_EDITION: ${{ matrix.edition }}
+          PLATFORM: linux/${{ matrix.platform }}
         run: |
            set -eux
            export DOCKERFILE=Dockerfile
@@ -141,5 +177,5 @@ jobs:
            export PACKAGE_SUFFIX=
            export TAG=${VERSION%.*}.${RELEASE_NUMBER}
            export PACKAGE_VERSION=$( echo ${VERSION} |  sed -E 's/(.*)\./\1-/')
-           docker buildx bake -f docker-bake.hcl documentserver-ucs --push
+           docker buildx bake --sbom=true --provenance=mode=max -f docker-bake.hcl documentserver-ucs --push
         shell: bash

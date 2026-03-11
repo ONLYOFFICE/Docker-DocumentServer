@@ -77,41 +77,61 @@ jobs:
             exit 1
           fi
           echo "editions=$(jq -n -c --arg s "${EDITIONS[*]}" '($s|split(" "))')" >> $GITHUB_OUTPUT
+          echo "platforms=$(jq -c -n '$ARGS.positional' --args "${PLATFORMS[@]}")" >> $GITHUB_OUTPUT
     outputs:
       editions: ${{ steps.matrix.outputs.editions }}
+      platforms: ${{ steps.matrix.outputs.platforms }}
 
   build:
-    name: "Build ${{ matrix.image }}-${{ matrix.edition }}"
-    runs-on: ubuntu-latest
+    name: "Build ${{ matrix.image }}-${{ matrix.edition }}:${{ matrix.platform }}"
+    runs-on: ${{ matrix.runner }}
     needs: prepare
     strategy:
       fail-fast: false
       matrix:
         image: ["documentserver"]
         edition: ${{ fromJSON(needs.prepare.outputs.editions) }}
+        platform: ${{ fromJSON(needs.prepare.outputs.platforms) }}
+        include:
+          - platform: amd64
+            runner: ubuntu-latest
+          - platform: arm64
+            runner: ubuntu-24.04-arm
     steps:
       - name: Checkout code 
-        uses: actions/checkout@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
      
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Prepare fonts cache
+        id: fonts
+        uses: actions/cache@v4
+        with:
+          path: fonts
+          key: fonts-${{ runner.os }}-v1
+
+      - name: Install fonts if not cached
+        if: steps.fonts.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" | sudo debconf-set-selections
+          sudo apt-get install -y ttf-mscorefonts-installer
+          mkdir -p fonts/msttcorefonts
+          cp -a /usr/share/fonts/truetype/msttcorefonts/* fonts/msttcorefonts/
 
       - name: Build 4testing
         id: build-ds
         env:
           BRANCH_NAME: ${{ github.ref_name }}
-          AMD64: ${{ github.event.inputs.amd64 }}
-          ARM64: ${{ github.event.inputs.arm64 }}
+          PLATFORM: linux/${{ matrix.platform }}
           BUILD_NUMBER: ${{ github.event.inputs.build }}
           EDITION: ${{ matrix.edition }}
           IMAGE: ${{ matrix.image }}
@@ -133,10 +153,6 @@ jobs:
               ;;
           esac
 
-          [ "${AMD64}" = true ] && PLATFORMS+=("amd64")
-          [ "${ARM64}" = true ] && PLATFORMS+=("arm64")
-          PLATFORM=$(echo ${PLATFORMS[*]/#/linux/} | tr ' ' ',')
-
           if [ "$BRANCH_NAME" = develop ]; then
             BUILD_CHANNEL=nightly
             PRODUCT_VERSION=99.99.99
@@ -148,14 +164,13 @@ jobs:
           export PRODUCT_EDITION
           export PACKAGE_VERSION=${PRODUCT_VERSION}-${BUILD_NUMBER}
           export BUILD_CHANNEL
-          export PLATFORM
           export DOCKERFILE=Dockerfile
           export PREFIX_NAME=4testing-
-          export TAG=${PRODUCT_VERSION}.${BUILD_NUMBER}
+          export TAG=${PRODUCT_VERSION}.${BUILD_NUMBER}-${{ matrix.platform }}
 
           ### ==>> Build and push images at this step ###
 
-          docker buildx bake -f docker-bake.hcl "${IMAGE}" --push
+          docker buildx bake --sbom=true --provenance=mode=max -f docker-bake.hcl "${IMAGE}" --push
           echo "DONE: Build success"
 
           ### Set output for Zap scanner
@@ -170,6 +185,7 @@ jobs:
       - name: Trigger zap manualy
         if: >-
              matrix.edition == 'community' &&
+             matrix.platform == 'amd64' &&
              (startsWith(steps.build-ds.outputs.branch, 'release/') ||
               startsWith(steps.build-ds.outputs.branch, 'hotfix/'))
         env:
@@ -184,3 +200,120 @@ jobs:
                  -f version="${VERSION}"
         shell: bash
 
+      - name: Save build result to file
+        if: always()
+        run: |
+          mkdir -p build-result
+
+          cat > build-result/info.json <<EOF
+          {
+            "status": "${{ job.status }}"
+          }
+          EOF
+
+      - name: Upload build result artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-result-${{ matrix.edition }}-${{ matrix.platform }}
+          path: build-result
+
+  make-images:
+    runs-on: ubuntu-latest
+    needs: [prepare,build]
+    if: always()
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["documentserver"]
+        edition: ${{ fromJSON(needs.prepare.outputs.editions) }}
+    steps:
+      - name: Download all build results
+        uses: actions/download-artifact@v4
+        with:
+          path: build-results
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: "Make images documentserver"
+        env:
+          EDITION: ${{ matrix.edition }}
+          BUILD_NUMBER: ${{ github.event.inputs.build }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+           case "${EDITION}" in
+             community)
+               PRODUCT_EDITION=""
+               ;;
+             enterprise)
+               PRODUCT_EDITION="-ee"
+               ;;
+             developer)
+               PRODUCT_EDITION="-de"
+               ;;
+           esac
+
+           AMD64_STATUS=$(cat ./build-results/build-result-${{ matrix.edition }}-amd64/info.json | jq -r .status)
+           ARM64_STATUS=$(cat ./build-results/build-result-${{ matrix.edition }}-arm64/info.json | jq -r .status)
+
+           echo "ARM64 status: ${ARM64_STATUS}"
+           echo "AMD64 status: ${AMD64_STATUS}"
+
+           if [ "$BRANCH_NAME" = develop ]; then
+            BUILD_CHANNEL=nightly
+            PRODUCT_VERSION=99.99.99
+           elif [[ "$BRANCH_NAME" =~ hotfix || "$BRANCH_NAME" =~ release ]]; then
+            BUILD_CHANNEL=test
+            PRODUCT_VERSION=${BRANCH_NAME#*/v}
+           fi
+
+           export TAG=${PRODUCT_VERSION}.${BUILD_NUMBER}
+
+           FROM_TAGS=()
+           PUSH_TAGS=()
+
+           check_image() {
+                local img="$1"
+                local timeout=120
+                local interval=20
+                local elapsed=0
+
+                echo "Checking for image: $img"
+
+                while (( elapsed < timeout )); do
+                  if docker manifest inspect "$img" > /dev/null 2>&1; then
+                    echo "Found image: $img"
+                    FROM_TAGS+=( "$img" )
+                    return 0
+                  fi
+
+                  echo "Image not found yet, retrying in ${interval}s..."
+                  sleep $interval
+                  elapsed=$(( elapsed + interval ))
+                done
+
+                echo "ERROR: Image not found after ${timeout}s: $img"
+                return 1
+              }
+
+           if [[ "${AMD64_STATUS}" == "success" ]]; then
+              check_image "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-amd64"
+           fi
+
+           if [[ "${ARM64_STATUS}" == "success" ]]; then
+              check_image "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}-arm64"
+           fi
+
+           PUSH_TAGS=(
+               -t "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}"
+           )
+
+           if [[ "${BUILD_CHANNEL}" == "nightly" ]]; then
+              PUSH_TAGS+=( -t "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:latest" )
+           fi
+
+           docker buildx imagetools create "${PUSH_TAGS[@]}" "${FROM_TAGS[@]}"

@@ -1,0 +1,83 @@
+name: "Bug report"
+description: "Use this template if you're running into issues with DocumentServer Docker container."
+body:
+  - type: checkboxes
+    id: unique
+    attributes:
+      label: "This issue is unique."
+      options:
+      - label: "I have used the [search tool](https://github.com/ONLYOFFICE/Docker-DocumentServer/issues?q=) and did not find an issue describing my bug."
+        required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: "Select the operating system where Docker is running."
+      multiple: true
+      options:
+      - Windows
+      - macOS
+      - Linux
+    validations:
+      required: true
+  - type: dropdown
+    id: architecture
+    attributes:
+      label: Architecture
+      description: "Select the architecture of the system."
+      options:
+      - x86_64
+      - arm64
+    validations:
+      required: true
+  - type: input
+    id: docker-version
+    attributes:
+      label: "Docker version"
+      description: "Provide your Docker version (run `docker --version`)."
+      placeholder: "Example: Docker version 24.0.5"
+    validations:
+      required: true
+  - type: input
+    id: docs-version
+    attributes:
+      label: "ONLYOFFICE-Docs version"
+      description: "Please provide the exact version or Docker tag you are using."
+      placeholder: "Example: 8.0.1 or latest"
+    validations:
+      required: true
+  - type: textarea
+    id: repro-steps
+    attributes:
+      label: "Reproduction Steps"
+      description: "Provide information on how to reproduce this bug. Make sure your instructions are clear."
+      placeholder: |
+        Example:
+        1. Pull the latest DocumentServer image
+        2. Start container with docker-compose
+        3. Access http://localhost
+        4. Observe the issue
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected Behavior"
+      description: "What did you expect to happen?"
+      placeholder: "Example: The container should start successfully and be accessible on port 80."
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Actual Behavior"
+      description: "What did actually happen?"
+      placeholder: "Example: The container starts but DocumentServer returns 502 Bad Gateway error."
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: "Additional information"
+      description: "If you have any screenshots, error messages, logs, or other information that you feel is necessary to explain the issue, feel free to attach them here."
+      placeholder: "Example: Container logs, error messages, configuration details, etc."
