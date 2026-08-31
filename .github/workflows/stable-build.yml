@@ -31,9 +31,9 @@ on:
 env:
   COMPANY_NAME: "onlyoffice"
   PRODUCT_NAME: "documentserver"
-  VERSION: ${{ github.event.inputs.tag }}
-  RELEASE_NUMBER: ${{ github.event.inputs.release_number }}
-  LATEST: ${{ github.event.inputs.latest }}
+  VERSION: ${{ inputs.tag }}
+  RELEASE_NUMBER: ${{ inputs.release_number }}
+  LATEST: ${{ inputs.latest }}
 
 jobs:
   setup:
@@ -46,17 +46,27 @@ jobs:
         id: set
         shell: bash
         env:
-          INPUT_C: ${{ github.event.inputs.community }}
-          INPUT_E: ${{ github.event.inputs.enterprise }}
+          INPUT_C: ${{ inputs.community }}
+          INPUT_E: ${{ inputs.enterprise }}
         run: |
-          set -eux
-          editions=$(jq -nc \
-            --argjson c "$INPUT_C" \
-            --argjson e "$INPUT_E" \
-            '[ if $c then "" else empty end,
-               if $e then ("-ee", "-de") else empty end ]')
-          echo "editions=$editions" >> "$GITHUB_OUTPUT"
-          echo "Matrix editions: $editions"
+          set -euo pipefail
+
+          editions="$(jq -nc \
+            --argjson community "${INPUT_C}" \
+            --argjson enterprise "${INPUT_E}" \
+            '[
+              if $community then "" else empty end,
+              if $enterprise then "-ee", "-de" else empty end
+            ]'
+          )"
+
+          if [ "$(jq 'length' <<< "${editions}")" -eq 0 ]; then
+            echo "At least one edition must be selected" >&2
+            exit 1
+          fi
+
+          echo "editions=${editions}" >> "${GITHUB_OUTPUT}"
+          echo "Matrix editions: ${editions}"
 
   build:
     name: "Release image: DocumentServer${{ matrix.edition }}"
@@ -95,6 +105,11 @@ jobs:
             )
             if [ "${LATEST}" = "true" ]; then
               PUSH_TAGS+=( "-t" "$RELEASE_IMAGE:latest" )
+            fi
+
+            # Save base images for use them on rebuild
+            if [ "${PRODUCT_EDITION}" == "-de" ] || [ "${PRODUCT_EDITION}" == "-ee" ]; then
+                PUSH_TAGS+=( "-t" "${COMPANY_NAME}/base-${PRODUCT_NAME}${PRODUCT_EDITION}:${VERSION}" )
             fi
             docker buildx imagetools create "${PUSH_TAGS[@]}" "${SOURCE_IMAGE}"
         shell: bash
@@ -173,3 +188,293 @@ jobs:
           export TAG=${VERSION%.*}.${RELEASE_NUMBER}
           docker buildx bake --sbom=true --provenance=mode=max -f docker-bake.hcl "${TARGET}" --push
         shell: bash
+
+  update-secure-rebuild-config:
+    name: "Update secure-rebuild config"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Compute release metadata
+        id: release
+        env:
+          VERSION: ${{ inputs.tag }}
+          RELEASE_NUMBER: ${{ inputs.release_number }}
+        run: |
+          set -euo pipefail
+
+          BASE="${VERSION%.*}"
+
+          echo "source_tag=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "release_tag=${BASE}.${RELEASE_NUMBER}" >> "${GITHUB_OUTPUT}"
+
+      - name: Update JSON
+        id: update_json
+        env:
+          ENTERPRISE: ${{ inputs.enterprise }}
+          LATEST: ${{ inputs.latest }}
+          SOURCE_TAG: ${{ steps.release.outputs.source_tag }}
+          RELEASE_TAG: ${{ steps.release.outputs.release_tag }}
+          RELEASE_NUMBER: ${{ inputs.release_number }}
+        run: |
+          set -euo pipefail
+
+          EDITIONS_JSON="$(jq -cn \
+            --argjson enterprise "${ENTERPRISE}" \
+            --argjson latest "${LATEST}" \
+            '{
+              editions: (
+                if $enterprise
+                then {
+                  "-ee": {latest: $latest},
+                  "-de": {latest: $latest}
+                }
+                else {}
+                end
+              )
+            }
+            | .editions'
+          )"
+
+          if [ "$(jq 'length' <<< "${EDITIONS_JSON}")" -eq 0 ]; then
+            echo "No enterprise editions were selected, skipping config update"
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          chmod +x .github/scripts/update-secure-rebuild-config.sh
+
+          .github/scripts/update-secure-rebuild-config.sh \
+            "${SOURCE_TAG}" \
+            "${RELEASE_TAG}" \
+            "${RELEASE_NUMBER}" \
+            "${EDITIONS_JSON}"
+
+          echo "changed=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Push branch and open PR in Gitea
+        if: ${{ steps.update_json.outputs.changed == 'true' }}
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          GITEA_URL: ${{ secrets.GITEA_URL }}
+          GITEA_REPO: ${{ secrets.GITEA_REPO }}
+          RELEASE_TAG: ${{ steps.release.outputs.release_tag }}
+          SOURCE_TAG: ${{ steps.release.outputs.source_tag }}
+          GITHUB_SOURCE_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          CONFIG_FILE=".github/secure-rebuild.json"
+          BRANCH="secure-rebuild-config/${RELEASE_TAG}"
+          WORK_DIR="${RUNNER_TEMP}/gitea-repo"
+          RESPONSE_FILE="$(mktemp)"
+
+          cleanup() {
+            rm -f "${RESPONSE_FILE}"
+            rm -rf "${WORK_DIR}"
+          }
+
+          trap cleanup EXIT
+
+          if [ ! -f "${CONFIG_FILE}" ]; then
+            echo "Config file was not found: ${CONFIG_FILE}" >&2
+            exit 1
+          fi
+
+          if [ -z "${GITEA_TOKEN}" ]; then
+            echo "GITEA_TOKEN is empty" >&2
+            exit 1
+          fi
+
+          if [ -z "${GITEA_URL}" ]; then
+            echo "GITEA_URL is empty" >&2
+            exit 1
+          fi
+
+          if [ -z "${GITEA_REPO}" ]; then
+            echo "GITEA_REPO is empty" >&2
+            exit 1
+          fi
+
+          GITEA_URL="${GITEA_URL%/}"
+          GITEA_HOST="${GITEA_URL#https://}"
+          GITEA_HOST="${GITEA_HOST#http://}"
+
+          AUTHENTICATED_REPO_URL="https://x-token:${GITEA_TOKEN}@${GITEA_HOST}/${GITEA_REPO}.git"
+          PUBLIC_REPO_URL="${GITEA_URL}/${GITEA_REPO}.git"
+          API_URL="${GITEA_URL}/api/v1/repos/${GITEA_REPO}/pulls"
+
+          BASE_BRANCH="${GITHUB_SOURCE_BRANCH#refs/heads/}"
+
+          if [ -z "${BASE_BRANCH}" ]; then
+            BASE_BRANCH="master"
+          fi
+
+          if git ls-remote \
+            --exit-code \
+            --heads \
+            "${AUTHENTICATED_REPO_URL}" \
+            "refs/heads/${BASE_BRANCH}" \
+            >/dev/null 2>&1; then
+            echo "Using matching Gitea branch as PR base: ${BASE_BRANCH}"
+          else
+            echo "Branch ${BASE_BRANCH} does not exist in Gitea"
+            BASE_BRANCH="master"
+            echo "Using fallback PR base: ${BASE_BRANCH}"
+          fi
+
+          if ! git ls-remote \
+            --exit-code \
+            --heads \
+            "${AUTHENTICATED_REPO_URL}" \
+            "refs/heads/${BASE_BRANCH}" \
+            >/dev/null 2>&1; then
+            echo "Base branch does not exist in Gitea: ${BASE_BRANCH}" >&2
+            exit 1
+          fi
+
+          rm -rf "${WORK_DIR}"
+
+          git clone \
+            --branch "${BASE_BRANCH}" \
+            --single-branch \
+            "${AUTHENTICATED_REPO_URL}" \
+            "${WORK_DIR}"
+
+          cd "${WORK_DIR}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B "${BRANCH}"
+
+          mkdir -p "$(dirname "${CONFIG_FILE}")"
+
+          cp \
+            "${GITHUB_WORKSPACE}/${CONFIG_FILE}" \
+            "${CONFIG_FILE}"
+
+          jq -e . "${CONFIG_FILE}" >/dev/null
+
+          git add "${CONFIG_FILE}"
+
+          if git diff --cached --quiet; then
+            echo "The secure rebuild config is already up to date"
+            exit 0
+          fi
+
+          git commit \
+            -m "chore: update secure-rebuild config for ${RELEASE_TAG}"
+
+          git push \
+            origin \
+            "HEAD:refs/heads/${BRANCH}" \
+            --force
+
+          HTTP_CODE="$(curl \
+            --silent \
+            --show-error \
+            --output "${RESPONSE_FILE}" \
+            --write-out "%{http_code}" \
+            --get "${API_URL}" \
+            --header "Accept: application/json" \
+            --header "Authorization: token ${GITEA_TOKEN}" \
+            --data-urlencode "state=open" \
+            --data-urlencode "limit=50"
+          )"
+
+          if [ "${HTTP_CODE}" -lt 200 ] ||
+             [ "${HTTP_CODE}" -ge 300 ]; then
+            echo "Failed to query existing pull requests. HTTP status: ${HTTP_CODE}" >&2
+            jq . "${RESPONSE_FILE}" >&2 || cat "${RESPONSE_FILE}" >&2
+            exit 1
+          fi
+
+          EXISTING_PR_URL="$(jq -r \
+            --arg branch "${BRANCH}" \
+            --arg base "${BASE_BRANCH}" \
+            '
+              map(
+                select(
+                  .head.ref == $branch
+                  and .base.ref == $base
+                )
+              )
+              | first
+              | .html_url // empty
+            ' "${RESPONSE_FILE}"
+          )"
+
+          if [ -n "${EXISTING_PR_URL}" ]; then
+            echo "Pull request already exists: ${EXISTING_PR_URL}"
+            exit 0
+          fi
+
+          PAYLOAD="$(jq -n \
+            --arg title "chore: update secure-rebuild config for ${RELEASE_TAG}" \
+            --arg head "${BRANCH}" \
+            --arg base "${BASE_BRANCH}" \
+            --arg body "Auto-generated after release of ${RELEASE_TAG} from source image tag ${SOURCE_TAG}." \
+            '{
+              title: $title,
+              head: $head,
+              base: $base,
+              body: $body
+            }'
+          )"
+
+          HTTP_CODE="$(curl \
+            --silent \
+            --show-error \
+            --output "${RESPONSE_FILE}" \
+            --write-out "%{http_code}" \
+            --request POST "${API_URL}" \
+            --header "Accept: application/json" \
+            --header "Content-Type: application/json" \
+            --header "Authorization: token ${GITEA_TOKEN}" \
+            --data "${PAYLOAD}"
+          )"
+
+          if [ "${HTTP_CODE}" -lt 200 ] ||
+             [ "${HTTP_CODE}" -ge 300 ]; then
+            echo "Failed to create pull request. HTTP status: ${HTTP_CODE}" >&2
+            jq . "${RESPONSE_FILE}" >&2 || cat "${RESPONSE_FILE}" >&2
+            exit 1
+          fi
+
+          PR_NUMBER="$(jq -r '.number // empty' "${RESPONSE_FILE}")"
+          PR_URL="$(jq -r '.html_url // empty' "${RESPONSE_FILE}")"
+
+          echo "Pull request created: #${PR_NUMBER}"
+          echo "Pull request base branch: ${BASE_BRANCH}"
+
+          if [ -n "${PR_URL}" ]; then
+            echo "Pull request URL: ${PR_URL}"
+          else
+            echo "Repository URL: ${PUBLIC_REPO_URL}"
+          fi
+
+      # The same step for GITHUB.
+      # Uncomment if need to open PR in github repository.
+      - name: Open PR Github
+        if: ${{ false }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: "secure-rebuild-config/${{ steps.release.outputs.release_tag }}"
+          base: ${{ github.ref_name }}
+          commit-message: "chore: update secure-rebuild config for ${{ steps.release.outputs.release_tag }}"
+          title: "Update secure-rebuild config for ${{ steps.release.outputs.release_tag }}"
+          body: |
+            Auto-generated after release of `${{ steps.release.outputs.release_tag }}`
+            (source 4testing tag: `${{ steps.release.outputs.source_tag }}`,
+             release number: `${{ github.event.inputs.release_number }}`).
+
+            Please review and merge so next scheduled secure-rebuild picks up the new source.
+          delete-branch: true

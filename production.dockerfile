@@ -2,14 +2,6 @@
 ARG PULL_TAG=latest
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_EDITION=
-### Rebuild arguments
-ARG IMAGE=${COMPANY_NAME}/documentserver${PRODUCT_EDITION}:${PULL_TAG}
-
-### Rebuild stable images with secure updates 
-FROM ${IMAGE} as documentserver-stable-rebuild
-RUN    echo "This is rebuild" \
-    && apt-get update -y \
-    && apt-get upgrade -y
 
 ### Build nonexample ###
  

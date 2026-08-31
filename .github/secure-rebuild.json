@@ -1,0 +1,171 @@
+{
+  "releases": {
+    "v9": [
+      {
+        "source_tag": "9.4.1.15",
+        "release_tag": "9.4.1.2",
+        "short_tags": [
+          "9.4.1",
+          "9.4"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": true
+          },
+          "-de": {
+            "latest": true
+          }
+        }
+      },
+      {
+        "source_tag": "9.4.1.15",
+        "release_tag": "9.4.1.1",
+        "short_tags": [],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      },
+      {
+        "source_tag": "9.4.0.129",
+        "release_tag": "9.4.0.2",
+        "short_tags": [
+          "9.4.0"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      },
+      {
+        "source_tag": "9.4.0.129",
+        "release_tag": "9.4.0.1",
+        "short_tags": [],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      },
+      {
+        "source_tag": "9.3.1.10",
+        "release_tag": "9.3.1.2",
+        "short_tags": [
+          "9.3.1",
+          "9.3"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      },
+      {
+        "source_tag": "9.3.1.8",
+        "release_tag": "9.3.1.1",
+        "short_tags": [],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      },
+      {
+        "source_tag": "9.3.0.138",
+        "release_tag": "9.3.0.1",
+        "short_tags": [
+          "9.3.0"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      },
+      {
+        "source_tag": "9.2.1.8",
+        "release_tag": "9.2.1.1",
+        "short_tags": [
+          "9.2.1",
+          "9.2"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      },
+      {
+        "source_tag": "9.2.0.98",
+        "release_tag": "9.2.0.1",
+        "short_tags": [
+          "9.2.0"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      },
+      {
+        "source_tag": "9.1.0.168",
+        "release_tag": "9.1.0.1",
+        "short_tags": [
+          "9.1.0",
+          "9.1"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      },
+      {
+        "source_tag": "9.0.4.50",
+        "release_tag": "9.0.4.1",
+        "short_tags": [
+          "9.0.4",
+          "9.0"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      }
+    ]
+  }
+}
+

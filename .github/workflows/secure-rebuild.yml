@@ -1,0 +1,642 @@
+name: Secure rebuild
+
+run-name: >-
+  Secure rebuild [
+  ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'DRY-RUN' || 'PUBLISH' }}
+  ]
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        type: boolean
+        description: "Dry run (build & test, do not retag release)"
+        required: false
+        default: false
+
+concurrency:
+  group: secure-rebuild
+  cancel-in-progress: false
+
+env:
+  COMPANY_NAME: "onlyoffice"
+  PRODUCT_NAME: "documentserver"
+  REBUILD_CONFIG: ".github/secure-rebuild.json"
+
+jobs:
+  prepare:
+    name: Prepare rebuild matrices
+    runs-on: ubuntu-latest
+
+    outputs:
+      build_matrix: ${{ steps.matrix.outputs.build_matrix }}
+      retag_matrix: ${{ steps.matrix.outputs.retag_matrix }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Validate rebuild config
+        run: |
+          set -euo pipefail
+
+          if [ ! -f "${REBUILD_CONFIG}" ]; then
+            echo "Rebuild config was not found: ${REBUILD_CONFIG}" >&2
+            exit 1
+          fi
+
+          jq -e '
+            type == "object"
+            and (.releases | type == "object")
+            and all(
+              .releases[];
+              type == "array"
+              and all(
+                .[];
+                (.source_tag | type == "string")
+                and (.source_tag | length > 0)
+                and (.release_tag | type == "string")
+                and (.release_tag | length > 0)
+                and (.short_tags | type == "array")
+                and all(.short_tags[]; type == "string")
+                and (.editions | type == "object")
+                and (.editions | length > 0)
+                and all(
+                  .editions[];
+                  type == "object"
+                  and has("latest")
+                  and (.latest | type == "boolean")
+                )
+              )
+            )
+          ' "${REBUILD_CONFIG}" >/dev/null
+
+      - name: Create build and retag matrices
+        id: matrix
+        run: |
+          set -euo pipefail
+
+          BUILD="$(jq -c '
+            def ver_key: [splits("\\.")] | map(tonumber);
+            {
+              include: (
+                [
+                  .releases
+                  | to_entries[]
+                  | .value
+                  | group_by(.release_tag | split(".") | .[0:3] | join("."))
+                  | map(
+                      (max_by(.source_tag | ver_key) | .source_tag) as $latest_src
+                      | map(select(.source_tag == $latest_src))
+                    )
+                  | add[]
+                  | . as $release
+                  | $release.editions
+                  | to_entries[]
+                  | {
+                      source_tag: $release.source_tag,
+                      test_tag: (
+                        $release.release_tag
+                        | split(".")
+                        | .[0:3]
+                        | join(".")
+                      ),
+                      edition: .key
+                    }
+                ]
+                | unique_by([
+                    .source_tag,
+                    .edition
+                  ])
+              )
+            }
+          ' "${REBUILD_CONFIG}")"
+
+          RETAG="$(jq -c '
+            def ver_key: [splits("\\.")] | map(tonumber);
+            {
+              include: [
+                .releases
+                | to_entries[]
+                | .value
+                | group_by(.release_tag | split(".") | .[0:3] | join("."))
+                | map(
+                    (max_by(.source_tag | ver_key) | .source_tag) as $latest_src
+                    | map(select(.source_tag == $latest_src))
+                  )
+                | add[]
+                | . as $release
+                | $release.editions
+                | to_entries[]
+                | {
+                    source_tag: $release.source_tag,
+                    release_tag: $release.release_tag,
+                    short_tags: (
+                      $release.short_tags
+                      | join(",")
+                    ),
+                    is_latest: (
+                      .value.latest
+                      | tostring
+                    ),
+                    edition: .key
+                  }
+              ]
+            }
+          ' "${REBUILD_CONFIG}")"
+
+          BUILD_COUNT="$(jq '.include | length' <<< "${BUILD}")"
+          RETAG_COUNT="$(jq '.include | length' <<< "${RETAG}")"
+
+          if [ "${BUILD_COUNT}" -eq 0 ]; then
+            echo "Build matrix is empty" >&2
+            exit 1
+          fi
+
+          if [ "${RETAG_COUNT}" -eq 0 ]; then
+            echo "Retag matrix is empty" >&2
+            exit 1
+          fi
+
+          echo "Build matrix contains ${BUILD_COUNT} entries:"
+          jq . <<< "${BUILD}"
+
+          echo "Retag matrix contains ${RETAG_COUNT} entries:"
+          jq . <<< "${RETAG}"
+
+          echo "build_matrix=${BUILD}" >> "${GITHUB_OUTPUT}"
+          echo "retag_matrix=${RETAG}" >> "${GITHUB_OUTPUT}"
+
+  rebuild:
+    name: "Rebuild ${{ matrix.source_tag }}${{ matrix.edition }}"
+    needs: prepare
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.build_matrix) }}
+
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          ref: v${{ matrix.source_tag }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: Checkout tests
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          TEST_TAG: ${{ matrix.test_tag }}
+        run: |
+          set -euo pipefail
+
+          git clone \
+            "https://${GITEA_TOKEN}@git.onlyoffice.com/ONLYOFFICE-QA/Dep.Tests.git" \
+            dep-tests
+
+          cd dep-tests
+
+          if git checkout "refs/tags/${TEST_TAG}" 2>/dev/null; then
+            echo "Checked out test tag ${TEST_TAG}"
+          else
+            echo "Test tag ${TEST_TAG} was not found" >&2
+            echo "Using fallback commit aa2d423f18" >&2
+            git checkout aa2d423f18
+          fi
+
+          df -h
+
+      - name: Initialize submodules
+        working-directory: dep-tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          set -euo pipefail
+
+          git config --global \
+            url."https://${GITHUB_TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
+
+          git submodule update \
+            --init
+
+          git config --global --unset url."https://${GITHUB_TOKEN}@github.com/".insteadOf
+
+      - name: Install dependencies
+        working-directory: dep-tests/puppeteer/engine
+        run: |
+          df -h
+          npm install --silent --no-progress > /dev/null 2>&1 || {
+            echo "Dependency installation failed"
+            exit 1
+          }
+
+      - name: mv Dep.Tests under context
+        run: |
+          mv dep-tests ../
+          
+      - name: Build secure-patched image
+        id: build
+        env:
+          SOURCE_TAG: ${{ matrix.source_tag }}
+          EDITION: ${{ matrix.edition }}
+        run: |
+          set -euo pipefail
+
+          PATCHED_IMAGE="${COMPANY_NAME}/4testing-${PRODUCT_NAME}${EDITION}:${SOURCE_TAG}-secure"
+          # source_tag = 9.4.1.15 → PRODUCT_VERSION=9.4.1  BUILD_NUMBER=15
+          PACKAGE_VERSION="${SOURCE_TAG%.*}"
+
+          echo "Patched image: ${PATCHED_IMAGE}"
+          echo "Package version: ${PACKAGE_VERSION}"
+
+          docker buildx build \
+            --platform "linux/amd64,linux/arm64" \
+            --build-arg "COMPANY_NAME=${COMPANY_NAME}" \
+            --build-arg "PRODUCT_NAME=${PRODUCT_NAME}" \
+            --build-arg "PRODUCT_EDITION=${EDITION}" \
+            --build-arg "PACKAGE_VERSION=${PACKAGE_VERSION}" \
+            --tag "${PATCHED_IMAGE}" \
+            --file Dockerfile \
+            --push \
+            .
+
+          echo "patched_image=${PATCHED_IMAGE}" >> "${GITHUB_OUTPUT}"
+
+      - name: Return dep.tests
+        run: |
+          mv ../dep-tests ./
+          
+      - name: Clean-up
+        run: |
+          set -euo pipefail
+
+          docker rm --force documentserver 2>/dev/null || true
+          docker buildx prune -af 
+          docker image prune -af
+          docker builder prune -af
+
+      - name: Pull test image
+        env:
+          IMAGE: ${{ steps.build.outputs.patched_image }}
+        run: |
+          set -euo pipefail
+
+          for attempt in $(seq 1 30); do
+            if docker pull "${IMAGE}"; then
+              echo "Image pulled successfully"
+              exit 0
+            fi
+
+            if [ "${attempt}" -eq 30 ]; then
+              echo "Image was not available after 5 minutes" >&2
+              exit 1
+            fi
+
+            echo "Image is not available yet, retrying in 10 seconds"
+            sleep 10
+          done
+
+      - name: Start test container
+        env:
+          IMAGE: ${{ steps.build.outputs.patched_image }}
+        run: |
+          set -euo pipefail
+          
+          docker run \
+            --detach \
+            --publish 80:80 \
+            --name documentserver \
+            "${IMAGE}"
+
+      - name: Wait for healthcheck
+        run: |
+          set -euo pipefail
+
+          for attempt in $(seq 1 30); do
+            RESULT="$(
+              curl \
+                --fail \
+                --silent \
+                --show-error \
+                http://localhost/healthcheck \
+                2>/dev/null \
+                || true
+            )"
+
+            echo "Healthcheck response: ${RESULT}"
+
+            if [ "${RESULT}" = "true" ]; then
+              echo "Healthcheck passed"
+              exit 0
+            fi
+
+            if [ "${attempt}" -eq 30 ]; then
+              echo "Healthcheck failed after 5 minutes" >&2
+              docker logs documentserver || true
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+      - name: Start example service
+        run: |
+          set -euo pipefail
+
+          docker exec documentserver \
+            supervisorctl start ds:example
+
+          for attempt in $(seq 1 30); do
+            if curl \
+              --fail \
+              --silent \
+              --show-error \
+              http://localhost/example/ \
+              >/dev/null 2>&1; then
+              echo "Example service is ready"
+              exit 0
+            fi
+
+            if [ "${attempt}" -eq 30 ]; then
+              echo "Example service did not become ready" >&2
+              docker logs documentserver || true
+              exit 1
+            fi
+
+            sleep 5
+          done
+
+      - name: Start Xvfb
+        run: |
+          set -euo pipefail
+
+          Xvfb :99 \
+            -screen 0 1920x1080x24 \
+            >"${RUNNER_TEMP}/xvfb.log" \
+            2>&1 &
+          
+          sleep 60
+          echo "DISPLAY=:99" >> "${GITHUB_ENV}"
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: "120"
+
+      - name: Run tests with retryes
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 20
+          max_attempts: 3
+          retry_wait_seconds: 120
+          command: |
+              set -uo pipefail
+              cd dep-tests/puppeteer/engine
+              OUTPUT_FILE="../test-output.log"
+              RESULT=0
+    
+              : > "${OUTPUT_FILE}"
+    
+              tests=(
+                "tests/desktop/word/smoke/open-close-file-tab.js"
+                "tests/desktop/word/smoke/check_search_while_drawing.js"
+                "tests/desktop/spreadsheets/smoke/check_replace_all.js"
+                "tests/desktop/spreadsheets/smoke/data_entry_use_tab_button.js"
+                "tests/desktop/pdf/smoke/check_find_for_a_specific_pdf.js"
+                "tests/desktop/pdf/smoke/check_undo_after_add_text_comment.js"
+              )
+    
+              for test in "${tests[@]}"; do
+                echo "Running ${test}" \
+                  | tee -a "${OUTPUT_FILE}"
+    
+                python3 run.py \
+                  --config config_chrome_linux.json \
+                  "${test}" \
+                  --config_params \
+                    "runOptions.disableAnimation=true" \
+                    "testOptions.url=http://localhost/example" \
+                    'puppeteerOptions.browserArgs.args=["--no-sandbox","--disable-setuid-sandbox"]' \
+                  2>&1 \
+                  | tee -a "${OUTPUT_FILE}"
+    
+                TEST_RESULT="${PIPESTATUS[0]}"
+    
+                if [ "${TEST_RESULT}" -ne 0 ]; then
+                  echo "Test failed with exit code ${TEST_RESULT}: ${test}" \
+                    | tee -a "${OUTPUT_FILE}"
+                  RESULT=1
+                fi
+              done
+    
+              exit "${RESULT}"
+
+      - name: Print test output
+        if: always()
+        run: |
+          if [ -f dep-tests/puppeteer/test-output.log ]; then
+            cat dep-tests/puppeteer/test-output.log
+          else
+            echo "Test output file was not created"
+          fi
+
+      - name: Print test reports
+        if: always()
+        run: |
+          if [ ! -d dep-tests/puppeteer/out ]; then
+            echo "Test report directory was not created"
+            exit 0
+          fi
+
+          find dep-tests/puppeteer/out \
+            -type f \
+            -name "report*.html" \
+            -print0 \
+            | sort -z \
+            | while IFS= read -r -d "" report; do
+                echo "=== ${report} ==="
+                cat "${report}"
+                echo
+              done
+
+      - name: Upload test artifacts
+        if: ${{ false }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-tests-${{ matrix.source_tag }}${{ matrix.edition }}
+          path: |
+            dep-tests/puppeteer/test-output.log
+            dep-tests/puppeteer/out/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Remove test container
+        if: ${{ false }}
+        run: |
+          docker rm \
+            --force \
+            documentserver \
+            2>/dev/null \
+            || true
+
+  retag:
+    name: "Retag all releases"
+    needs:
+      - prepare
+      - rebuild
+
+    if: >-
+      ${{
+        github.event_name != 'workflow_dispatch'
+        || !inputs.dry_run
+      }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Retag all releases in order
+        uses: nick-fields/retry@v4
+        env:
+          PRODUCT_NAME: ${{ env.PRODUCT_NAME }}
+          REBUILD_CONFIG: ${{ env.REBUILD_CONFIG }}
+        with:
+          timeout_minutes: 60
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: |
+            set -euo pipefail
+
+            # Build the ordered retag list, applying the same
+            # "latest source_tag per minor" filter as the build matrix.
+            #
+            # reverse: oldest releases (bottom of JSON) are pushed first,
+            # newest (top of JSON) last — so newest end up at the top of
+            # Docker Hub's tag list, which sorts by push time.
+            RETAG="$(jq -c '
+              def ver_key: [splits("\\.")] | map(tonumber);
+              [
+                .releases
+                | to_entries[]
+                | .value
+                | group_by(.release_tag | split(".") | .[0:3] | join("."))
+                | map(
+                    (max_by(.source_tag | ver_key) | .source_tag) as $latest_src
+                    | map(select(.source_tag == $latest_src))
+                  )
+                | add[]
+                | . as $release
+                | $release.editions
+                | to_entries[]
+                | {
+                    source_tag: $release.source_tag,
+                    release_tag: $release.release_tag,
+                    short_tags: ($release.short_tags | join(",")),
+                    is_latest: (.value.latest | tostring),
+                    edition: .key,
+                    sort_key: ($release.release_tag | ver_key)
+                  }
+              ]
+              | sort_by(.sort_key)
+            ' "${REBUILD_CONFIG}")"
+
+            COUNT="$(jq 'length' <<< "${RETAG}")"
+
+            if [ "${COUNT}" -eq 0 ]; then
+              echo "Retag list is empty" >&2
+              exit 1
+            fi
+
+            echo "Retagging ${COUNT} entries (oldest first)"
+
+            for i in $(seq 0 $((COUNT - 1))); do
+              ENTRY="$(jq -c ".[${i}]" <<< "${RETAG}")"
+
+              SOURCE_TAG="$(jq -r '.source_tag'  <<< "${ENTRY}")"
+              RELEASE_TAG="$(jq -r '.release_tag' <<< "${ENTRY}")"
+              SHORT_TAGS="$(jq -r '.short_tags'   <<< "${ENTRY}")"
+              IS_LATEST="$(jq -r '.is_latest'     <<< "${ENTRY}")"
+              EDITION="$(jq -r '.edition'         <<< "${ENTRY}")"
+
+              RELEASE_IMAGE="${COMPANY_NAME}/${PRODUCT_NAME}${EDITION}"
+              SRC_IMAGE="${COMPANY_NAME}/4testing-${PRODUCT_NAME}${EDITION}:${SOURCE_TAG}-secure"
+
+              echo "=============================================="
+              echo "Source image:  ${SRC_IMAGE}"
+              echo "Release image: ${RELEASE_IMAGE}"
+              echo "Release tag:   ${RELEASE_TAG}"
+              echo "Short tags:    ${SHORT_TAGS}"
+              echo "Latest:        ${IS_LATEST}"
+
+              docker buildx imagetools inspect "${SRC_IMAGE}"
+
+              PUSH_TAGS=(
+                --tag "${RELEASE_IMAGE}:${RELEASE_TAG}"
+              )
+
+              if [ -n "${SHORT_TAGS}" ]; then
+                IFS=',' read -r -a SHORTS <<< "${SHORT_TAGS}"
+                for tag in "${SHORTS[@]}"; do
+                  if [ -n "${tag}" ]; then
+                    PUSH_TAGS+=( --tag "${RELEASE_IMAGE}:${tag}" )
+                  fi
+                done
+              fi
+
+              if [ "${IS_LATEST}" = "true" ]; then
+                PUSH_TAGS+=( --tag "${RELEASE_IMAGE}:latest" )
+              fi
+
+              docker buildx imagetools create \
+                "${PUSH_TAGS[@]}" \
+                "${SRC_IMAGE}"
+
+              docker buildx imagetools inspect \
+                "${RELEASE_IMAGE}:${RELEASE_TAG}"
+            done
