@@ -7,7 +7,7 @@ ENV LC_ALL=en_US.UTF-8 LANGUAGE=en_US:en DEBIAN_FRONTEND=noninteractive
 # Install base OS dependencies: locale, cron, supervisor, network tools.
 RUN printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d && \
     apt-get -y update && apt-get -yq install --no-install-recommends \
-        $(: tools) ca-certificates curl gnupg locales sudo cron certbot netcat-openbsd supervisor && \
+        $(: tools) ca-certificates curl gnupg locales sudo cron certbot python3-certbot-nginx netcat-openbsd supervisor && \
     locale-gen ${LC_ALL} && rm -rf /var/lib/apt/lists/*
 
 ARG COMPANY_NAME=onlyoffice
