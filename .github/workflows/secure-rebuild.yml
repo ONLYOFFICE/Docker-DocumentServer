@@ -281,8 +281,17 @@ jobs:
           # source_tag = 9.4.1.15 → PRODUCT_VERSION=9.4.1  BUILD_NUMBER=15
           PACKAGE_VERSION="${SOURCE_TAG%.*}"
 
+          # Enterprise editions build from Dockerfile.enterprise when it exists
+          # in the checked-out tag (introduced in v10). Otherwise use the default.
+          if { [ "${EDITION}" = "-ee" ] || [ "${EDITION}" = "-de" ]; } && [ -f "Dockerfile.enterprise" ]; then
+            DOCKERFILE="Dockerfile.enterprise"
+          else
+            DOCKERFILE="Dockerfile"
+          fi
+
           echo "Patched image: ${PATCHED_IMAGE}"
           echo "Package version: ${PACKAGE_VERSION}"
+          echo "Dockerfile:      ${DOCKERFILE}"
 
           docker buildx build \
             --platform "linux/amd64,linux/arm64" \
@@ -291,7 +300,7 @@ jobs:
             --build-arg "PRODUCT_EDITION=${EDITION}" \
             --build-arg "PACKAGE_VERSION=${PACKAGE_VERSION}" \
             --tag "${PATCHED_IMAGE}" \
-            --file Dockerfile \
+            --file "${DOCKERFILE}" \
             --push \
             .
 
