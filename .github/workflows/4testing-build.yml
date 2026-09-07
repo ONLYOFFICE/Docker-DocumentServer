@@ -86,6 +86,10 @@ jobs:
     name: "Build ${{ matrix.image }}-${{ matrix.edition }}:${{ matrix.platform }}"
     runs-on: ${{ (matrix.platform == 'arm64') && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     needs: prepare
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -164,7 +168,10 @@ jobs:
 
           ### ==>> Build and push images at this step ###
 
-          docker buildx bake --sbom=true --provenance=mode=max -f docker-bake.hcl "${IMAGE}" --push
+          docker buildx bake --sbom=true \
+                             --provenance=mode=max \
+                             --metadata-file metadata.json \
+                             -f docker-bake.hcl "${IMAGE}" --push
           echo "DONE: Build success"
 
           ### Set output for Zap scanner
@@ -193,6 +200,23 @@ jobs:
                  -f branch="${BRANCH}" \
                  -f version="${VERSION}"
         shell: bash
+
+      - name: Extract digest and image name
+        id: image
+        run: |
+          NAME=$(jq -r '."${{ matrix.image }}"."image.name" | split(",")[0]' metadata.json)
+          DIGEST=$(jq -r '."${{ matrix.image }}"."containerimage.digest"' metadata.json)
+          REPO="${NAME%:*}"
+          echo "name=$REPO" >> "$GITHUB_OUTPUT"
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
 
       # Run Trivy scans for community and developer images from release/hotfix branches.
       - name: Trigger Trivy scan
@@ -237,6 +261,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare,build]
     if: always()
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -255,12 +283,11 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: "Make images documentserver"
+        id: manifest
         env:
           EDITION: ${{ matrix.edition }}
           BUILD_NUMBER: ${{ github.event.inputs.build }}
           BRANCH_NAME: ${{ github.ref_name }}
-          DOCKER_PAT_USERNAME: ${{ secrets.DOCKERHUB_USERNAME_PAT }}
-          DOCKER_PAT_ACCESS_TOKEN: ${{ secrets.DOCKERHUB_TOKEN_PAT }}
         run: |
            case "${EDITION}" in
              community)
@@ -333,38 +360,74 @@ jobs:
               PUSH_TAGS+=( -t "${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:latest" )
            fi
 
-           docker buildx imagetools create "${PUSH_TAGS[@]}" "${FROM_TAGS[@]}"
+           docker buildx imagetools create "${PUSH_TAGS[@]}" "${FROM_TAGS[@]}" || { echo "ERROR: imagetools create failed"; exit 1; }
 
-           ### ==>> Cleanup platform-specific tags ###
+           FINAL_TAG="${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}"
+           
+           INDEX_DIGEST=""
+           for i in $(seq 1 6); do
+                INDEX_DIGEST=$(docker buildx imagetools inspect "$FINAL_TAG" --format '{{ .Manifest.Digest }}' 2>/dev/null || true)
+                [ -n "${INDEX_DIGEST}" ] && [ "${INDEX_DIGEST}" != "null" ] && break
+                echo "Digest not available yet, retrying in 10s... (attempt $i)"
+                sleep 10
+           done
+
+           if [ -z "${INDEX_DIGEST}" ] || [ "${INDEX_DIGEST}" = "null" ]; then
+                echo "ERROR: Failed to resolve index digest after retries"
+                exit 1
+           fi
 
            REPO="${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}"
+           echo "name=$REPO" >> "$GITHUB_OUTPUT"
+           echo "index_digest=$INDEX_DIGEST" >> "$GITHUB_OUTPUT"
+           echo "from_tags=${FROM_TAGS[*]}" >> "$GITHUB_OUTPUT"
 
-           echo "Getting Docker Hub token..."
-           TOKEN=$(curl -s -X POST "https://hub.docker.com/v2/users/login" \
+      - name: Cleanup platform-specific tags
+        if: always() && steps.manifest.outputs.index_digest != ''
+        env:
+          REPO: ${{ steps.manifest.outputs.name }}
+          FROM_TAGS_STR: ${{ steps.manifest.outputs.from_tags }}
+          DOCKER_PAT_USERNAME: ${{ secrets.DOCKERHUB_USERNAME_PAT }}
+          DOCKER_PAT_ACCESS_TOKEN: ${{ secrets.DOCKERHUB_TOKEN_PAT }}
+        run: |
+          set -u
+          read -ra FROM_TAGS <<< "${FROM_TAGS_STR}"
+
+          if [ ${#FROM_TAGS[@]} -eq 0 ]; then
+            echo "No platform-specific tags to clean up."
+            exit 0
+          fi
+
+          echo "Getting Docker Hub token..."
+          TOKEN=$(curl -s -X POST "https://hub.docker.com/v2/users/login" \
             -H "Content-Type: application/json" \
             -d "{\"username\": \"${DOCKER_PAT_USERNAME}\", \"password\": \"${DOCKER_PAT_ACCESS_TOKEN}\"}" \
             | jq -r .token)
 
-           if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
-             echo "ERROR: Failed to get Docker Hub token"
-             exit 1
-           fi
-           echo "Docker Hub token obtained successfully"
+          if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
+            echo "ERROR: Failed to get Docker Hub token"
+            exit 1
+          fi
 
-           for IMG in "${FROM_TAGS[@]}"; do
-             PLATFORM_TAG="${IMG##*:}"
-             echo "Deleting tag: ${IMG}"
+          for IMG in "${FROM_TAGS[@]}"; do
+            PLATFORM_TAG="${IMG##*:}"
+            echo "Deleting tag: ${IMG}"
+            HTTP_STATUS=$(curl -s -o /tmp/delete_response.json -w "%{http_code}" -X DELETE \
+              -H "Authorization: JWT ${TOKEN}" \
+              "https://hub.docker.com/v2/repositories/${REPO}/tags/${PLATFORM_TAG}/")
+            echo "Response HTTP status: ${HTTP_STATUS}"
+            if [ "${HTTP_STATUS}" = "204" ]; then
+              echo "Successfully deleted: ${IMG}"
+            else
+              echo "WARNING: Unexpected status ${HTTP_STATUS} when deleting ${IMG}"
+            fi
+          done
+        shell: bash
 
-             HTTP_STATUS=$(curl -s -o /tmp/delete_response.json -w "%{http_code}" -X DELETE \
-               -H "Authorization: JWT ${TOKEN}" \
-               "https://hub.docker.com/v2/repositories/${REPO}/tags/${PLATFORM_TAG}/")
-
-             echo "Response HTTP status: ${HTTP_STATUS}"
-             echo "Response body: $(cat /tmp/delete_response.json)"
-
-             if [ "${HTTP_STATUS}" = "204" ]; then
-               echo "Successfully deleted: ${IMG}"
-             else
-               echo "WARNING: Unexpected status ${HTTP_STATUS} when deleting ${IMG}"
-             fi
-           done
+      - name: Attest build provenance for multi-arch index
+        if: always() && steps.manifest.outputs.index_digest != ''
+        uses: actions/attest@v4
+        with:
+          subject-name: docker.io/${{ steps.manifest.outputs.name }}
+          subject-digest: ${{ steps.manifest.outputs.index_digest }}
+          push-to-registry: true
