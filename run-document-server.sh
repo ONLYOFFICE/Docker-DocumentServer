@@ -35,7 +35,7 @@ init_config(){
 
   NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
   NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
-  NGINX_ACCESS_LOG=${NGINX_ACCESS_LOG:-false}
+  NGINX_ACCESS_LOG=${NGINX_ACCESS_LOG:-true}
   local limit
   limit=$(ulimit -n); [ "$limit" = "unlimited" ] || [ "$limit" -gt 1048576 ] && limit=1048576
   NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$limit}
@@ -631,12 +631,11 @@ update_nginx_settings(){
     -e "s/worker_connections.*/worker_connections ${NGINX_WORKER_CONNECTIONS};/"
 
   # Access logging.
-  if [ "${NGINX_ACCESS_LOG}" = "true" ]; then
-    touch "${DS_LOG_DIR}/nginx.access.log"
-    sed -ri "s|^\s*(access_log)\b.*;|\1 ${DS_LOG_DIR}/nginx.access.log;|" \
-      "${NGINX_CONFIG_PATH}" "${NGINX_ONLYOFFICE_PATH}/includes/ds-common.conf" 2>/dev/null
-  else
-    sed -ri 's|^\s*(access_log)\b.*;|\1 off;|' "${NGINX_CONFIG_PATH}"
+  sed -ri 's|^\s*(access_log)\b.*;|\1 off;|' "${NGINX_CONFIG_PATH}"
+  if [ "${NGINX_ACCESS_LOG}" != "true" ]; then
+    sed -ri 's|^\s*(access_log)\b.*;|\1 off;|' \
+      "${NGINX_ONLYOFFICE_PATH}/includes/ds-common.conf" \
+      "${NGINX_ONLYOFFICE_PATH}/ds-ssl.conf.tmpl" 2>/dev/null
   fi
 
   # SSL/HTTPS setup.

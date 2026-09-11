@@ -206,7 +206,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **NODE_EXTRA_CA_CERTS**: The [NODE_EXTRA_CA_CERTS](https://nodejs.org/api/cli.html#node_extra_ca_certsfile "Node.js documentation") to extend CAs with the extra certificates for Node.js. Defaults to `/var/www/onlyoffice/Data/certs/extra-ca-certs.pem`.
 - **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
 - **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process. Defaults to the soft limit from `ulimit -n`.
-- **NGINX_ACCESS_LOG**: Defines whether access logging is enabled. Defaults to `false`.
+- **NGINX_ACCESS_LOG**: Defines whether filtered JSON access logging is enabled. Defaults to `true`.
 - **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](https://nginx.org/en/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.
 - **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `true`.
 - **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to random value.
