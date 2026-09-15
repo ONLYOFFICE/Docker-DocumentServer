@@ -53,6 +53,10 @@ init_config(){
   WOPI_ENABLED=${WOPI_ENABLED:-false}
   ALLOW_META_IP_ADDRESS=${ALLOW_META_IP_ADDRESS:-false}
   ALLOW_PRIVATE_IP_ADDRESS=${ALLOW_PRIVATE_IP_ADDRESS:-false}
+  DOCBUILDER_ENABLED=${DOCBUILDER_ENABLED:-true}
+  DOCBUILDER_ENABLED="$([[ "${DOCBUILDER_ENABLED}" == "true" ]] && echo "true" || echo "false")"
+  CONVERTER_ENABLED=${CONVERTER_ENABLED:-true}
+  CONVERTER_ENABLED="$([[ "${CONVERTER_ENABLED}" == "true" ]] && echo "true" || echo "false")"
 
   # Feature flags and feature availability.
   GENERATE_FONTS=${GENERATE_FONTS:-true}
@@ -456,7 +460,10 @@ update_redis_settings(){
 
 # Write JWT tokens, WOPI keys, and request-filtering-agent settings to local.json.
 update_ds_settings(){
-  ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}; \
+  ${JSON} -I -e "this.services.CoAuthoring.server = this.services.CoAuthoring.server || {}; \
+    this.services.CoAuthoring.server.docbuilderEnable = ${DOCBUILDER_ENABLED}; \
+    this.services.CoAuthoring.server.convertServiceEnable = ${CONVERTER_ENABLED}; \
+    this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}; \
     this.services.CoAuthoring.token.enable.request.inbox = ${JWT_ENABLED}; \
     this.services.CoAuthoring.token.enable.request.outbox = ${JWT_ENABLED}; \
     this.services.CoAuthoring.secret.inbox.string = '${JWT_SECRET}'; \
