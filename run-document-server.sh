@@ -55,6 +55,7 @@ init_config(){
   ALLOW_PRIVATE_IP_ADDRESS=${ALLOW_PRIVATE_IP_ADDRESS:-false}
 
   # Feature flags and feature availability.
+  WELCOME_PAGE_ENABLED=${WELCOME_PAGE_ENABLED:-true}
   GENERATE_FONTS=${GENERATE_FONTS:-true}
 
   local _is_commercial
@@ -593,8 +594,12 @@ oracle_tbl() {
   run_oracle_sql_file "$APP_DIR/server/schema/oracle/createdb.sql"
 }
 
-# Patch welcome and disabled-page HTML to replace docker container placeholder.
+# Configure the welcome page and patch Docker-specific HTML placeholders.
 update_welcome_page() {
+  if [ "${WELCOME_PAGE_ENABLED}" != "true" ] && [ -f /etc/nginx/includes/ds-example.conf ]; then
+    sed -i '/^[[:space:]]*location .*welcome/,/^[[:space:]]*}/d' /etc/nginx/includes/ds-example.conf
+  fi
+
   INDEX_PAGE="${APP_DIR}-example/welcome/index.html"
   WELCOME_PAGE="${APP_DIR}-example/welcome/docker.html"
   EXAMPLE_DISABLED_PAGE="${APP_DIR}-example/welcome/example-disabled.html"
