@@ -51,6 +51,7 @@ init_config(){
   JWT_IN_BODY=${JWT_IN_BODY:-false}
 
   WOPI_ENABLED=${WOPI_ENABLED:-false}
+  IP_FILTER_RULES=${IP_FILTER_RULES:-}
   ALLOW_META_IP_ADDRESS=${ALLOW_META_IP_ADDRESS:-false}
   ALLOW_PRIVATE_IP_ADDRESS=${ALLOW_PRIVATE_IP_ADDRESS:-false}
 
@@ -455,6 +456,39 @@ update_redis_settings(){
   fi
 }
 
+update_ipfilter_rules(){
+  [ -z "${IP_FILTER_RULES}" ] && return
+
+  local -a rules
+  local rule action address extra
+  IFS=';' read -ra rules <<< "${IP_FILTER_RULES}"
+
+  for rule in "${rules[@]}"; do
+    read -r action address extra <<< "${rule}"
+
+    case "${action,,}" in
+      allow|deny) ;;
+      *) action= ;;
+    esac
+
+    if [ -z "${action}" ] || [ -z "${address}" ] || [ -n "${extra}" ] || [[ "${address}" == */* ]]; then
+      echo 'ERROR: invalid IP_FILTER_RULES. Expected format: allow <address>; deny <address>' >&2
+      exit 1
+    fi
+  done
+
+  ${JSON} -I -e "this.services.CoAuthoring.ipfilter ||= {}; this.services.CoAuthoring.ipfilter.rules = []" || exit 1
+
+  for rule in "${rules[@]}"; do
+    read -r action address <<< "${rule}"
+    [ "${address,,}" = "all" ] && address='*'
+    [ "${action,,}" = "allow" ] && action=true || action=false
+
+    IP_FILTER_ADDRESS="${address}" IP_FILTER_ALLOWED="${action}" \
+      ${JSON} -I -e "this.services.CoAuthoring.ipfilter.rules.push({ address: process.env.IP_FILTER_ADDRESS, allowed: process.env.IP_FILTER_ALLOWED === 'true' })" || exit 1
+  done
+}
+
 # Write JWT tokens, WOPI keys, and request-filtering-agent settings to local.json.
 update_ds_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}; \
@@ -756,6 +790,7 @@ init_folders
 if [ "${ONLYOFFICE_DATA_CONTAINER_HOST}" = "localhost" ]; then
   read_setting
   update_welcome_page
+  update_ipfilter_rules
   update_ds_settings
   [ "${DB_AVAILABLE}" = "true" ]       && setup_db
   [ "${RABBITMQ_AVAILABLE}" = "true" ] && setup_rabbitmq

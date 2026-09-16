@@ -213,6 +213,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
 - **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
 - **WOPI_ENABLED**: Specifies the enabling the wopi handlers. Defaults to `false`.
+- **IP_FILTER_RULES**: Configures ordered rules that allow or deny hosts and IP addresses, using semicolon-separated `allow <address>`/`deny <address>` values. Replaces existing rules when set and preserves them when unset. WOPI requires a matching `allow` rule for each host, e.g. `allow wopi.example.com`. CIDR is not supported.
 - **ALLOW_META_IP_ADDRESS**: Defines if it is allowed to connect meta IP address or not. Defaults to `false`.
 - **ALLOW_PRIVATE_IP_ADDRESS**: Defines if it is allowed to connect private IP address or not. Defaults to `false`.
 - **USE_UNAUTHORIZED_STORAGE**: Set to `true` if using self-signed certificates for your storage server e.g. Nextcloud. Defaults to `false`
