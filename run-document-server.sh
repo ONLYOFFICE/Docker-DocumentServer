@@ -131,9 +131,9 @@ init_ssl(){
 init_folders(){
   for f in "${SUPERVISOR_CONF_DIR}"/ds-*.conf; do
     local d="${DS_LOG_DIR}/${f##*/ds-}"; d="${d%.conf}"
-    mkdir -p "$d" && touch "$d"/{out,err}.log
+    mkdir -p "$d" && touch "$d"/out.log
   done
-  mkdir -p "${DS_LOG_DIR}-example" && touch "${DS_LOG_DIR}-example"/{out,err}.log
+  mkdir -p "${DS_LOG_DIR}-example" && touch "${DS_LOG_DIR}-example"/out.log
   mkdir -p "${DS_LIB_DIR}/App_Data/cache/files" "${DS_LIB_DIR}/App_Data/docbuilder" "${DS_LIB_DIR}-example/files"
 
   chmod -R 755 "${DS_LOG_DIR}" "${DS_LOG_DIR}-example" "${LIB_DIR}"
