@@ -349,7 +349,7 @@ Code repository: [github.com/ONLYOFFICE/DocumentServer](https://github.com/ONLYO
 
 Docker Image: [github.com/ONLYOFFICE/Docker-DocumentServer](https://github.com/ONLYOFFICE/Docker-DocumentServer "https://github.com/ONLYOFFICE/Docker-DocumentServer")
 
-License: [GNU AGPL v3.0](https://onlyo.co/38YZGJh)
+License: [GNU AGPL v3.0](https://docspace.onlyoffice.com/s/wjQ94v2GWfm65wH)
 
 Free version vs commercial builds comparison: https://github.com/ONLYOFFICE/DocumentServer#onlyoffice-docs-editions
 
