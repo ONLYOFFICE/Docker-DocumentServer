@@ -1,5 +1,23 @@
 {
   "releases": {
+    "v10": [
+      {
+        "source_tag": "10.0.0.169",
+        "release_tag": "10.0.0.1",
+        "short_tags": [
+          "10.0.0",
+          "10.0"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": true
+          },
+          "-de": {
+            "latest": true
+          }
+        }
+      }
+    ],
     "v9": [
       {
         "source_tag": "9.4.1.15",
@@ -10,10 +28,10 @@
         ],
         "editions": {
           "-ee": {
-            "latest": true
+            "latest": false
           },
           "-de": {
-            "latest": true
+            "latest": false
           }
         }
       },
@@ -168,4 +186,3 @@
     ]
   }
 }
-
