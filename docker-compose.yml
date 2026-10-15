@@ -2,24 +2,18 @@ services:
   onlyoffice-documentserver:
     build:
       context: .
-      target: documentserver-community
-    image: onlyoffice/documentserver
+      dockerfile: Dockerfile
+    image: onlyoffice/documentserver:${TAG:-latest}
     container_name: onlyoffice-documentserver
-    environment:
-      # Uncomment strings below to enable the JSON Web Token validation.
-      #- JWT_ENABLED=true
-      #- JWT_SECRET=secret
-      #- JWT_HEADER=Authorization
-      #- JWT_IN_BODY=true
+    # Uncomment to enable JWT validation:
+    #environment:
+    #  - JWT_ENABLED=true
+    #  - JWT_SECRET=secret
+    #  - JWT_HEADER=Authorization
+    #  - JWT_IN_BODY=true
     ports:
       - '80:80'
       - '443:443'
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/info/info.json"]
-      interval: 30s
-      retries: 5
-      start_period: 60s
-      timeout: 10s
     stdin_open: true
     restart: always
     stop_grace_period: 60s

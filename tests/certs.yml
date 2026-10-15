@@ -1,4 +1,3 @@
-version: '2.1'
 services:
   onlyoffice-documentserver:
     container_name: onlyoffice-documentserver

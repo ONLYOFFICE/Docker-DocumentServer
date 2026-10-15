@@ -1,0 +1,42 @@
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    build:
+      context: ../.
+      dockerfile: Dockerfile.enterprise
+    depends_on:
+      - onlyoffice-redis
+    environment:
+      - REDIS_SERVER_HOST=onlyoffice-redis
+      - REDIS_SERVER_PORT=6379
+      - REDIS_TLS_MODE=${REDIS_TLS_MODE:-verify-full}
+      - TLS_CA_CERT=${TLS_CA_CERT:-/var/www/onlyoffice/Data/tls/ca.crt}
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+    volumes:
+      - ./data:/var/www/onlyoffice/Data
+
+  onlyoffice-redis:
+    container_name: onlyoffice-redis
+    image: redis:${REDIS_VERSION:-7}
+    command:
+      - redis-server
+      - --port
+      - '0'
+      - --tls-port
+      - '6379'
+      - --tls-cert-file
+      - /tls/redis.crt
+      - --tls-key-file
+      - /tls/redis.key
+      - --tls-ca-cert-file
+      - /tls/ca.crt
+      - --tls-auth-clients
+      - 'no'
+    restart: always
+    expose:
+      - '6379'
+    volumes:
+      - ./data/tls:/tls:ro

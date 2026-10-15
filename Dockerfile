@@ -1,146 +1,47 @@
-ARG BASE_VERSION=24.04
-
-ARG BASE_IMAGE=ubuntu:$BASE_VERSION
-
-FROM ${BASE_IMAGE} AS documentserver-base
+# syntax=docker/dockerfile:1
+FROM ubuntu:24.04
 LABEL maintainer="Ascensio System SIA <support@onlyoffice.com>"
 
-ARG BASE_VERSION
-ARG PG_VERSION=16
-ARG PACKAGE_SUFFIX=t64
+ENV LC_ALL=en_US.UTF-8 LANGUAGE=en_US:en DEBIAN_FRONTEND=noninteractive
 
-ENV OC_RELEASE_NUM=23
-ENV OC_RU_VER=7
-ENV OC_RU_REVISION_VER=0
-ENV OC_RESERVED_NUM=25
-ENV OC_RU_DATE=01
-ENV OC_PATH=${OC_RELEASE_NUM}${OC_RU_VER}0000
-ENV OC_FILE_SUFFIX=${OC_RELEASE_NUM}.${OC_RU_VER}.${OC_RU_REVISION_VER}.${OC_RESERVED_NUM}.${OC_RU_DATE}
-ENV OC_VER_DIR=${OC_RELEASE_NUM}_${OC_RU_VER}
-ENV OC_DOWNLOAD_URL=https://download.oracle.com/otn_software/linux/instantclient/${OC_PATH}
-
-ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 DEBIAN_FRONTEND=noninteractive PG_VERSION=${PG_VERSION} BASE_VERSION=${BASE_VERSION}
-
-ARG ONLYOFFICE_VALUE=onlyoffice
-COPY fonts/ /usr/share/fonts/truetype/
-
-RUN echo "#!/bin/sh\nexit 101" > /usr/sbin/policy-rc.d && \
-    apt-get -y update && \
-    apt-get -yq install wget apt-transport-https gnupg locales lsb-release && \
-    locale-gen en_US.UTF-8 && \
-    echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
-    ACCEPT_EULA=Y apt-get -yq install \
-        adduser \
-        apt-utils \
-        bomstrip \
-        certbot \
-        cron \
-        curl \
-        htop \
-        libasound2${PACKAGE_SUFFIX} \
-        libcairo2 \
-        libcurl3-gnutls \
-        libcurl4 \
-        libgtk-3-0 \
-        libnspr4 \
-        libnss3 \
-        libstdc++6 \
-        libxml2 \
-        libxss1 \
-        libxtst6 \
-        nano \
-        net-tools \
-        netcat-openbsd \
-        nginx-extras \
-        pwgen \
-        sudo \
-        supervisor \
-        ttf-mscorefonts-installer \
-        unzip \
-        xvfb \
-        xxd \
-        zlib1g && \
-    if [  $(find /usr/share/fonts/truetype/msttcorefonts -maxdepth 1 -type f -iname '*.ttf' | wc -l) -lt 30 ]; \
-        then echo 'msttcorefonts failed to download'; exit 1; fi  && \
-    rm -rf /var/lib/apt/lists/*
-
-COPY config/supervisor/supervisor /etc/init.d/
-COPY config/supervisor/ds/*.conf /etc/supervisor/conf.d/
-COPY run-document-server.sh /app/ds/run-document-server.sh
-
-EXPOSE 80 443
+# Install base OS dependencies: locale, cron, supervisor, network tools.
+RUN printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d && \
+    apt-get -y update && apt-get -yq install --no-install-recommends \
+        $(: tools) ca-certificates curl gnupg locales sudo cron certbot python3-certbot-nginx netcat-openbsd supervisor && \
+    locale-gen ${LC_ALL} && rm -rf /var/lib/apt/lists/*
 
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_NAME=documentserver
 ARG PRODUCT_EDITION=
 ARG PACKAGE_VERSION=
 ARG TARGETARCH
-ARG PACKAGE_BASEURL="http://download.onlyoffice.com/install/documentserver/linux"
+ARG PACKAGE_BASEURL="https://download.onlyoffice.com/install/documentserver/linux"
+ENV COMPANY_NAME=$COMPANY_NAME PRODUCT_NAME=$PRODUCT_NAME PRODUCT_EDITION=$PRODUCT_EDITION \
+    DS_PLUGIN_INSTALLATION=false DS_DOCKER_INSTALLATION=true
 
-ENV COMPANY_NAME=$COMPANY_NAME \
-    PRODUCT_NAME=$PRODUCT_NAME \
-    PRODUCT_EDITION=$PRODUCT_EDITION \
-    DS_PLUGIN_INSTALLATION=false \
-    DS_DOCKER_INSTALLATION=true
+# Copy fonts, supervisor configs, and entrypoint scripts.
+COPY fonts/ /usr/share/fonts/truetype/
+COPY --exclude=ds-adminpanel.conf --exclude=ds.conf.enterprise config/supervisor/ /etc/supervisor/conf.d/
+COPY run-document-server.sh /app/ds/run-document-server.sh
 
-RUN if [ -n "${PRODUCT_EDITION}" ]; then \
-    wget -q -O /etc/apt/sources.list.d/mssql-release.list "https://packages.microsoft.com/config/ubuntu/$BASE_VERSION/prod.list" && \
-    wget -q -O /tmp/microsoft.asc https://packages.microsoft.com/keys/microsoft.asc && \
-    apt-key add /tmp/microsoft.asc && \
-    gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg < /tmp/microsoft.asc && \
-    apt-get -y update && \
-    ACCEPT_EULA=Y apt-get -yq install \
-        libaio1${PACKAGE_SUFFIX} \
-        libboost-regex-dev \
-        mssql-tools18 \
-        mysql-client \
-        unixodbc-dev \
-        redis-server \
-        postgresql postgresql-client \
-        rabbitmq-server && \
-    dpkg --configure -a && \
-    wget -O basic.zip ${OC_DOWNLOAD_URL}/instantclient-basic-linux.$(dpkg --print-architecture | sed 's/amd64/x64/')-${OC_FILE_SUFFIX}.zip && \
-    wget -O sqlplus.zip ${OC_DOWNLOAD_URL}/instantclient-sqlplus-linux.$(dpkg --print-architecture | sed 's/amd64/x64/')-${OC_FILE_SUFFIX}.zip && \
-    unzip -o basic.zip -d /usr/share && \
-    unzip -o sqlplus.zip -d /usr/share && \
-    rm -f basic.zip sqlplus.zip && \
-    mv /usr/share/instantclient_${OC_VER_DIR} /usr/share/instantclient && \
-    find /usr/lib /lib -name "libaio.so.1$PACKAGE_SUFFIX" -exec bash -c 'ln -sf "$0" "$(dirname "$0")/libaio.so.1"' {} \; && \
-    sed -i "s/bind .*/bind 127.0.0.1/g" /etc/redis/redis.conf && \
-    echo "SERVER_ADDITIONAL_ERL_ARGS=\"+S 1:1\"" | tee -a /etc/rabbitmq/rabbitmq-env.conf && \
-    pg_conftool $PG_VERSION main set listen_addresses 'localhost' && \
-    service postgresql start && \
-    sudo -u postgres psql -c "CREATE USER $ONLYOFFICE_VALUE WITH password '$ONLYOFFICE_VALUE';" && \
-    sudo -u postgres psql -c "CREATE DATABASE $ONLYOFFICE_VALUE OWNER $ONLYOFFICE_VALUE;" && \
-    service postgresql stop && \
-    rm -rf /var/lib/apt/lists/*; fi
-
+# Download and install the document server package, verify msttcorefonts.
 RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
-    wget -q -P /tmp "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
-    apt-get -y update && \
-    [ -n "${PRODUCT_EDITION}" ] && service postgresql start || true && \
-    apt-get -yq install /tmp/$PACKAGE_FILE && \
-    if [ -n "${PRODUCT_EDITION}" ]; then \
-        PGPASSWORD=$ONLYOFFICE_VALUE dropdb -h localhost -p 5432 -U $ONLYOFFICE_VALUE $ONLYOFFICE_VALUE && \
-        sudo -u postgres psql -c "DROP ROLE onlyoffice;" && \
-        service postgresql stop; \
-    else \
-        rm -f /etc/supervisor/conf.d/ds-adminpanel.conf && \
-        sed -i 's/,adminpanel//' /etc/supervisor/conf.d/ds.conf; \
-    fi && \
-    chmod 755 /etc/init.d/supervisor && \
-    sed "s/COMPANY_NAME/${COMPANY_NAME}/g" -i /etc/supervisor/conf.d/*.conf && \
-    service supervisor stop && \
-    chmod 755 /app/ds/*.sh && \
-    rm -f /tmp/$PACKAGE_FILE && \
-    rm -rf /var/log/$COMPANY_NAME && \
-    rm -rf /var/lib/apt/lists/*
+    test -z "$PRODUCT_EDITION" || { echo "ERROR: PRODUCT_EDITION is set - community package requires an empty edition suffix"; exit 1; } && \
+    curl -fsSLo /tmp/$PACKAGE_FILE "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
+    curl -fsSL https://download.onlyoffice.com/GPG-KEY-ONLYOFFICE | gpg --batch --yes --dearmor -o /usr/share/keyrings/onlyoffice.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/onlyoffice.gpg] https://download.onlyoffice.com/repo/debian squeeze main" > /etc/apt/sources.list.d/onlyoffice.list && \
+    echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
+    apt-get -y update && apt-get -yq install --no-install-recommends /tmp/$PACKAGE_FILE && \
+    rm -f /etc/nginx/sites-enabled/default && \
+    sed -i "s/COMPANY_NAME/${COMPANY_NAME}/g" /etc/supervisor/conf.d/*.conf && \
+    [ "$(find /usr/share/fonts/truetype/msttcorefonts -maxdepth 1 -type f -iname '*.ttf' | wc -l)" -ge 30 ] || \
+        { echo 'msttcorefonts failed to download'; exit 1; } && \
+    rm -rf /tmp/$PACKAGE_FILE /var/log/$COMPANY_NAME /var/lib/apt/lists/*
 
-FROM documentserver-base AS documentserver-community
+EXPOSE 80 443
 VOLUME /var/log/$COMPANY_NAME /var/lib/$COMPANY_NAME /var/www/$COMPANY_NAME/Data /usr/share/fonts/truetype/custom
-ENTRYPOINT ["/app/ds/run-document-server.sh"]
 
-FROM documentserver-base AS documentserver-enterprise
-COPY oracle/sqlplus /usr/bin/sqlplus
-VOLUME /var/log/$COMPANY_NAME /var/lib/$COMPANY_NAME /var/www/$COMPANY_NAME/Data /var/lib/postgresql /var/lib/rabbitmq /var/lib/redis /usr/share/fonts/truetype/custom
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD if [ "$ONLYOFFICE_DATA_CONTAINER" != "true" ]; then [ "$(curl -fs http://127.0.0.1/healthcheck)" = "true" ]; else curl -fso /dev/null http://127.0.0.1/; fi
+
 ENTRYPOINT ["/app/ds/run-document-server.sh"]

@@ -173,7 +173,10 @@ jobs:
     name: "Rebuild ${{ matrix.source_tag }}${{ matrix.edition }}"
     needs: prepare
     runs-on: ubuntu-latest
-
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare.outputs.build_matrix) }}
@@ -281,8 +284,17 @@ jobs:
           # source_tag = 9.4.1.15 → PRODUCT_VERSION=9.4.1  BUILD_NUMBER=15
           PACKAGE_VERSION="${SOURCE_TAG%.*}"
 
+          # Enterprise editions build from Dockerfile.enterprise when it exists
+          # in the checked-out tag (introduced in v10). Otherwise use the default.
+          if { [ "${EDITION}" = "-ee" ] || [ "${EDITION}" = "-de" ]; } && [ -f "Dockerfile.enterprise" ]; then
+            DOCKERFILE="Dockerfile.enterprise"
+          else
+            DOCKERFILE="Dockerfile"
+          fi
+
           echo "Patched image: ${PATCHED_IMAGE}"
           echo "Package version: ${PACKAGE_VERSION}"
+          echo "Dockerfile:      ${DOCKERFILE}"
 
           docker buildx build \
             --platform "linux/amd64,linux/arm64" \
@@ -291,11 +303,43 @@ jobs:
             --build-arg "PRODUCT_EDITION=${EDITION}" \
             --build-arg "PACKAGE_VERSION=${PACKAGE_VERSION}" \
             --tag "${PATCHED_IMAGE}" \
-            --file Dockerfile \
+            --sbom=true \
+            --provenance=mode=max \
+            --file "${DOCKERFILE}" \
+            --metadata-file metadata.json \
             --push \
             .
 
           echo "patched_image=${PATCHED_IMAGE}" >> "${GITHUB_OUTPUT}"
+
+      - name: Extract secure image digest
+        id: image
+        env:
+          EDITION: ${{ matrix.edition }}
+        run: |
+          set -euo pipefail
+
+          IMAGE="${COMPANY_NAME}/4testing-${PRODUCT_NAME}${EDITION}"
+          DIGEST="$(jq -r '."containerimage.digest"' metadata.json)"
+
+          if [ -z "${DIGEST}" ] || [ "${DIGEST}" = "null" ]; then
+            echo "Failed to get image digest from metadata.json" >&2
+            cat metadata.json >&2
+            exit 1
+          fi
+
+          echo "Image: ${IMAGE}"
+          echo "Digest: ${DIGEST}"
+
+          echo "name=${IMAGE}" >> "${GITHUB_OUTPUT}"
+          echo "digest=${DIGEST}" >> "${GITHUB_OUTPUT}"
+
+      - name: Attest secure image
+        uses: actions/attest@v4
+        with:
+          subject-name: docker.io/${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
 
       - name: Return dep.tests
         run: |

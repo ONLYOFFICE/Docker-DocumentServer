@@ -16,9 +16,9 @@ docker-compose.enterprise.yml — Local dev EE (with postgres, rabbitmq, redis)
 docker-compose.developer.yml  — Local dev DE (with postgres, rabbitmq, redis)
 docker-bake.hcl         — BuildX multi-platform config
 Makefile                — Build system (image, deploy, clean targets)
-run-document-server.sh  — Main entrypoint script (842 lines)
-config/supervisor/ds/        — Supervisor service configs (ds, ds-adminpanel, ds-converter, ds-docservice, ds-example, ds-metrics)
-config/supervisor/supervisor — Shell script for supervisord startup
+run-document-server.sh       — Entrypoint: initialization sequence and startup
+config/supervisor/           — Supervisor service configs (ds-converter, ds-docservice, ds-example, ds-metrics, ds-adminpanel)
+config/supervisor/ds.conf.enterprise — Group config with adminpanel included (EE/DE only)
 tests/                  — Integration tests (DB/AMQP/SSL matrix)
 fonts/                  — Custom fonts directory
 oracle/                 — Oracle SQLPlus wrapper

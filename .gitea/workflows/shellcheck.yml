@@ -1,0 +1,29 @@
+name: ShellCheck
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - master
+      - release/*
+      - hotfix/*
+      - feature/*
+      - bugfix/*
+    paths:
+      - "run-document-server.sh"
+      - ".gitea/workflows/shellcheck.yml"
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run ShellCheck
+        run: |
+          shellcheck --version
+          shellcheck --severity=warning \
+            --exclude=SC2086 `# intentional word-splitting for $PSQL/$MYSQL/$MSSQL command variables` \
+            --exclude=SC2046 `# intentional word-splitting in command substitution` \
+            --exclude=SC2034 `# variables set in libs are used by run-document-server.sh after source` \
+            run-document-server.sh

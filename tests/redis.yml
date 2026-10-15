@@ -1,9 +1,9 @@
-version: '2.1'
 services:
   onlyoffice-documentserver:
     container_name: onlyoffice-documentserver
     build:
       context: ../.
+      dockerfile: Dockerfile.enterprise
       args:
         - PRODUCT_NAME=${PRODUCT_NAME:-documentserver}
     environment:

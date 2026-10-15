@@ -8,6 +8,7 @@ BUILD_CHANNEL ?= nightly
 ONLYOFFICE_VALUE ?= onlyoffice
 
 COMPANY_NAME_LOW = $(shell echo $(COMPANY_NAME) | tr A-Z a-z)
+DOCKERFILE := $(if $(PRODUCT_EDITION),Dockerfile.enterprise,Dockerfile)
 
 PACKAGE_NAME := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME)$(PRODUCT_EDITION)
 PACKAGE_VERSION ?= $(PRODUCT_VERSION)-$(BUILD_NUMBER)~stretch
@@ -27,8 +28,7 @@ DOCKER_ARCH := $(COMPANY_NAME_LOW)-$(PRODUCT_NAME)_$(DOCKER_TAG).tar.gz
 .PHONY: all clean clean-docker image deploy docker
 
 $(DOCKER_DUMMY):
-	docker pull ubuntu:22.04
-	docker build \
+	docker build -f $(DOCKERFILE) \
 		--build-arg COMPANY_NAME=$(COMPANY_NAME_LOW) \
 		--build-arg PRODUCT_NAME=$(PRODUCT_NAME) \
 		--build-arg PRODUCT_EDITION=$(PRODUCT_EDITION) \

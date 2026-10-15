@@ -1,0 +1,96 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:24.04
+LABEL maintainer="Ascensio System SIA <support@onlyoffice.com>"
+
+ARG PG_VERSION=16
+ENV LC_ALL=en_US.UTF-8 LANGUAGE=en_US:en DEBIAN_FRONTEND=noninteractive PG_VERSION=$PG_VERSION
+
+# Install base OS dependencies: locale, cron, supervisor, network tools.
+RUN printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d && \
+    apt-get -y update && apt-get -yq install --no-install-recommends \
+        $(: tools) ca-certificates curl gnupg locales sudo cron certbot python3-certbot-nginx netcat-openbsd supervisor && \
+    locale-gen ${LC_ALL} && rm -rf /var/lib/apt/lists/*
+
+# Install bundled database engines and clients: PostgreSQL, Redis, RabbitMQ, MySQL, MSSQL, Oracle.
+RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --batch --yes --dearmor -o /usr/share/keyrings/microsoft-prod.gpg && \
+    curl -fsSLo /etc/apt/sources.list.d/mssql-release.list "https://packages.microsoft.com/config/ubuntu/24.04/prod.list" && \
+    sed -Ei 's/ ?signed-by=[^]]*//; s#^deb \[([^]]*)\]#deb [\1 signed-by=/usr/share/keyrings/microsoft-prod.gpg]#' /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get -y update && ACCEPT_EULA=Y apt-get -yq install --no-install-recommends \
+        $(: databases)          postgresql redis-server rabbitmq-server \
+        $(: mysql client)       mysql-client \
+        $(: mssql client)       mssql-tools18 unixodbc \
+        $(: oracle client deps) unzip $(apt-cache pkgnames libaio1 | sort -r | head -1) && \
+    echo 'SERVER_ADDITIONAL_ERL_ARGS="+S 1:1"' >> /etc/rabbitmq/rabbitmq-env.conf && \
+    sed -i 's/^\(bind\) .*/\1 127.0.0.1/' /etc/redis/redis.conf && \
+    pg_conftool $PG_VERSION main set listen_addresses 'localhost' && \
+    ORACLE_URL="https://download.oracle.com/otn_software/linux/instantclient/2370000" && \
+    ORACLE_VER="23.7.0.25.01" ORACLE_DIR="23_7" && \
+    ARCH=$(dpkg --print-architecture | sed 's/amd64/x64/') && \
+    case "$ARCH" in \
+        x64)   IC_PKG="basiclite" \
+               BASICLITE_SHA256="5b20c56304b96067afb851c64de7cbdb1233775668748f40197b6b9f9ac459c7" \
+               SQLPLUS_SHA256="0e41ac407c4a51cb8e2754e698c8a9b04f631176c8537668c1803e114b578222" ;; \
+        arm64) IC_PKG="basic" \
+               BASICLITE_SHA256="6a262e1eb61c3268ac9a7049ad29753136df3e4841aa8f827398754b188d3c49" \
+               SQLPLUS_SHA256="23f36302a439966f3f3b5922687a2ea25ff0587fdce6d5e19c680d89cf6aa2c8" ;; \
+        *) echo "ERROR: Oracle InstantClient ${ORACLE_VER} is not available for arch $ARCH" >&2; exit 1 ;; \
+    esac && { \
+    curl -fsSLo client.zip  "${ORACLE_URL}/instantclient-${IC_PKG}-linux.${ARCH}-${ORACLE_VER}.zip" & \
+    curl -fsSLo sqlplus.zip "${ORACLE_URL}/instantclient-sqlplus-linux.${ARCH}-${ORACLE_VER}.zip" & \
+    wait; } && \
+    echo "${BASICLITE_SHA256}  client.zip"  | sha256sum -c - && \
+    echo "${SQLPLUS_SHA256}  sqlplus.zip" | sha256sum -c - && \
+    unzip -o client.zip -d /usr/share && unzip -o sqlplus.zip -d /usr/share && \
+    rm -f client.zip sqlplus.zip && \
+    mv /usr/share/instantclient_${ORACLE_DIR} /usr/share/instantclient && \
+    find /usr/lib /lib -name "libaio.so.1*" ! -name "libaio.so.1" -execdir ln -sf {} libaio.so.1 \; && \
+    apt-get -yq purge --auto-remove unzip && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG ONLYOFFICE_VALUE=onlyoffice
+ARG COMPANY_NAME=onlyoffice
+ARG PRODUCT_NAME=documentserver
+ARG PRODUCT_EDITION=-ee
+ARG PACKAGE_VERSION=
+ARG TARGETARCH
+ARG PACKAGE_BASEURL="https://download.onlyoffice.com/install/documentserver/linux"
+ENV COMPANY_NAME=$COMPANY_NAME PRODUCT_NAME=$PRODUCT_NAME PRODUCT_EDITION=$PRODUCT_EDITION \
+    DS_PLUGIN_INSTALLATION=false DS_DOCKER_INSTALLATION=true
+
+# Copy fonts, supervisor configs, Oracle wrapper, and entrypoint scripts.
+COPY fonts/ /usr/share/fonts/truetype/
+COPY --exclude=ds.conf --exclude=ds.conf.enterprise config/supervisor/ /etc/supervisor/conf.d/
+COPY config/supervisor/ds.conf.enterprise /etc/supervisor/conf.d/ds.conf
+COPY oracle/sqlplus /usr/bin/sqlplus
+COPY run-document-server.sh /app/ds/run-document-server.sh
+
+# Install the enterprise package; init and tear down a temporary PG cluster for schema migration.
+RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
+    test -n "$PRODUCT_EDITION" || { echo "ERROR: PRODUCT_EDITION is empty - enterprise package requires a non-CE edition suffix"; exit 1; } && \
+    curl -fsSLo /tmp/$PACKAGE_FILE "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
+    curl -fsSL https://download.onlyoffice.com/GPG-KEY-ONLYOFFICE | gpg --batch --yes --dearmor -o /usr/share/keyrings/onlyoffice.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/onlyoffice.gpg] https://download.onlyoffice.com/repo/debian squeeze main" > /etc/apt/sources.list.d/onlyoffice.list && \
+    echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
+    apt-get -y update && \
+    pg_ctlcluster $PG_VERSION main start && \
+    sudo -u postgres psql \
+        -c "CREATE USER $ONLYOFFICE_VALUE WITH password '$ONLYOFFICE_VALUE';" \
+        -c "CREATE DATABASE $ONLYOFFICE_VALUE OWNER $ONLYOFFICE_VALUE;" && \
+    apt-get -yq install --no-install-recommends /tmp/$PACKAGE_FILE && \
+    rm -f /etc/nginx/sites-enabled/default && \
+    sudo -u postgres psql \
+        -c "DROP DATABASE $ONLYOFFICE_VALUE;" \
+        -c "DROP ROLE $ONLYOFFICE_VALUE;" && \
+    pg_ctlcluster $PG_VERSION main stop && \
+    sed -i "s/COMPANY_NAME/${COMPANY_NAME}/g" /etc/supervisor/conf.d/*.conf && \
+    [ "$(find /usr/share/fonts/truetype/msttcorefonts -maxdepth 1 -type f -iname '*.ttf' | wc -l)" -ge 30 ] || \
+        { echo 'msttcorefonts failed to download'; exit 1; } && \
+    rm -rf /tmp/$PACKAGE_FILE /var/log/$COMPANY_NAME /var/lib/apt/lists/*
+
+EXPOSE 80 443
+VOLUME /var/log/$COMPANY_NAME /var/lib/$COMPANY_NAME /var/www/$COMPANY_NAME/Data /var/lib/postgresql /var/lib/rabbitmq /var/lib/redis /usr/share/fonts/truetype/custom
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+    CMD if [ "$ONLYOFFICE_DATA_CONTAINER" != "true" ]; then [ "$(curl -fs http://127.0.0.1/healthcheck)" = "true" ]; else curl -fso /dev/null http://127.0.0.1/; fi
+
+ENTRYPOINT ["/app/ds/run-document-server.sh"]

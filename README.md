@@ -202,22 +202,23 @@ Below is the complete list of parameters that can be set using environment varia
 - **SSL_CERTIFICATE_PATH**: The path to the SSL certificate to use. Defaults to `/var/www/onlyoffice/Data/certs/tls.crt`.
 - **SSL_KEY_PATH**: The path to the SSL certificate's private key. Defaults to `/var/www/onlyoffice/Data/certs/tls.key`.
 - **SSL_DHPARAM_PATH**: The path to the Diffie-Hellman parameter. Defaults to `/var/www/onlyoffice/Data/certs/dhparam.pem`.
-- **SSL_VERIFY_CLIENT**: Enable verification of client certificates using the `CA_CERTIFICATES_PATH` file. Defaults to `false`
+- **SSL_VERIFY_CLIENT**: Controls client certificate verification using the `CA_CERTIFICATES_PATH` file. Accepts `on`, `off`, `optional`, or `optional_no_ca`. Defaults to `off`.
 - **NODE_EXTRA_CA_CERTS**: The [NODE_EXTRA_CA_CERTS](https://nodejs.org/api/cli.html#node_extra_ca_certsfile "Node.js documentation") to extend CAs with the extra certificates for Node.js. Defaults to `/var/www/onlyoffice/Data/certs/extra-ca-certs.pem`.
 - **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
 - **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process. Defaults to the soft limit from `ulimit -n`.
-- **NGINX_ACCESS_LOG**: Defines whether access logging is enabled. Defaults to `false`.
+- **NGINX_ACCESS_LOG**: Defines whether filtered JSON access logging is enabled. Defaults to `true`.
 - **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](https://nginx.org/en/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.
 - **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `true`.
 - **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to random value.
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
 - **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
 - **WOPI_ENABLED**: Specifies the enabling the wopi handlers. Defaults to `false`.
+- **IP_FILTER_RULES**: Configures ordered rules that allow or deny hosts and IP addresses, using semicolon-separated `allow <address>`/`deny <address>` values. Replaces existing rules when set and preserves them when unset. WOPI requires a matching `allow` rule for each host, e.g. `allow wopi.example.com`. CIDR is not supported.
 - **ALLOW_META_IP_ADDRESS**: Defines if it is allowed to connect meta IP address or not. Defaults to `false`.
 - **ALLOW_PRIVATE_IP_ADDRESS**: Defines if it is allowed to connect private IP address or not. Defaults to `false`.
 - **USE_UNAUTHORIZED_STORAGE**: Set to `true` if using self-signed certificates for your storage server e.g. Nextcloud. Defaults to `false`
 - **GENERATE_FONTS**: When 'true' regenerates fonts list and the fonts thumbnails etc. at each start. Defaults to `true`
-- **ADMINPANEL_ENABLED**: Enables admin panel service autostart. Defaults to `false`.
+- **WELCOME_PAGE_ENABLED**: Specifies whether the Welcome page is enabled. Defaults to `true`.
 - **EXAMPLE_ENABLED**: Enables example service autostart. Defaults to `false`.
 - **METRICS_ENABLED**: Specifies the enabling StatsD for ONLYOFFICE Document Server. Defaults to `false`.
 - **METRICS_HOST**: Defines StatsD listening host. Defaults to `localhost`.
@@ -231,7 +232,8 @@ Below is the complete list of parameters that can be set using environment varia
 
 The following dependency parameters are supported only in Enterprise and Developer editions.
 
-- **DB_TYPE**: The database type. Supported values are `postgres`, `mariadb`, `mysql`, `mssql` or `oracle`. Defaults to `postgres`.
+- **ADMINPANEL_ENABLED**: Enables admin panel service autostart. Defaults to `true`.
+- **DB_TYPE**: The database type. Supported values are `postgres`, `mariadb`, `mysql`, `dameng`, `mssql` or `oracle`. Defaults to `postgres`.
 - **DB_HOST**: The IP address or the name of the host where the database server is running.
 - **DB_PORT**: The database server port number.
 - **DB_NAME**: The name of a database to use. Should be existing on container startup.
@@ -240,6 +242,12 @@ The following dependency parameters are supported only in Enterprise and Develop
 - **DB_SCHEMA**: Database schema name (optional).
   - **PostgreSQL** — schema for [search_path](https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH), default `public`.
   - **MSSQL** — schema to set as [DEFAULT_SCHEMA](https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-user-transact-sql?view=sql-server-ver17#default_schema---schema_name--null-), default `dbo`.
+- **DB_TLS_MODE**: TLS mode for supported database connections, one of `disable`, `require`, `verify-ca` or `verify-full`. Defaults to `disable`.
+- **REDIS_TLS_MODE**: TLS mode for Redis connections, one of `disable`, `require` or `verify-full`. Defaults to `disable`.
+- **AMQP_TLS_MODE**: TLS mode for AMQP connections, one of `disable`, `require` or `verify-full`. Defaults to `disable`.
+- **TLS_CA_CERT**: Path to the TLS CA certificate file.
+- **TLS_CERT**: Path to the TLS client certificate file.
+- **TLS_KEY**: Path to the TLS client private key file.
 - **AMQP_URI**: The [AMQP URI](https://www.rabbitmq.com/uri-spec.html "RabbitMQ URI Specification") to connect to message broker server.
 - **AMQP_TYPE**: The message broker type. Supported values are `rabbitmq` or `activemq`. Defaults to `rabbitmq`.
 - **RABBIT_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened to the RabbitMQ message broker. Defaults to the soft limit from `ulimit -n`.
@@ -287,116 +295,9 @@ docker compose -f docker-compose.developer.yml up -d
 
 ## Installing ONLYOFFICE Document Server as a part of ONLYOFFICE Workspace
 
-ONLYOFFICE Document Server is a part of ONLYOFFICE Workspace that comprises also Community Server, Mail Server, and Control Panel. To install them, follow these easy steps:
+ONLYOFFICE Document Server can be used as a part of ONLYOFFICE Workspace together with Community Server, Mail Server, and Control Panel.
 
-**STEP 1**: Create the `onlyoffice` network.
-
-```bash
-docker network create --driver bridge onlyoffice
-```
-Then launch containers on it using the 'docker run --net onlyoffice' option:
-
-**STEP 2**: Install MySQL.
-
-Install MySQL server. You can find MySQL installation instructions in the [official MySQL documentation](https://dev.mysql.com/doc/).
-
-**STEP 3**: Generate JWT Secret
-
-JWT secret defines the secret key to validate the JSON Web Token in the request to the **ONLYOFFICE Document Server**. You can specify it yourself or easily get it using the command:
-```
-JWT_SECRET=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 12);
-```
-
-**STEP 4**: Install ONLYOFFICE Document Server.
-
-```bash
-sudo docker run --net onlyoffice -i -t -d --restart=always --name onlyoffice-document-server \
- -e JWT_ENABLED=true \
- -e JWT_SECRET=${JWT_SECRET} \
- -e JWT_HEADER=AuthorizationJwt \
- -v /app/onlyoffice/DocumentServer/logs:/var/log/onlyoffice  \
- -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  \
- -v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice \
- onlyoffice/documentserver
-```
-
-**STEP 5**: Install ONLYOFFICE Mail Server. 
-
-For the mail server correct work you need to specify its hostname 'yourdomain.com'.
-
-```bash
-sudo docker run --init --net onlyoffice --privileged -i -t -d --restart=always --name onlyoffice-mail-server -p 25:25 -p 143:143 -p 587:587 \
- -e MYSQL_SERVER=onlyoffice-mysql-server \
- -e MYSQL_SERVER_PORT=3306 \
- -e MYSQL_ROOT_USER=root \
- -e MYSQL_ROOT_PASSWD=my-secret-pw \
- -e MYSQL_SERVER_DB_NAME=onlyoffice_mailserver \
- -v /app/onlyoffice/MailServer/data:/var/vmail \
- -v /app/onlyoffice/MailServer/data/certs:/etc/pki/tls/mailserver \
- -v /app/onlyoffice/MailServer/logs:/var/log \
- -h yourdomain.com \
- onlyoffice/mailserver
-```
-
-The additional parameters for mail server are available [here](https://github.com/ONLYOFFICE/Docker-CommunityServer/blob/master/docker-compose.workspace_enterprise.yml#L87).
-
-To learn more, refer to the [ONLYOFFICE Mail Server documentation](https://github.com/ONLYOFFICE/Docker-MailServer "ONLYOFFICE Mail Server documentation").
-
-**STEP 6**: Install ONLYOFFICE Community Server
-
-```bash
-sudo docker run --net onlyoffice -i -t -d --privileged --restart=always --name onlyoffice-community-server -p 80:80 -p 443:443 -p 5222:5222 --cgroupns=host \
- -e MYSQL_SERVER_ROOT_PASSWORD=my-secret-pw \
- -e MYSQL_SERVER_DB_NAME=onlyoffice \
- -e MYSQL_SERVER_HOST=onlyoffice-mysql-server \
- -e MYSQL_SERVER_USER=onlyoffice_user \
- -e MYSQL_SERVER_PASS=onlyoffice_pass \
- 
- -e DOCUMENT_SERVER_PORT_80_TCP_ADDR=onlyoffice-document-server \
- -e DOCUMENT_SERVER_JWT_ENABLED=true \
- -e DOCUMENT_SERVER_JWT_SECRET=${JWT_SECRET} \
- -e DOCUMENT_SERVER_JWT_HEADER=AuthorizationJwt \
- 
- -e MAIL_SERVER_API_HOST=${MAIL_SERVER_IP} \
- -e MAIL_SERVER_DB_HOST=onlyoffice-mysql-server \
- -e MAIL_SERVER_DB_NAME=onlyoffice_mailserver \
- -e MAIL_SERVER_DB_PORT=3306 \
- -e MAIL_SERVER_DB_USER=root \
- -e MAIL_SERVER_DB_PASS=my-secret-pw \ 
- -e CONTROL_PANEL_PORT_80_TCP=80 \
- -e CONTROL_PANEL_PORT_80_TCP_ADDR=onlyoffice-control-panel \
- -v /app/onlyoffice/CommunityServer/data:/var/www/onlyoffice/Data \
- -v /app/onlyoffice/CommunityServer/logs:/var/log/onlyoffice \
- -v /app/onlyoffice/CommunityServer/letsencrypt:/etc/letsencrypt \
- -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
- onlyoffice/communityserver
-```
-
-Where `${MAIL_SERVER_IP}` is the IP address for **ONLYOFFICE Mail Server**. You can easily get it using the command:
-```
-MAIL_SERVER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' onlyoffice-mail-server)
-```
-
-Alternatively, you can use an automatic installation script to install ONLYOFFICE Workspace at once. For the mail server correct work you need to specify its hostname 'yourdomain.com'.
-
-**STEP 1**: Download the ONLYOFFICE Workspace Docker script file
-
-```bash
-wget https://download.onlyoffice.com/install/workspace-install.sh
-```
-
-**STEP 2**: Install ONLYOFFICE Workspace executing the following command:
-
-```bash
-bash workspace-install.sh -md yourdomain.com
-```
-
-Or, use [docker-compose](https://docs.docker.com/compose/install "docker-compose"). First you need to clone this [GitHub repository](https://github.com/ONLYOFFICE/Docker-CommunityServer/):
-
-```bash
-wget https://raw.githubusercontent.com/ONLYOFFICE/Docker-CommunityServer/master/docker-compose.groups.yml
-docker-compose -f docker-compose.groups.yml up -d
-```
+For Workspace installation instructions, use the automatic installation script or Docker Compose files from the [ONLYOFFICE Workspace documentation](https://helpcenter.onlyoffice.com/workspace/installation/workspace-install-docker.aspx) and [Docker-CommunityServer repository](https://github.com/ONLYOFFICE/Docker-CommunityServer).
 
 ## ONLYOFFICE Document Server ipv6 setup
 
@@ -435,7 +336,7 @@ The known Docker issue with ONLYOFFICE Document Server with rpm-based distributi
 Due to the operational characteristic, **Document Server** saves a document only after the document has been closed by all the users who edited it. To avoid data loss, you must forcefully disconnect the **Document Server** users when you need to stop **Document Server** in cases of the application update, server reboot etc. To do that, execute the following script on the server where **Document Server** is installed:
 
 ```
-sudo docker exec <CONTAINER> documentserver-prepare4shutdown.sh
+sudo docker exec <CONTAINER> documentserver-prepare4shutdown
 ```
 
 Please note, that both executing the script and disconnecting users may take a long time (up to 5 minutes).
@@ -448,7 +349,7 @@ Code repository: [github.com/ONLYOFFICE/DocumentServer](https://github.com/ONLYO
 
 Docker Image: [github.com/ONLYOFFICE/Docker-DocumentServer](https://github.com/ONLYOFFICE/Docker-DocumentServer "https://github.com/ONLYOFFICE/Docker-DocumentServer")
 
-License: [GNU AGPL v3.0](https://onlyo.co/38YZGJh)
+License: [GNU AGPL v3.0](https://docspace.onlyoffice.com/s/wjQ94v2GWfm65wH)
 
 Free version vs commercial builds comparison: https://github.com/ONLYOFFICE/DocumentServer#onlyoffice-docs-editions
 

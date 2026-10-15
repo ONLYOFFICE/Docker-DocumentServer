@@ -1,0 +1,293 @@
+name: Docker tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
+
+jobs:
+  docker-tests:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Community Edition
+            working_directory: .
+            script: tests/test.sh
+            config: docker-compose.yml
+            variables: ""
+
+          - name: Enterprise Edition
+            working_directory: .
+            script: tests/test.sh
+            config: docker-compose.enterprise.yml
+            variables: ""
+
+          - name: Developer Edition
+            working_directory: .
+            script: tests/test.sh
+            config: docker-compose.developer.yml
+            variables: ""
+
+          - name: Community Edition (Standalone)
+            working_directory: tests
+            script: ./test.sh
+            config: standalone.yml
+            variables: ""
+
+          - name: Enterprise Edition (Standalone)
+            working_directory: tests
+            script: ./test.sh
+            config: standalone-enterprise.yml
+            variables: ""
+
+          - name: Certificates with generated certificate
+            working_directory: tests
+            script: ./test.sh
+            config: certs.yml
+            variables: |
+              ssl=true
+
+          - name: Certificates with onlyoffice certificate
+            working_directory: tests
+            script: ./test.sh
+            config: certs.yml
+            variables: |
+              ssl=true
+              private_key=onlyoffice.key
+              certificate_request=onlyoffice.csr
+              certificate=onlyoffice.crt
+
+          - name: Custom certificates
+            working_directory: tests
+            script: ./test.sh
+            config: certs-customized.yml
+            variables: |
+              ssl=true
+              private_key=mycert.key
+              certificate_request=mycert.csr
+              certificate=mycert.crt
+              SSL_CERTIFICATE_PATH=/var/www/onlyoffice/Data/certs/mycert.crt
+              SSL_KEY_PATH=/var/www/onlyoffice/Data/certs/mycert.key
+
+          - name: PostgreSQL 16
+            working_directory: tests
+            script: ./test.sh
+            config: postgres.yml
+            variables: |
+              POSTGRES_VERSION=16
+
+          - name: PostgreSQL 15
+            working_directory: tests
+            script: ./test.sh
+            config: postgres.yml
+            variables: |
+              POSTGRES_VERSION=15
+
+          - name: PostgreSQL 14
+            working_directory: tests
+            script: ./test.sh
+            config: postgres.yml
+            variables: |
+              POSTGRES_VERSION=14
+
+          - name: PostgreSQL 13
+            working_directory: tests
+            script: ./test.sh
+            config: postgres.yml
+            variables: |
+              POSTGRES_VERSION=13
+
+          - name: PostgreSQL 12
+            working_directory: tests
+            script: ./test.sh
+            config: postgres.yml
+            variables: ""
+
+          - name: PostgreSQL custom values
+            working_directory: tests
+            script: ./test.sh
+            config: postgres.yml
+            variables: |
+              DB_NAME=mydb
+              DB_USER=myuser
+              DB_PWD=password
+              POSTGRES_DB=mydb
+              POSTGRES_USER=myuser
+
+          - name: PostgreSQL TLS only
+            working_directory: tests
+            script: ./test.sh
+            config: postgres-tls.yml
+            variables: |
+              tls_services=postgresql
+              assert_tls_isolation=true
+
+          - name: PostgreSQL deprecated variables
+            working_directory: tests
+            script: ./test.sh
+            config: postgres-old.yml
+            variables: ""
+
+          - name: MySQL 8
+            working_directory: tests
+            script: ./test.sh
+            config: mysql.yml
+            variables: |
+              MYSQL_VERSION=8
+
+          - name: MySQL TLS
+            working_directory: tests
+            script: ./test.sh
+            config: mysql-tls.yml
+            variables: |
+              tls_services=mysql
+
+          - name: MSSQL TLS
+            working_directory: tests
+            script: ./test.sh
+            config: mssql-tls.yml
+            variables: |
+              tls_services=mssql
+
+          - name: MySQL 5
+            working_directory: tests
+            script: ./test.sh
+            config: mysql.yml
+            variables: |
+              MYSQL_VERSION=5
+
+          - name: MySQL 5.7
+            working_directory: tests
+            script: ./test.sh
+            config: mysql.yml
+            variables: ""
+
+          - name: MariaDB 10
+            working_directory: tests
+            script: ./test.sh
+            config: mariadb.yml
+            variables: |
+              MARIADB_VERSION=10
+
+          - name: MariaDB 10.5
+            working_directory: tests
+            script: ./test.sh
+            config: mariadb.yml
+            variables: ""
+
+          - name: ActiveMQ latest
+            working_directory: tests
+            script: ./test.sh
+            config: activemq.yml
+            variables: |
+              ACTIVEMQ_VERSION=latest
+
+          - name: ActiveMQ 5.14.3
+            working_directory: tests
+            script: ./test.sh
+            config: activemq.yml
+            variables: ""
+
+          - name: RabbitMQ latest
+            working_directory: tests
+            script: ./test.sh
+            config: rabbitmq.yml
+            variables: ""
+
+          - name: RabbitMQ 3
+            working_directory: tests
+            script: ./test.sh
+            config: rabbitmq.yml
+            variables: |
+              RABBITMQ_VERSION=3
+
+          - name: PostgreSQL, Redis and RabbitMQ TLS
+            working_directory: tests
+            script: ./test.sh
+            config: rabbitmq-tls.yml
+            variables: |
+              tls_services=postgresql rabbitmq redis
+
+          - name: RabbitMQ deprecated variables
+            working_directory: tests
+            script: ./test.sh
+            config: rabbitmq-old.yml
+            variables: ""
+
+          - name: Redis latest
+            working_directory: tests
+            script: ./test.sh
+            config: redis.yml
+            variables: ""
+
+          - name: Redis TLS
+            working_directory: tests
+            script: ./test.sh
+            config: redis-tls.yml
+            variables: |
+              tls_services=postgresql redis
+
+          - name: Redis TLS with local PostgreSQL
+            working_directory: tests
+            script: ./test.sh
+            config: redis-tls-local-db.yml
+            variables: |
+              tls_services=redis
+
+          - name: Redis 6
+            working_directory: tests
+            script: ./test.sh
+            config: redis.yml
+            variables: |
+              REDIS_VERSION=6
+
+          - name: Redis 5
+            working_directory: tests
+            script: ./test.sh
+            config: redis.yml
+            variables: |
+              REDIS_VERSION=5
+
+          - name: Graphite
+            working_directory: tests
+            script: ./test.sh
+            config: graphite.yml
+            variables: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Run compose test
+        shell: bash
+        env:
+          PACKAGE_BASEURL: ${{ secrets.REPO_BASEURL }}
+          TEST_WORKING_DIRECTORY: ${{ matrix.working_directory }}
+          TEST_SCRIPT: ${{ matrix.script }}
+          TEST_CONFIG: ${{ matrix.config }}
+          TEST_VARIABLES: ${{ matrix.variables }}
+        run: |
+          set -euo pipefail
+
+          package_tag=$(git tag --merged HEAD \
+            --list 'v[0-9]*.[0-9]*.[0-9]*.[0-9]*' \
+            --sort=version:refname | grep -v '^v99\.99\.99\.' | tail -n1)
+          [[ -n "$package_tag" ]]
+          package_version=${package_tag#v}
+          export PACKAGE_VERSION="${package_version%.*}-${package_version##*.}"
+
+          cd "${TEST_WORKING_DIRECTORY}"
+          export config="${TEST_CONFIG}"
+
+          while IFS= read -r variable; do
+            if [[ -n "${variable}" ]]; then
+              export "${variable}"
+            fi
+          done <<< "${TEST_VARIABLES}"
+
+          bash "${TEST_SCRIPT}"

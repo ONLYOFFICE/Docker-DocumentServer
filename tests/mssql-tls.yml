@@ -1,0 +1,37 @@
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    build:
+      context: ../.
+      dockerfile: Dockerfile.enterprise
+    depends_on:
+      - onlyoffice-mssql
+    environment:
+      - DB_TYPE=mssql
+      - DB_HOST=onlyoffice-mssql
+      - DB_PORT=1433
+      - DB_NAME=${DB_NAME:-onlyoffice}
+      - DB_USER=${DB_USER:-sa}
+      - DB_PWD=${DB_PWD:-Password123!}
+      - DB_TLS_MODE=${DB_TLS_MODE:-verify-full}
+      - TLS_CA_CERT=${TLS_CA_CERT:-/var/www/onlyoffice/Data/tls/ca.crt}
+      - SSL_CERT_FILE=/var/www/onlyoffice/Data/tls/ca.crt
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+    volumes:
+      - ./data:/var/www/onlyoffice/Data
+
+  onlyoffice-mssql:
+    container_name: onlyoffice-mssql
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${DB_PWD:-Password123!}
+    restart: always
+    expose:
+      - '1433'
+    volumes:
+      - ./data/tls:/tls:ro
+      - ./data/tls/mssql.conf:/var/opt/mssql/mssql.conf:ro

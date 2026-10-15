@@ -1,9 +1,9 @@
-version: '2.1'
 services:
   onlyoffice-documentserver:
     container_name: onlyoffice-documentserver
     build:
       context: ../.
+      dockerfile: Dockerfile.enterprise
     environment:
       - AMQP_SERVER_TYPE=${AMQP_SERVER_TYPE:-rabbitmq}
       - AMQP_SERVER_URL=${AMQP_SERVER_URL:-amqp://guest:guest@onlyoffice-rabbitmq}

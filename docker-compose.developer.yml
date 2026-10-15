@@ -2,10 +2,10 @@ services:
   onlyoffice-documentserver:
     build:
       context: .
-      target: documentserver-enterprise
+      dockerfile: Dockerfile.enterprise
       args:
         - PRODUCT_EDITION=-de
-    image: onlyoffice/documentserver-de
+    image: onlyoffice/documentserver-de:${TAG:-latest}
     container_name: onlyoffice-documentserver
     depends_on:
       - onlyoffice-postgresql
@@ -28,12 +28,6 @@ services:
     ports:
       - '80:80'
       - '443:443'
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/info/info.json"]
-      interval: 30s
-      retries: 5
-      start_period: 60s
-      timeout: 10s
     stdin_open: true
     restart: always
     stop_grace_period: 60s

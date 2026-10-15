@@ -1,3 +1,5 @@
+FROM onlyoffice/documentserver-ee:latest as schema-source
+
 FROM onlyoffice/damengdb:8.1.3 as damengdb
 
 ARG DM8_USER="SYSDBA"
@@ -41,7 +43,9 @@ GRANT ALL PRIVILEGES ON sysdba.TASK_RESULT TO onlyoffice;
 
 EOF
 
-ADD https://raw.githubusercontent.com/ONLYOFFICE/server/master/schema/dameng/createdb.sql /schema/dameng/createdb.sql
+RUN mkdir -p /schema/dameng
+
+COPY --from=schema-source /var/www/onlyoffice/documentserver/server/schema/dameng/createdb.sql /schema/dameng/createdb.sql
 
 ARG OO_DB_USER="onlyoffice"
 ARG OO_DB_PASS="Onlyoffice_2026"

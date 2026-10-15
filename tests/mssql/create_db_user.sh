@@ -13,7 +13,7 @@ for (( i=1; i <= 20; i++ )); do
 done
 export MSSQL_SA_PASSWORD=$PASS
 
-CONNECTION_STR="/opt/mssql-tools/bin/sqlcmd -S localhost,1433 -U SA -P "$MSSQL_SA_PASSWORD" -C -Q"
+CONNECTION_STR="/opt/mssql-tools18/bin/sqlcmd -S localhost,1433 -U SA -P "$MSSQL_SA_PASSWORD" -C -Q"
 
 #start db
 /opt/mssql/bin/sqlservr &

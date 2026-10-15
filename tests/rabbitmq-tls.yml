@@ -1,0 +1,94 @@
+services:
+  onlyoffice-documentserver:
+    container_name: onlyoffice-documentserver
+    build:
+      context: ../.
+      dockerfile: Dockerfile.enterprise
+    depends_on:
+      - onlyoffice-postgresql
+      - onlyoffice-rabbitmq
+      - onlyoffice-redis
+    environment:
+      - DB_TYPE=postgres
+      - DB_HOST=onlyoffice-postgresql
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-onlyoffice}
+      - DB_USER=${DB_USER:-onlyoffice}
+      - DB_PWD=${DB_PWD:-onlyoffice}
+      - AMQP_TYPE=rabbitmq
+      - AMQP_URI=${AMQP_URI:-amqp://guest:guest@onlyoffice-rabbitmq:5671}
+      - REDIS_SERVER_HOST=onlyoffice-redis
+      - REDIS_SERVER_PORT=6379
+      - DB_TLS_MODE=${DB_TLS_MODE:-verify-full}
+      - REDIS_TLS_MODE=${REDIS_TLS_MODE:-require}
+      - AMQP_TLS_MODE=${AMQP_TLS_MODE:-verify-full}
+      - TLS_CA_CERT=${TLS_CA_CERT:-/var/www/onlyoffice/Data/tls/ca.crt}
+    stdin_open: true
+    restart: always
+    ports:
+      - '80:80'
+    networks:
+      - onlyoffice
+    volumes:
+      - ./data:/var/www/onlyoffice/Data
+
+  onlyoffice-postgresql:
+    container_name: onlyoffice-postgresql
+    image: postgres:${POSTGRES_VERSION:-16}
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-onlyoffice}
+      - POSTGRES_USER=${POSTGRES_USER:-onlyoffice}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-onlyoffice}
+    restart: always
+    networks:
+      - onlyoffice
+    expose:
+      - '5432'
+    volumes:
+      - ./data/tls:/tls:ro
+      - ./data/tls/postgresql-init-tls.sh:/docker-entrypoint-initdb.d/postgresql-init-tls.sh:ro
+      - postgresql_data:/var/lib/postgresql/data
+
+  onlyoffice-rabbitmq:
+    container_name: onlyoffice-rabbitmq
+    image: rabbitmq:${RABBITMQ_VERSION:-3}
+    restart: always
+    networks:
+      - onlyoffice
+    expose:
+      - '5671'
+    volumes:
+      - ./data/tls:/tls:ro
+      - ./data/tls/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+
+  onlyoffice-redis:
+    container_name: onlyoffice-redis
+    image: redis:${REDIS_VERSION:-7}
+    command:
+      - redis-server
+      - --port
+      - '0'
+      - --tls-port
+      - '6379'
+      - --tls-cert-file
+      - /tls/redis.crt
+      - --tls-key-file
+      - /tls/redis.key
+      - --tls-ca-cert-file
+      - /tls/ca.crt
+      - --tls-auth-clients
+      - 'no'
+    restart: always
+    networks:
+      - onlyoffice
+    expose:
+      - '6379'
+    volumes:
+      - ./data/tls:/tls:ro
+
+networks:
+  onlyoffice:
+    driver: 'bridge'
+
+volumes:
+  postgresql_data:

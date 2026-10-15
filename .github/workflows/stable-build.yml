@@ -266,12 +266,12 @@ jobs:
           GITEA_REPO: ${{ secrets.GITEA_REPO }}
           RELEASE_TAG: ${{ steps.release.outputs.release_tag }}
           SOURCE_TAG: ${{ steps.release.outputs.source_tag }}
-          GITHUB_SOURCE_BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
           CONFIG_FILE=".github/secure-rebuild.json"
           BRANCH="secure-rebuild-config/${RELEASE_TAG}"
+          BASE_BRANCH="master"
           WORK_DIR="${RUNNER_TEMP}/gitea-repo"
           RESPONSE_FILE="$(mktemp)"
 
@@ -309,25 +309,6 @@ jobs:
           AUTHENTICATED_REPO_URL="https://x-token:${GITEA_TOKEN}@${GITEA_HOST}/${GITEA_REPO}.git"
           PUBLIC_REPO_URL="${GITEA_URL}/${GITEA_REPO}.git"
           API_URL="${GITEA_URL}/api/v1/repos/${GITEA_REPO}/pulls"
-
-          BASE_BRANCH="${GITHUB_SOURCE_BRANCH#refs/heads/}"
-
-          if [ -z "${BASE_BRANCH}" ]; then
-            BASE_BRANCH="master"
-          fi
-
-          if git ls-remote \
-            --exit-code \
-            --heads \
-            "${AUTHENTICATED_REPO_URL}" \
-            "refs/heads/${BASE_BRANCH}" \
-            >/dev/null 2>&1; then
-            echo "Using matching Gitea branch as PR base: ${BASE_BRANCH}"
-          else
-            echo "Branch ${BASE_BRANCH} does not exist in Gitea"
-            BASE_BRANCH="master"
-            echo "Using fallback PR base: ${BASE_BRANCH}"
-          fi
 
           if ! git ls-remote \
             --exit-code \
