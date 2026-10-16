@@ -35,7 +35,7 @@ init_config(){
 
   NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
   NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-1}
-  NGINX_ACCESS_LOG=${NGINX_ACCESS_LOG:-false}
+  NGINX_ACCESS_LOG=${NGINX_ACCESS_LOG:-true}
   local limit
   limit=$(ulimit -n); [ "$limit" = "unlimited" ] || [ "$limit" -gt 1048576 ] && limit=1048576
   NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$limit}
@@ -51,10 +51,12 @@ init_config(){
   JWT_IN_BODY=${JWT_IN_BODY:-false}
 
   WOPI_ENABLED=${WOPI_ENABLED:-false}
+  IP_FILTER_RULES=${IP_FILTER_RULES:-}
   ALLOW_META_IP_ADDRESS=${ALLOW_META_IP_ADDRESS:-false}
   ALLOW_PRIVATE_IP_ADDRESS=${ALLOW_PRIVATE_IP_ADDRESS:-false}
 
   # Feature flags and feature availability.
+  WELCOME_PAGE_ENABLED=${WELCOME_PAGE_ENABLED:-true}
   GENERATE_FONTS=${GENERATE_FONTS:-true}
 
   local _is_commercial
@@ -130,9 +132,9 @@ init_ssl(){
 init_folders(){
   for f in "${SUPERVISOR_CONF_DIR}"/ds-*.conf; do
     local d="${DS_LOG_DIR}/${f##*/ds-}"; d="${d%.conf}"
-    mkdir -p "$d" && touch "$d"/{out,err}.log
+    mkdir -p "$d" && touch "$d"/out.log
   done
-  mkdir -p "${DS_LOG_DIR}-example" && touch "${DS_LOG_DIR}-example"/{out,err}.log
+  mkdir -p "${DS_LOG_DIR}-example" && touch "${DS_LOG_DIR}-example"/out.log
   mkdir -p "${DS_LIB_DIR}/App_Data/cache/files" "${DS_LIB_DIR}/App_Data/docbuilder" "${DS_LIB_DIR}-example/files"
 
   chmod -R 755 "${DS_LOG_DIR}" "${DS_LOG_DIR}-example" "${LIB_DIR}"
@@ -454,6 +456,39 @@ update_redis_settings(){
   fi
 }
 
+update_ipfilter_rules(){
+  [ -z "${IP_FILTER_RULES}" ] && return
+
+  local -a rules
+  local rule action address extra
+  IFS=';' read -ra rules <<< "${IP_FILTER_RULES}"
+
+  for rule in "${rules[@]}"; do
+    read -r action address extra <<< "${rule}"
+
+    case "${action,,}" in
+      allow|deny) ;;
+      *) action= ;;
+    esac
+
+    if [ -z "${action}" ] || [ -z "${address}" ] || [ -n "${extra}" ] || [[ "${address}" == */* ]]; then
+      echo 'ERROR: invalid IP_FILTER_RULES. Expected format: allow <address>; deny <address>' >&2
+      exit 1
+    fi
+  done
+
+  ${JSON} -I -e "this.services.CoAuthoring.ipfilter ||= {}; this.services.CoAuthoring.ipfilter.rules = []" || exit 1
+
+  for rule in "${rules[@]}"; do
+    read -r action address <<< "${rule}"
+    [ "${address,,}" = "all" ] && address='*'
+    [ "${action,,}" = "allow" ] && action=true || action=false
+
+    IP_FILTER_ADDRESS="${address}" IP_FILTER_ALLOWED="${action}" \
+      ${JSON} -I -e "this.services.CoAuthoring.ipfilter.rules.push({ address: process.env.IP_FILTER_ADDRESS, allowed: process.env.IP_FILTER_ALLOWED === 'true' })" || exit 1
+  done
+}
+
 # Write JWT tokens, WOPI keys, and request-filtering-agent settings to local.json.
 update_ds_settings(){
   ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}; \
@@ -593,8 +628,12 @@ oracle_tbl() {
   run_oracle_sql_file "$APP_DIR/server/schema/oracle/createdb.sql"
 }
 
-# Patch welcome and disabled-page HTML to replace docker container placeholder.
+# Configure the welcome page and patch Docker-specific HTML placeholders.
 update_welcome_page() {
+  if [ "${WELCOME_PAGE_ENABLED}" != "true" ] && [ -f /etc/nginx/includes/ds-example.conf ]; then
+    sed -i '/^[[:space:]]*location .*welcome/,/^[[:space:]]*}/d' /etc/nginx/includes/ds-example.conf
+  fi
+
   INDEX_PAGE="${APP_DIR}-example/welcome/index.html"
   WELCOME_PAGE="${APP_DIR}-example/welcome/docker.html"
   EXAMPLE_DISABLED_PAGE="${APP_DIR}-example/welcome/example-disabled.html"
@@ -631,12 +670,10 @@ update_nginx_settings(){
     -e "s/worker_connections.*/worker_connections ${NGINX_WORKER_CONNECTIONS};/"
 
   # Access logging.
-  if [ "${NGINX_ACCESS_LOG}" = "true" ]; then
-    touch "${DS_LOG_DIR}/nginx.access.log"
-    sed -ri "s|^\s*(access_log)\b.*;|\1 ${DS_LOG_DIR}/nginx.access.log;|" \
-      "${NGINX_CONFIG_PATH}" "${NGINX_ONLYOFFICE_PATH}/includes/ds-common.conf" 2>/dev/null
-  else
-    sed -ri 's|^\s*(access_log)\b.*;|\1 off;|' "${NGINX_CONFIG_PATH}"
+  sed -ri 's|^\s*(access_log)\b.*;|\1 off;|' "${NGINX_CONFIG_PATH}"
+  if [ "${NGINX_ACCESS_LOG}" != "true" ]; then
+    sed -ri 's|^\s*(access_log)\b.*;|\1 off;|' \
+      "${NGINX_ONLYOFFICE_PATH}/includes/ds-common.conf"
   fi
 
   # SSL/HTTPS setup.
@@ -753,6 +790,7 @@ init_folders
 if [ "${ONLYOFFICE_DATA_CONTAINER_HOST}" = "localhost" ]; then
   read_setting
   update_welcome_page
+  update_ipfilter_rules
   update_ds_settings
   [ "${DB_AVAILABLE}" = "true" ]       && setup_db
   [ "${RABBITMQ_AVAILABLE}" = "true" ] && setup_rabbitmq
