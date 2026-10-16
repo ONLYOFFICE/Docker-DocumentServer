@@ -218,27 +218,6 @@ jobs:
           subject-digest: ${{ steps.image.outputs.digest }}
           push-to-registry: true
 
-      # Run Trivy scans for community and developer images from release/hotfix branches.
-      - name: Trigger Trivy scan
-        if: >-
-             (matrix.edition == 'community' || matrix.edition == 'developer') &&
-             matrix.platform == 'amd64' &&
-             (startsWith(steps.build-ds.outputs.branch, 'release/') ||
-              startsWith(steps.build-ds.outputs.branch, 'hotfix/'))
-        env:
-          VERSION: ${{ steps.build-ds.outputs.version }}
-          EDITION: ${{ matrix.edition }}
-          BRANCH: ${{ steps.build-ds.outputs.branch }}
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
-          REPO: ${{ github.repository }}
-        run: |
-            gh workflow run trivy-ds.yml \
-                 --repo "${REPO}" \
-                 --ref "${BRANCH}" \
-                 -f edition="${EDITION}" \
-                 -f version="${VERSION}"
-        shell: bash
-
       - name: Save build result to file
         if: always()
         run: |
@@ -381,6 +360,29 @@ jobs:
            echo "name=$REPO" >> "$GITHUB_OUTPUT"
            echo "index_digest=$INDEX_DIGEST" >> "$GITHUB_OUTPUT"
            echo "from_tags=${FROM_TAGS[*]}" >> "$GITHUB_OUTPUT"
+           echo "version=${TAG}" >> "$GITHUB_OUTPUT"
+           echo "amd64_status=${AMD64_STATUS}" >> "$GITHUB_OUTPUT"
+
+      # Scan the published tag, which survives platform-specific tag cleanup.
+      - name: Trigger Trivy scan
+        if: >-
+             (matrix.edition == 'community' || matrix.edition == 'developer') &&
+             steps.manifest.outputs.amd64_status == 'success' &&
+             (startsWith(github.ref_name, 'release/') ||
+              startsWith(github.ref_name, 'hotfix/'))
+        env:
+          VERSION: ${{ steps.manifest.outputs.version }}
+          EDITION: ${{ matrix.edition }}
+          BRANCH: ${{ github.ref_name }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+            gh workflow run trivy-ds.yml \
+                 --repo "${REPO}" \
+                 --ref "${BRANCH}" \
+                 -f edition="${EDITION}" \
+                 -f version="${VERSION}"
+        shell: bash
 
       - name: Cleanup platform-specific tags
         if: always() && steps.manifest.outputs.index_digest != ''
