@@ -631,7 +631,7 @@ oracle_tbl() {
 # Configure the welcome page and patch Docker-specific HTML placeholders.
 update_welcome_page() {
   if [ "${WELCOME_PAGE_ENABLED}" != "true" ] && [ -f /etc/nginx/includes/ds-example.conf ]; then
-    sed -i '/^[[:space:]]*location .*welcome/,/^[[:space:]]*}/d' /etc/nginx/includes/ds-example.conf
+    sed -Ei '/^\s*location .*welcome/,/^\s*}/{/^\s*location/!d;s/\s*(\{.*)?$/ {\n  return 404;\n}/;}' /etc/nginx/includes/ds-example.conf
   fi
 
   INDEX_PAGE="${APP_DIR}-example/welcome/index.html"
