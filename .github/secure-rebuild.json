@@ -2,10 +2,10 @@
   "releases": {
     "v10": [
       {
-        "source_tag": "10.0.0.169",
-        "release_tag": "10.0.0.1",
+        "source_tag": "10.0.2.5",
+        "release_tag": "10.0.2.1",
         "short_tags": [
-          "10.0.0",
+          "10.0.2",
           "10.0"
         ],
         "editions": {
@@ -14,6 +14,21 @@
           },
           "-de": {
             "latest": true
+          }
+        }
+      },
+      {
+        "source_tag": "10.0.0.169",
+        "release_tag": "10.0.0.1",
+        "short_tags": [
+          "10.0.0"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
           }
         }
       }
