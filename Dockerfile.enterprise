@@ -40,7 +40,7 @@ RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --batch -
     wait; } && \
     echo "${BASICLITE_SHA256}  client.zip"  | sha256sum -c - && \
     echo "${SQLPLUS_SHA256}  sqlplus.zip" | sha256sum -c - && \
-    unzip -o client.zip -d /usr/share && unzip -o sqlplus.zip -d /usr/share && \
+    unzip -o client.zip -d /usr/share -x '*.jar' && unzip -o sqlplus.zip -d /usr/share && \
     rm -f client.zip sqlplus.zip && \
     mv /usr/share/instantclient_${ORACLE_DIR} /usr/share/instantclient && \
     find /usr/lib /lib -name "libaio.so.1*" ! -name "libaio.so.1" -execdir ln -sf {} libaio.so.1 \; && \
