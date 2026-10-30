@@ -794,9 +794,9 @@ fonts_fingerprint(){
   } | LC_ALL=C sort | md5sum | cut -d' ' -f1
 }
 
-# True when every file produced by the font generators is present.
+# True when every file produced by the font and theme generators is present.
 fonts_generated(){
-  [ -s "${APP_DIR}/sdkjs/common/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/font_selection.bin" ]
+  [ -s "${APP_DIR}/sdkjs/common/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/font_selection.bin" ] && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ]
 }
 
 # Generate fonts, themes and js cache; GENERATE_FONTS: true = when fonts changed, force = always, false = never.
@@ -810,6 +810,8 @@ generate_fonts(){
   if [ "${GENERATE_FONTS}" != "force" ] && fonts_generated && [ "$(cat "${FONTS_FINGERPRINT_FILE}" 2>/dev/null)" = "${fingerprint}" ]; then
     return 10
   fi
+  # The package script skips the themes unless the editor files changed, so force drops their fingerprint to rebuild them too.
+  [ "${GENERATE_FONTS}" = "force" ] && rm -f "${APP_DIR}/server/FileConverter/bin/themes.fingerprint"
   # "true" only skips the script's own service restart, cache flush and gzip, which refresh_fonts and static_gzip do instead.
   documentserver-generate-allfonts true
   fonts_generated && echo "${fingerprint}" > "${FONTS_FINGERPRINT_FILE}"
