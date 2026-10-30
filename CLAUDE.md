@@ -57,7 +57,7 @@ cd tests && ./test.sh
 - SSL/TLS with Let's Encrypt integration (Certbot)
 - Non-root execution possible
 - Fast start: `prepare-image.sh` runs at image build (end of the package-install `RUN` in both Dockerfiles) and pre-generates fonts, themes and the js cache, writes `server/FileConverter/bin/fonts.fingerprint` and enables `gzip_static`; it does not gzip. It sources `run-document-server.sh` (which returns right after its function definitions when sourced), so the build-time and runtime fingerprints always come from the same code
-- `GENERATE_FONTS`: `true` (default) regenerates in the background only when the fingerprint of the scanned font dirs changed, `force` always, `false` never (unless `AllFonts.js` is missing); services start immediately and are restarted after regeneration. Keep `fonts_fingerprint` in sync with the dirs the generator scans (`core/DesktopEditor/fontengine/ApplicationFonts.cpp`)
+- `GENERATE_FONTS`: `true` (default) regenerates in the background only when the fingerprint of the scanned font dirs changed, `force` always, `false` never (unless a generated font file such as `AllFonts.js` or `font_selection.bin` is missing); services start immediately and are restarted after regeneration. Keep `fonts_fingerprint` in sync with the dirs the generator scans (`core/DesktopEditor/fontengine/ApplicationFonts.cpp`)
 - Static `.gz` files are built at start by `static_gzip` in the background (parallel, temp file + rename); `sdkjs-plugins` `.gz` are dropped before `pluginsmanager` runs and rebuilt after it
 - Do not run `allthemesgen` in parallel (segfaults, output differs); a full font regeneration takes minutes
 

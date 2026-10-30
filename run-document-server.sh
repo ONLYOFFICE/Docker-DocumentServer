@@ -794,20 +794,25 @@ fonts_fingerprint(){
   } | LC_ALL=C sort | md5sum | cut -d' ' -f1
 }
 
+# True when every file produced by the font generators is present.
+fonts_generated(){
+  [ -s "${APP_DIR}/sdkjs/common/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/font_selection.bin" ]
+}
+
 # Generate fonts, themes and js cache; GENERATE_FONTS: true = when fonts changed, force = always, false = never.
 # Returns 10 when the generation was skipped.
 generate_fonts(){
-  local all_fonts="${APP_DIR}/sdkjs/common/AllFonts.js" fingerprint
-  if [ -s "${all_fonts}" ]; then
+  local fingerprint
+  if fonts_generated; then
     [ "${GENERATE_FONTS}" = "true" ] || [ "${GENERATE_FONTS}" = "force" ] || return 10
   fi
   fingerprint=$(fonts_fingerprint)
-  if [ "${GENERATE_FONTS}" != "force" ] && [ -s "${all_fonts}" ] && [ "$(cat "${FONTS_FINGERPRINT_FILE}" 2>/dev/null)" = "${fingerprint}" ]; then
+  if [ "${GENERATE_FONTS}" != "force" ] && fonts_generated && [ "$(cat "${FONTS_FINGERPRINT_FILE}" 2>/dev/null)" = "${fingerprint}" ]; then
     return 10
   fi
   # "true" only skips the script's own service restart, cache flush and gzip, which refresh_fonts and static_gzip do instead.
   documentserver-generate-allfonts true
-  [ -s "${all_fonts}" ] && echo "${fingerprint}" > "${FONTS_FINGERPRINT_FILE}"
+  fonts_generated && echo "${fingerprint}" > "${FONTS_FINGERPRINT_FILE}"
   return 0
 }
 
@@ -912,8 +917,8 @@ if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
   ${ADMINPANEL_AVAILABLE} && tail -n 0 -F "$DS_LOG_DIR/adminpanel/out.log" &
   # Drop pid/socket files left by a previous run, a reused pid would make supervisor look already running.
   rm -f /var/run/supervisord.pid /var/run/supervisor.sock
-  # Without AllFonts.js the editors cannot work, so only in that case wait for the generation.
-  [ -s "${APP_DIR}/sdkjs/common/AllFonts.js" ] || wait_fonts
+  # Without the generated font files the editors cannot work, so only in that case wait for the generation.
+  fonts_generated || wait_fonts
   service supervisor start
   update_logrotate_settings
   service cron start
