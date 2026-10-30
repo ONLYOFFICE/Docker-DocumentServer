@@ -788,7 +788,9 @@ fonts_fingerprint(){
     for font_dir in "${APP_DIR}/core-fonts" "${DATA_DIR}/custom-fonts" /usr/share/fonts /usr/share/X11/fonts /usr/X11R6/lib/X11/fonts /run/host/fonts /usr/local/share/fonts "${CUSTOM_FONTS_PATH}"; do
       [ -d "${font_dir}" ] && find -L "${font_dir}" -type f -printf '%p %s %T@\n' 2>/dev/null
     done
-    find "${APP_DIR}/server/tools" "${APP_DIR}/server/FileConverter/bin/x2t" "${APP_DIR}/sdkjs/slide/themes" -type f -printf '%p %s %T@\n' 2>/dev/null
+    # Generator binaries and the sources of the generated files; the generation itself rewrites sdkjs/slide/themes, so only its src is hashed.
+    find "${APP_DIR}/server/tools" "${APP_DIR}/server/FileConverter/bin/x2t" "${APP_DIR}/sdkjs/slide/themes/src" -type f -printf '%p %s %T@\n' 2>/dev/null
+    find "${APP_DIR}/sdkjs" -maxdepth 2 -name 'sdk-all*.js' -printf '%p %s %T@\n' 2>/dev/null
   } | LC_ALL=C sort | md5sum | cut -d' ' -f1
 }
 
