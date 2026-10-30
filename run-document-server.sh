@@ -154,6 +154,8 @@ start_process() {
 # Graceful shutdown: terminate tracked child, run prepare4shutdown if needed.
 clean_exit() {
   [[ -z "$CHILD" ]] || kill -s SIGTERM "$CHILD" 2>/dev/null
+  # Stop the background font generation too, children first as they are reparented once the job is gone.
+  [[ -z "$FONTS_PID" ]] || { pkill -TERM -P "$FONTS_PID" 2>/dev/null; kill -s SIGTERM "$FONTS_PID" 2>/dev/null; }
   if [ "${ONLYOFFICE_DATA_CONTAINER}" == "false" ] && [ "${ONLYOFFICE_DATA_CONTAINER_HOST}" == "localhost" ]; then
     /usr/bin/documentserver-prepare4shutdown
   fi
@@ -778,7 +780,7 @@ configure_autostart(){
     sed -i 's,\(autostart=\)false,\1true,' "${SUPERVISOR_CONF_DIR}"/ds-example.conf
 }
 
-# Hash every font file the generator scans, so unchanged fonts skip regeneration.
+# Hash every font file the generator scans; CUSTOM_FONTS_PATH is an optional user env var that the generator reads too.
 fonts_fingerprint(){
   local font_dir
   for font_dir in "${APP_DIR}/core-fonts" "${DATA_DIR}/custom-fonts" /usr/share/fonts /usr/share/X11/fonts /usr/X11R6/lib/X11/fonts /run/host/fonts /usr/local/share/fonts "${CUSTOM_FONTS_PATH}"; do
@@ -797,6 +799,7 @@ generate_fonts(){
   if [ "${GENERATE_FONTS}" != "force" ] && [ -s "${all_fonts}" ] && [ "$(cat "${FONTS_FINGERPRINT_FILE}" 2>/dev/null)" = "${fingerprint}" ]; then
     return 10
   fi
+  # "true" only skips the script's own service restart, cache flush and gzip, which refresh_fonts and static_gzip do instead.
   documentserver-generate-allfonts true
   [ -s "${all_fonts}" ] && echo "${fingerprint}" > "${FONTS_FINGERPRINT_FILE}"
   return 0
@@ -817,10 +820,10 @@ wait_fonts(){
   [ -n "${FONTS_PID}" ] && { wait "${FONTS_PID}"; FONTS_PID=""; }
 }
 
-# Gzip static files whose .gz is missing or older than the source, in parallel.
-# Each .gz goes to a per-worker temp file and is renamed, so neither an interrupted nor a concurrent run leaves a truncated .gz.
+# Gzip static files whose .gz is missing or stale, in parallel via temp files; concurrent calls are serialized by a lock.
 static_gzip(){
   (
+    flock 9
     cd "${APP_DIR}" || exit 1
     {
       find ./sdkjs ./web-apps ./sdkjs-plugins ./dictionaries -type f \( -name '*.js' -o -name '*.json' -o -name '*.htm' -o -name '*.html' -o -name '*.css' -o -name '*.bin' -o -name '*.wasm' -o -name '*.dic' -o -name '*.aff' -o -name '*.svg' \) -print0
@@ -829,7 +832,7 @@ static_gzip(){
       [ "${file}" -nt "${file}.gz" ] && printf '%s\0' "${file}"
     done | xargs -0 -r -P "$(nproc)" -n 16 sh -c \
       'for file; do gzip -9c "$file" > "$file.gz.$$" && touch -r "$file" "$file.gz.$$" && mv -f "$file.gz.$$" "$file.gz"; done' sh
-  )
+  ) 9> /tmp/ds-static-gzip.lock
 }
 
 # Start bundled services in parallel and wait for all of them.
