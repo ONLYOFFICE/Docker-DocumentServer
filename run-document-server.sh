@@ -919,7 +919,7 @@ if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
   ${ADMINPANEL_AVAILABLE} && tail -n 0 -F "$DS_LOG_DIR/adminpanel/out.log" &
   # Drop pid/socket files left by a previous run, a reused pid would make supervisor look already running.
   rm -f /var/run/supervisord.pid /var/run/supervisor.sock
-  # Without the generated font files the editors cannot work, so only in that case wait for the generation.
+  # Without the generated font and theme files the editors cannot work, so only in that case wait for the generation.
   fonts_generated || wait_fonts
   service supervisor start
   update_logrotate_settings
