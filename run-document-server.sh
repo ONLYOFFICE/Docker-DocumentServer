@@ -780,12 +780,16 @@ configure_autostart(){
     sed -i 's,\(autostart=\)false,\1true,' "${SUPERVISOR_CONF_DIR}"/ds-example.conf
 }
 
-# Hash every font file the generator scans; CUSTOM_FONTS_PATH is an optional user env var that the generator reads too.
+# Hash what the generated files are based on; keep identical to fonts_fingerprint in the package script documentserver-generate-allfonts.
 fonts_fingerprint(){
   local font_dir
-  for font_dir in "${APP_DIR}/core-fonts" "${DATA_DIR}/custom-fonts" /usr/share/fonts /usr/share/X11/fonts /usr/X11R6/lib/X11/fonts /run/host/fonts /usr/local/share/fonts "${CUSTOM_FONTS_PATH}"; do
-    [ -d "${font_dir}" ] && find -L "${font_dir}" -type f -printf '%p %s %T@\n' 2>/dev/null
-  done | sort | md5sum | cut -d' ' -f1
+  {
+    # CUSTOM_FONTS_PATH is an optional user env var that the generator reads too.
+    for font_dir in "${APP_DIR}/core-fonts" "${DATA_DIR}/custom-fonts" /usr/share/fonts /usr/share/X11/fonts /usr/X11R6/lib/X11/fonts /run/host/fonts /usr/local/share/fonts "${CUSTOM_FONTS_PATH}"; do
+      [ -d "${font_dir}" ] && find -L "${font_dir}" -type f -printf '%p %s %T@\n' 2>/dev/null
+    done
+    find "${APP_DIR}/server/tools" "${APP_DIR}/server/FileConverter/bin/x2t" "${APP_DIR}/sdkjs/slide/themes" -type f -printf '%p %s %T@\n' 2>/dev/null
+  } | LC_ALL=C sort | md5sum | cut -d' ' -f1
 }
 
 # Generate fonts, themes and js cache; GENERATE_FONTS: true = when fonts changed, force = always, false = never.
