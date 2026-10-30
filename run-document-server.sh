@@ -58,6 +58,7 @@ init_config(){
   # Feature flags and feature availability.
   WELCOME_PAGE_ENABLED=${WELCOME_PAGE_ENABLED:-true}
   GENERATE_FONTS=${GENERATE_FONTS:-true}
+  FONTS_FINGERPRINT_FILE="${APP_DIR}/server/FileConverter/bin/fonts.fingerprint"
 
   local _is_commercial
   [ -n "${PRODUCT_EDITION}" ] && _is_commercial=true || _is_commercial=false
@@ -777,7 +778,74 @@ configure_autostart(){
     sed -i 's,\(autostart=\)false,\1true,' "${SUPERVISOR_CONF_DIR}"/ds-example.conf
 }
 
+# Hash every font file the generator scans, so unchanged fonts skip regeneration.
+fonts_fingerprint(){
+  local font_dir
+  for font_dir in "${APP_DIR}/core-fonts" "${DATA_DIR}/custom-fonts" /usr/share/fonts /usr/share/X11/fonts /usr/X11R6/lib/X11/fonts /run/host/fonts /usr/local/share/fonts "${CUSTOM_FONTS_PATH}"; do
+    [ -d "${font_dir}" ] && find -L "${font_dir}" -type f -printf '%p %s %T@\n' 2>/dev/null
+  done | sort | md5sum | cut -d' ' -f1
+}
+
+# Generate fonts, themes and js cache; GENERATE_FONTS: true = when fonts changed, force = always, false = never.
+# Returns 10 when the generation was skipped.
+generate_fonts(){
+  local all_fonts="${APP_DIR}/sdkjs/common/AllFonts.js" fingerprint
+  if [ -s "${all_fonts}" ]; then
+    [ "${GENERATE_FONTS}" = "true" ] || [ "${GENERATE_FONTS}" = "force" ] || return 10
+  fi
+  fingerprint=$(fonts_fingerprint)
+  if [ "${GENERATE_FONTS}" != "force" ] && [ -s "${all_fonts}" ] && [ "$(cat "${FONTS_FINGERPRINT_FILE}" 2>/dev/null)" = "${fingerprint}" ]; then
+    return 10
+  fi
+  documentserver-generate-allfonts true
+  [ -s "${all_fonts}" ] && echo "${fingerprint}" > "${FONTS_FINGERPRINT_FILE}"
+  return 0
+}
+
+# Generate fonts and, if the services are already running, restart them to load the new files.
+refresh_fonts(){
+  generate_fonts || return 0
+  if pgrep -x supervisord >/dev/null; then
+    supervisorctl restart ds:docservice ds:converter
+    documentserver-flush-cache
+    static_gzip
+  fi
+}
+
+# Block until the background font generation (if any) has finished.
+wait_fonts(){
+  [ -n "${FONTS_PID}" ] && { wait "${FONTS_PID}"; FONTS_PID=""; }
+}
+
+# Gzip static files whose .gz is missing or older than the source, in parallel.
+# Each .gz goes to a per-worker temp file and is renamed, so neither an interrupted nor a concurrent run leaves a truncated .gz.
+static_gzip(){
+  (
+    cd "${APP_DIR}" || exit 1
+    {
+      find ./sdkjs ./web-apps ./sdkjs-plugins ./dictionaries -type f \( -name '*.js' -o -name '*.json' -o -name '*.htm' -o -name '*.html' -o -name '*.css' -o -name '*.bin' -o -name '*.wasm' -o -name '*.dic' -o -name '*.aff' -o -name '*.svg' \) -print0
+      find ./fonts -type f ! -name '*.*' -print0
+    } | while IFS= read -r -d '' file; do
+      [ "${file}" -nt "${file}.gz" ] && printf '%s\0' "${file}"
+    done | xargs -0 -r -P "$(nproc)" -n 16 sh -c \
+      'for file; do gzip -9c "$file" > "$file.gz.$$" && touch -r "$file" "$file.gz.$$" && mv -f "$file.gz.$$" "$file.gz"; done' sh
+  )
+}
+
+# Start bundled services in parallel and wait for all of them.
+start_local_services(){
+  local service_name service_pid
+  local -a service_pids=()
+  for service_name in "${LOCAL_SERVICES[@]}"; do
+    service "${service_name}" start & service_pids+=("$!")
+  done
+  for service_pid in "${service_pids[@]}"; do wait "${service_pid}"; done
+}
+
 # --------------------------- End of function definitions; execution starts below. ---------------------------
+
+# When sourced (by prepare-image.sh at image build), only the functions above are loaded.
+[[ "${BASH_SOURCE[0]}" != "${0}" ]] && return 0
 
 trap clean_exit SIGTERM SIGQUIT SIGABRT SIGINT # Graceful shutdown on any termination signal.
 
@@ -785,6 +853,9 @@ trap clean_exit SIGTERM SIGQUIT SIGABRT SIGINT # Graceful shutdown on any termin
 init_config
 init_ssl
 init_folders
+
+# Generate fonts in the background; services start meanwhile with the fonts built into the image.
+refresh_fonts & FONTS_PID=$!
 
 # Configure services: apply settings locally or wait for remote data container.
 if [ "${ONLYOFFICE_DATA_CONTAINER_HOST}" = "localhost" ]; then
@@ -803,7 +874,7 @@ else
 fi
 
 # Start bundled local services (postgresql, rabbitmq, redis if running in-container).
-for SVC in "${LOCAL_SERVICES[@]}"; do service "$SVC" start; done
+start_local_services
 
 # Create PostgreSQL database and schema if this is a new or missing database.
 [ "${DB_AVAILABLE}" = "true" ] && init_postgresql_db
@@ -814,7 +885,8 @@ find "/etc/${COMPANY_NAME}" ! -path '*logrotate*' -exec chown ds:ds {} +
 
 # Full startup: only runs in non-data-container mode.
 if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
-  # Start plugin manager in background before waiting for services.
+  # Start plugin manager in background before waiting for services; its .gz files are rebuilt once it finishes.
+  [ "${PLUGINS_ENABLED}" = "true" ] && find "${APP_DIR}/sdkjs-plugins" -type f -name '*.gz' -delete
   [ "${PLUGINS_ENABLED}" = "true" ] && { documentserver-pluginsmanager -r false --update="${APP_DIR}/sdkjs-plugins/plugin-list-default.json" >/dev/null & PLUGINSMANAGER_PID=$!; }
 
   # Wait for external services to become ready.
@@ -829,6 +901,10 @@ if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
   # Enable optional supervisor services and start supervisor and cron.
   configure_autostart
   ${ADMINPANEL_AVAILABLE} && tail -n 0 -F "$DS_LOG_DIR/adminpanel/out.log" &
+  # Drop pid/socket files left by a previous run, a reused pid would make supervisor look already running.
+  rm -f /var/run/supervisord.pid /var/run/supervisor.sock
+  # Without AllFonts.js the editors cannot work, so only in that case wait for the generation.
+  [ -s "${APP_DIR}/sdkjs/common/AllFonts.js" ] || wait_fonts
   service supervisor start
   update_logrotate_settings
   service cron start
@@ -845,14 +921,11 @@ if [[ -n "${LETS_ENCRYPT_DOMAIN}" && -n "${LETS_ENCRYPT_MAIL}" ]]; then
   fi
 fi
 
-# Background tasks: font generation, static gzip, log tailing.
-if [ ! -s "${APP_DIR}/sdkjs/common/AllFonts.js" ]; then
-  GENERATE_FONTS=true
-fi
-[ "${GENERATE_FONTS}" == "true" ] && start_process documentserver-generate-allfonts "${ONLYOFFICE_DATA_CONTAINER}"
-
 echo "${JWT_MESSAGE}"
 
 [ -n "${PLUGINSMANAGER_PID}" ] && { wait "${PLUGINSMANAGER_PID}"; echo "[pluginsmanager] Plugins initialization finished"; }
+
+# Gzip static files in the background (nginx serves them uncompressed until then), then log tailing.
+static_gzip &
 
 start_process bash -c "find '$DS_LOG_DIR' '$DS_LOG_DIR-example' -type f -name '*.log' ! -path '$DS_LOG_DIR/adminpanel/out.log' | xargs tail -F"

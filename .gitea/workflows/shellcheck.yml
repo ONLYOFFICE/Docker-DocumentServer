@@ -11,6 +11,7 @@ on:
       - bugfix/*
     paths:
       - "run-document-server.sh"
+      - "prepare-image.sh"
       - ".gitea/workflows/shellcheck.yml"
 
 jobs:
@@ -26,4 +27,5 @@ jobs:
             --exclude=SC2086 `# intentional word-splitting for $PSQL/$MYSQL/$MSSQL command variables` \
             --exclude=SC2046 `# intentional word-splitting in command substitution` \
             --exclude=SC2034 `# variables set in libs are used by run-document-server.sh after source` \
-            run-document-server.sh
+            --external-sources \
+            run-document-server.sh prepare-image.sh
