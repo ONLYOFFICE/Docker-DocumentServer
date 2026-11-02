@@ -810,22 +810,15 @@ fonts_generated(){
   [ -s "${APP_DIR}/sdkjs/common/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/font_selection.bin" ]
 }
 
-# True when at least one of the given files exists and is not empty.
-has_nonempty_file(){
-  local file
-  for file in "$@"; do
-    [ -s "${file}" ] && return 0
-  done
-  return 1
-}
-
 # True when the fonts and the presentation themes are all generated; only the fonts are needed to start serving.
 generated_all(){
-  fonts_generated && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ] || return 1
-  # File names follow allthemesgen (core/DesktopEditor/allthemesgen/main.cpp): the default run writes themes_thumbnail.png, the ios and android runs write theme*/thumbnail_<postfix>.png.
-  has_nonempty_file "${APP_DIR}/sdkjs/common/Images/themes_thumbnail.png" || return 1
-  has_nonempty_file "${APP_DIR}"/sdkjs/slide/themes/theme*/thumbnail_ios.png || return 1
-  has_nonempty_file "${APP_DIR}"/sdkjs/slide/themes/theme*/thumbnail_android.png
+  local theme_dir
+  fonts_generated && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ] && [ -s "${APP_DIR}/sdkjs/common/Images/themes_thumbnail.png" ] || return 1
+  # allthemesgen (core/DesktopEditor/allthemesgen/main.cpp) writes the ios and android thumbnails into every theme directory next to its --src, not into --output.
+  for theme_dir in "${APP_DIR}"/sdkjs/slide/themes/theme*/; do
+    [ -s "${theme_dir}thumbnail_ios.png" ] && [ -s "${theme_dir}thumbnail_android.png" ] || return 1
+  done
+  return 0
 }
 
 # Generate fonts, themes and js cache; GENERATE_FONTS: true = when fonts changed, force = always, false = never.
