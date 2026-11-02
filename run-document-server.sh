@@ -805,10 +805,10 @@ generated_all(){
 }
 
 # Generate fonts, themes and js cache; GENERATE_FONTS: true = when fonts changed, force = always, false = never.
-# Returns 10 when the generation was skipped.
+# Returns 10 when the generation was skipped and 1 when the generator failed.
 generate_fonts(){
   local fingerprint
-  if generated_all; then
+  if fonts_generated; then
     [ "${GENERATE_FONTS}" = "true" ] || [ "${GENERATE_FONTS}" = "force" ] || return 10
   fi
   fingerprint=$(fonts_fingerprint)
@@ -825,7 +825,10 @@ generate_fonts(){
 
 # Generate fonts and, if the services are already running, restart them to load the new files.
 refresh_fonts(){
-  generate_fonts || return 0
+  local status=0
+  generate_fonts || status=$?
+  [ "${status}" -eq 10 ] && return 0
+  [ "${status}" -eq 0 ] || { echo "ERROR: font generation failed" >&2; return 1; }
   if pgrep -x supervisord >/dev/null; then
     supervisorctl restart ds:docservice ds:converter
     documentserver-flush-cache
