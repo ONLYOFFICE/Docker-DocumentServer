@@ -849,6 +849,7 @@ refresh_fonts(){
   if pgrep -x supervisord >/dev/null; then
     supervisorctl restart ds:docservice ds:converter
     documentserver-flush-cache
+    # The package script serializes concurrent runs itself with flock on /run/ds-static-gzip.lock.
     documentserver-static-gzip >/dev/null
   fi
 }
@@ -951,7 +952,7 @@ echo "${JWT_MESSAGE}"
 
 [ -n "${PLUGINSMANAGER_PID}" ] && { wait "${PLUGINSMANAGER_PID}"; echo "[pluginsmanager] Plugins initialization finished"; }
 
-# Gzip static files in the background (nginx serves them uncompressed until then), then log tailing.
+# Gzip static files in the background (nginx serves them uncompressed until then; the package script locks against concurrent runs), then log tailing.
 documentserver-static-gzip >/dev/null &
 
 start_process bash -c "find '$DS_LOG_DIR' '$DS_LOG_DIR-example' -type f -name '*.log' ! -path '$DS_LOG_DIR/adminpanel/out.log' | xargs tail -F"
