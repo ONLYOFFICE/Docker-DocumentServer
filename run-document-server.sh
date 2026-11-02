@@ -834,7 +834,7 @@ generate_fonts(){
   fi
   # The package script skips the themes unless the editor files changed, so force drops their fingerprint to rebuild them too.
   [ "${GENERATE_FONTS}" = "force" ] && rm -f "${APP_DIR}/server/FileConverter/bin/themes.fingerprint"
-  # "true" only skips the script's own service restart, cache flush and gzip, which refresh_fonts and static_gzip do instead; a failed generator must not record the fingerprint.
+  # "true" only skips the script's own service restart, cache flush and gzip, which refresh_fonts and documentserver-static-gzip do instead; a failed generator must not record the fingerprint.
   documentserver-generate-allfonts true || return 1
   generated_all && echo "${fingerprint}" > "${FONTS_FINGERPRINT_FILE}"
   return 0
@@ -849,28 +849,13 @@ refresh_fonts(){
   if pgrep -x supervisord >/dev/null; then
     supervisorctl restart ds:docservice ds:converter
     documentserver-flush-cache
-    static_gzip
+    documentserver-static-gzip >/dev/null
   fi
 }
 
 # Block until the background font generation (if any) has finished.
 wait_fonts(){
   [ -n "${FONTS_PID}" ] && { wait "${FONTS_PID}"; FONTS_PID=""; }
-}
-
-# Gzip static files whose .gz is missing or has a different mtime (copied from the source, so any difference means stale), in parallel via temp files; concurrent calls are serialized by a lock.
-static_gzip(){
-  (
-    flock 9
-    cd "${APP_DIR}" || exit 1
-    {
-      find ./sdkjs ./web-apps ./sdkjs-plugins ./dictionaries -type f \( -name '*.js' -o -name '*.json' -o -name '*.htm' -o -name '*.html' -o -name '*.css' -o -name '*.bin' -o -name '*.wasm' -o -name '*.dic' -o -name '*.aff' -o -name '*.svg' \) -print0
-      find ./fonts -type f ! -name '*.*' -print0
-    } | while IFS= read -r -d '' file; do
-      { [ "${file}" -nt "${file}.gz" ] || [ "${file}.gz" -nt "${file}" ]; } && printf '%s\0' "${file}"
-    done | xargs -0 -r -P "$(nproc)" -n 16 sh -c \
-      'for file; do gzip -9c "$file" > "$file.gz.$$" && touch -r "$file" "$file.gz.$$" && mv -f "$file.gz.$$" "$file.gz" || rm -f "$file.gz.$$"; done' sh
-  ) 9> /run/ds-static-gzip.lock
 }
 
 # Start bundled services in parallel and wait for all of them.
@@ -967,6 +952,6 @@ echo "${JWT_MESSAGE}"
 [ -n "${PLUGINSMANAGER_PID}" ] && { wait "${PLUGINSMANAGER_PID}"; echo "[pluginsmanager] Plugins initialization finished"; }
 
 # Gzip static files in the background (nginx serves them uncompressed until then), then log tailing.
-static_gzip &
+documentserver-static-gzip >/dev/null &
 
 start_process bash -c "find '$DS_LOG_DIR' '$DS_LOG_DIR-example' -type f -name '*.log' ! -path '$DS_LOG_DIR/adminpanel/out.log' | xargs tail -F"
