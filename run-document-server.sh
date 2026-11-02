@@ -812,7 +812,12 @@ fonts_generated(){
 
 # True when the fonts and the presentation themes are all generated; only the fonts are needed to start serving.
 generated_all(){
-  fonts_generated && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ] && ls "${APP_DIR}"/sdkjs/common/Images/themes_thumbnail*.png >/dev/null 2>&1
+  local thumbnail
+  fonts_generated && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ] || return 1
+  for thumbnail in "${APP_DIR}"/sdkjs/common/Images/themes_thumbnail*.png; do
+    [ -s "${thumbnail}" ] && return 0
+  done
+  return 1
 }
 
 # Generate fonts, themes and js cache; GENERATE_FONTS: true = when fonts changed, force = always, false = never.
