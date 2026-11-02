@@ -794,27 +794,32 @@ fonts_fingerprint(){
   } | LC_ALL=C sort | md5sum | cut -d' ' -f1
 }
 
-# True when every file produced by the font and theme generators is present.
+# True when every file produced by the font generators is present.
 fonts_generated(){
-  [ -s "${APP_DIR}/sdkjs/common/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/font_selection.bin" ] && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ]
+  [ -s "${APP_DIR}/sdkjs/common/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/font_selection.bin" ]
+}
+
+# True when the fonts and the presentation themes are all generated; only the fonts are needed to start serving.
+generated_all(){
+  fonts_generated && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ] && [ -s "${APP_DIR}/sdkjs/common/Images/themes_thumbnail@2x.png" ]
 }
 
 # Generate fonts, themes and js cache; GENERATE_FONTS: true = when fonts changed, force = always, false = never.
 # Returns 10 when the generation was skipped.
 generate_fonts(){
   local fingerprint
-  if fonts_generated; then
+  if generated_all; then
     [ "${GENERATE_FONTS}" = "true" ] || [ "${GENERATE_FONTS}" = "force" ] || return 10
   fi
   fingerprint=$(fonts_fingerprint)
-  if [ "${GENERATE_FONTS}" != "force" ] && fonts_generated && [ "$(cat "${FONTS_FINGERPRINT_FILE}" 2>/dev/null)" = "${fingerprint}" ]; then
+  if [ "${GENERATE_FONTS}" != "force" ] && generated_all && [ "$(cat "${FONTS_FINGERPRINT_FILE}" 2>/dev/null)" = "${fingerprint}" ]; then
     return 10
   fi
   # The package script skips the themes unless the editor files changed, so force drops their fingerprint to rebuild them too.
   [ "${GENERATE_FONTS}" = "force" ] && rm -f "${APP_DIR}/server/FileConverter/bin/themes.fingerprint"
   # "true" only skips the script's own service restart, cache flush and gzip, which refresh_fonts and static_gzip do instead; a failed generator must not record the fingerprint.
   documentserver-generate-allfonts true || return 1
-  fonts_generated && echo "${fingerprint}" > "${FONTS_FINGERPRINT_FILE}"
+  generated_all && echo "${fingerprint}" > "${FONTS_FINGERPRINT_FILE}"
   return 0
 }
 
@@ -919,7 +924,7 @@ if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
   ${ADMINPANEL_AVAILABLE} && tail -n 0 -F "$DS_LOG_DIR/adminpanel/out.log" &
   # Drop pid/socket files left by a previous run, a reused pid would make supervisor look already running.
   rm -f /var/run/supervisord.pid /var/run/supervisor.sock
-  # Without the generated font and theme files the editors cannot work, so only in that case wait for the generation.
+  # Without the generated font files the editors cannot work, so only in that case wait for the generation.
   fonts_generated || wait_fonts
   service supervisor start
   update_logrotate_settings
