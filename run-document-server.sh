@@ -812,8 +812,8 @@ generate_fonts(){
   fi
   # The package script skips the themes unless the editor files changed, so force drops their fingerprint to rebuild them too.
   [ "${GENERATE_FONTS}" = "force" ] && rm -f "${APP_DIR}/server/FileConverter/bin/themes.fingerprint"
-  # "true" only skips the script's own service restart, cache flush and gzip, which refresh_fonts and static_gzip do instead.
-  documentserver-generate-allfonts true
+  # "true" only skips the script's own service restart, cache flush and gzip, which refresh_fonts and static_gzip do instead; a failed generator must not record the fingerprint.
+  documentserver-generate-allfonts true || return 1
   fonts_generated && echo "${fingerprint}" > "${FONTS_FINGERPRINT_FILE}"
   return 0
 }

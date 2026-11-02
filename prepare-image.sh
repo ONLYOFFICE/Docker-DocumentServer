@@ -5,7 +5,8 @@
 source "$(dirname "${BASH_SOURCE[0]}")/run-document-server.sh"
 
 init_config
-generate_fonts
+generate_fonts || [ $? -eq 10 ] || { echo "ERROR: font generation failed"; exit 1; }
 [ -s "${FONTS_FINGERPRINT_FILE}" ] || { echo "ERROR: fonts were not generated"; exit 1; }
 
 sed -i 's/#*\s*\(gzip_static\).*/\1 on;/g' "${NGINX_ONLYOFFICE_PATH}/includes/ds-docservice.conf"
+grep -q 'gzip_static on;' "${NGINX_ONLYOFFICE_PATH}/includes/ds-docservice.conf" || { echo "ERROR: gzip_static was not enabled"; exit 1; }
