@@ -800,7 +800,7 @@ fonts_fingerprint(){
     done
     # Generator binaries and the sources of the generated files; the generation itself rewrites sdkjs/slide/themes, so only its src is hashed.
     find -L "${APP_DIR}/server/tools" "${APP_DIR}/server/FileConverter/bin/x2t" "${APP_DIR}/sdkjs/slide/themes/src" -type f -printf '%p %s %T@\n' 2>/dev/null
-    # sdk-all*.js ship with the package and only feed the js cache build; the generation does not rewrite them.
+    # sdk-all*.js ship with the package; allthemesgen patches them only with --change-sdk (core/DesktopEditor/allthemesgen/main.cpp), which the package script never passes.
     find -L "${APP_DIR}/sdkjs" -maxdepth 2 -type f -name 'sdk-all*.js' -printf '%p %s %T@\n' 2>/dev/null
   } | LC_ALL=C sort | md5sum | cut -d' ' -f1
 }
@@ -810,14 +810,22 @@ fonts_generated(){
   [ -s "${APP_DIR}/sdkjs/common/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/AllFonts.js" ] && [ -s "${APP_DIR}/server/FileConverter/bin/font_selection.bin" ]
 }
 
-# True when the fonts and the presentation themes are all generated; only the fonts are needed to start serving.
-generated_all(){
-  local thumbnail
-  fonts_generated && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ] || return 1
-  for thumbnail in "${APP_DIR}"/sdkjs/common/Images/themes_thumbnail*.png; do
-    [ -s "${thumbnail}" ] && return 0
+# True when at least one of the given files exists and is not empty.
+has_nonempty_file(){
+  local file
+  for file in "$@"; do
+    [ -s "${file}" ] && return 0
   done
   return 1
+}
+
+# True when the fonts and the presentation themes are all generated; only the fonts are needed to start serving.
+generated_all(){
+  fonts_generated && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ] || return 1
+  # File names follow allthemesgen (core/DesktopEditor/allthemesgen/main.cpp): the default run writes themes_thumbnail.png, the ios and android runs write theme*/thumbnail_<postfix>.png.
+  has_nonempty_file "${APP_DIR}/sdkjs/common/Images/themes_thumbnail.png" || return 1
+  has_nonempty_file "${APP_DIR}"/sdkjs/slide/themes/theme*/thumbnail_ios.png || return 1
+  has_nonempty_file "${APP_DIR}"/sdkjs/slide/themes/theme*/thumbnail_android.png
 }
 
 # Generate fonts, themes and js cache; GENERATE_FONTS: true = when fonts changed, force = always, false = never.
