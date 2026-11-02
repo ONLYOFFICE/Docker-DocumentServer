@@ -812,8 +812,13 @@ fonts_generated(){
 
 # True when the fonts and the presentation themes are all generated; only the fonts are needed to start serving.
 generated_all(){
-  local theme_dir
+  local theme_dir thumbnail
   fonts_generated && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ] && [ -s "${APP_DIR}/sdkjs/common/Images/themes_thumbnail.png" ] || return 1
+  # allfontsgen writes the font thumbnails into --images (core/DesktopEditor/fontengine/ApplicationFontsWorker.cpp); they are not needed to start, so only generated_all checks them.
+  for thumbnail in "${APP_DIR}"/sdkjs/common/Images/fonts_thumbnail*.png; do
+    [ -s "${thumbnail}" ] && break
+    return 1
+  done
   # allthemesgen (core/DesktopEditor/allthemesgen/main.cpp) writes the ios and android thumbnails into every theme directory next to its --src, not into --output.
   for theme_dir in "${APP_DIR}"/sdkjs/slide/themes/theme*/; do
     [ -s "${theme_dir}thumbnail_ios.png" ] && [ -s "${theme_dir}thumbnail_android.png" ] || return 1
