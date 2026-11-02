@@ -218,6 +218,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **ALLOW_PRIVATE_IP_ADDRESS**: Defines if it is allowed to connect private IP address or not. Defaults to `false`.
 - **USE_UNAUTHORIZED_STORAGE**: Set to `true` if using self-signed certificates for your storage server e.g. Nextcloud. Defaults to `false`
 - **GENERATE_FONTS**: Controls regeneration of the fonts list, the fonts thumbnails etc. at start. When `true`, they are regenerated only if the fonts changed since the image was built or since the last start; `force` regenerates them at each start, including the presentation theme thumbnails that are otherwise rebuilt only when the editor files change; `false` never regenerates them (unless they are missing). Defaults to `true`
+- **CUSTOM_FONTS_PATH**: Path to an additional directory with fonts (for example a mounted volume) that the font generator scans together with the default font directories. A change in it triggers a regeneration at start, see `GENERATE_FONTS`. Not set by default
 - **WELCOME_PAGE_ENABLED**: Specifies whether the Welcome page is enabled. Defaults to `true`.
 - **EXAMPLE_ENABLED**: Enables example service autostart. Defaults to `false`.
 - **METRICS_ENABLED**: Specifies the enabling StatsD for ONLYOFFICE Document Server. Defaults to `false`.

@@ -58,6 +58,8 @@ init_config(){
   # Feature flags and feature availability.
   WELCOME_PAGE_ENABLED=${WELCOME_PAGE_ENABLED:-true}
   GENERATE_FONTS=${GENERATE_FONTS:-true}
+  # Optional extra font directory: the generator reads this variable itself and the fingerprint covers it.
+  CUSTOM_FONTS_PATH=${CUSTOM_FONTS_PATH:-}
   FONTS_FINGERPRINT_FILE="${APP_DIR}/server/FileConverter/bin/fonts.fingerprint"
 
   local _is_commercial
@@ -151,11 +153,20 @@ start_process() {
   CHILD=$!; wait "$CHILD"; CHILD="";
 }
 
+# Print the pids of all descendants of a process, so they can be signaled together before any of them is reparented.
+descendants() {
+  local child
+  for child in $(pgrep -P "$1" 2>/dev/null); do
+    echo "${child}"
+    descendants "${child}"
+  done
+}
+
 # Graceful shutdown: terminate tracked child, run prepare4shutdown if needed.
 clean_exit() {
   [[ -z "$CHILD" ]] || kill -s SIGTERM "$CHILD" 2>/dev/null
-  # Stop the background font generation too, children first as they are reparented once the job is gone.
-  [[ -z "$FONTS_PID" ]] || { pkill -TERM -P "$FONTS_PID" 2>/dev/null; kill -s SIGTERM "$FONTS_PID" 2>/dev/null; }
+  # Stop the background font generation too, with all its descendants (xargs and gzip workers included).
+  [[ -z "$FONTS_PID" ]] || kill -s SIGTERM "$FONTS_PID" $(descendants "$FONTS_PID") 2>/dev/null
   if [ "${ONLYOFFICE_DATA_CONTAINER}" == "false" ] && [ "${ONLYOFFICE_DATA_CONTAINER_HOST}" == "localhost" ]; then
     /usr/bin/documentserver-prepare4shutdown
   fi
@@ -784,12 +795,12 @@ configure_autostart(){
 fonts_fingerprint(){
   local font_dir
   {
-    # CUSTOM_FONTS_PATH is an optional user env var that the generator reads too.
     for font_dir in "${APP_DIR}/core-fonts" "${DATA_DIR}/custom-fonts" /usr/share/fonts /usr/share/X11/fonts /usr/X11R6/lib/X11/fonts /run/host/fonts /usr/local/share/fonts "${CUSTOM_FONTS_PATH}"; do
       [ -d "${font_dir}" ] && find -L "${font_dir}" -type f -printf '%p %s %T@\n' 2>/dev/null
     done
     # Generator binaries and the sources of the generated files; the generation itself rewrites sdkjs/slide/themes, so only its src is hashed.
     find -L "${APP_DIR}/server/tools" "${APP_DIR}/server/FileConverter/bin/x2t" "${APP_DIR}/sdkjs/slide/themes/src" -type f -printf '%p %s %T@\n' 2>/dev/null
+    # sdk-all*.js ship with the package and only feed the js cache build; the generation does not rewrite them.
     find -L "${APP_DIR}/sdkjs" -maxdepth 2 -type f -name 'sdk-all*.js' -printf '%p %s %T@\n' 2>/dev/null
   } | LC_ALL=C sort | md5sum | cut -d' ' -f1
 }
@@ -801,7 +812,7 @@ fonts_generated(){
 
 # True when the fonts and the presentation themes are all generated; only the fonts are needed to start serving.
 generated_all(){
-  fonts_generated && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ] && [ -s "${APP_DIR}/sdkjs/common/Images/themes_thumbnail@2x.png" ]
+  fonts_generated && [ -s "${APP_DIR}/sdkjs/slide/themes/themes.js" ] && ls "${APP_DIR}"/sdkjs/common/Images/themes_thumbnail*.png >/dev/null 2>&1
 }
 
 # Generate fonts, themes and js cache; GENERATE_FONTS: true = when fonts changed, force = always, false = never.
