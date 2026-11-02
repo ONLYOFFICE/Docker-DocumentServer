@@ -928,7 +928,7 @@ if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
   # Drop pid/socket files left by a previous run, a reused pid would make supervisor look already running.
   rm -f /var/run/supervisord.pid /var/run/supervisor.sock
   # Without the generated font files the editors cannot work, so only in that case wait for the generation.
-  fonts_generated || wait_fonts
+  fonts_generated || { wait_fonts; fonts_generated || { echo "ERROR: fonts were not generated, cannot start" >&2; exit 1; }; }
   service supervisor start
   update_logrotate_settings
   service cron start
