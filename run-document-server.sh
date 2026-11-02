@@ -858,7 +858,7 @@ wait_fonts(){
   [ -n "${FONTS_PID}" ] && { wait "${FONTS_PID}"; FONTS_PID=""; }
 }
 
-# Gzip static files whose .gz is missing or stale, in parallel via temp files; concurrent calls are serialized by a lock.
+# Gzip static files whose .gz is missing or has a different mtime (copied from the source, so any difference means stale), in parallel via temp files; concurrent calls are serialized by a lock.
 static_gzip(){
   (
     flock 9
@@ -867,10 +867,10 @@ static_gzip(){
       find ./sdkjs ./web-apps ./sdkjs-plugins ./dictionaries -type f \( -name '*.js' -o -name '*.json' -o -name '*.htm' -o -name '*.html' -o -name '*.css' -o -name '*.bin' -o -name '*.wasm' -o -name '*.dic' -o -name '*.aff' -o -name '*.svg' \) -print0
       find ./fonts -type f ! -name '*.*' -print0
     } | while IFS= read -r -d '' file; do
-      [ "${file}" -nt "${file}.gz" ] && printf '%s\0' "${file}"
+      { [ "${file}" -nt "${file}.gz" ] || [ "${file}.gz" -nt "${file}" ]; } && printf '%s\0' "${file}"
     done | xargs -0 -r -P "$(nproc)" -n 16 sh -c \
-      'for file; do gzip -9c "$file" > "$file.gz.$$" && touch -r "$file" "$file.gz.$$" && mv -f "$file.gz.$$" "$file.gz"; done' sh
-  ) 9> /tmp/ds-static-gzip.lock
+      'for file; do gzip -9c "$file" > "$file.gz.$$" && touch -r "$file" "$file.gz.$$" && mv -f "$file.gz.$$" "$file.gz" || rm -f "$file.gz.$$"; done' sh
+  ) 9> /run/ds-static-gzip.lock
 }
 
 # Start bundled services in parallel and wait for all of them.
