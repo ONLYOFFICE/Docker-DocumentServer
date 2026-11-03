@@ -22,6 +22,18 @@ services:
   onlyoffice-graphite:
     container_name: onlyoffice-graphite
     image: graphiteapp/graphite-statsd
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        # A conversion produces more than 50 new series in its first flush.
+        # Carbon drops excess creates instead of queuing them for later.
+        sed -i 's/^[[:space:]]*MAX_CREATES_PER_MINUTE[[:space:]]*=.*/MAX_CREATES_PER_MINUTE = inf/' /opt/graphite/conf/carbon.conf
+        if ! grep -qx 'MAX_CREATES_PER_MINUTE = inf' /opt/graphite/conf/carbon.conf; then
+          echo 'Failed to configure the Graphite metric creation limit!' >&2
+          exit 1
+        fi
+        exec /entrypoint
     environment:
       - GRAPHITE_STATSD_HOST=${GRAPHITE_STATSD_HOST:-onlyoffice-documentserver}
       - GRAPHITE_TIME_ZONE=${GRAPHITE_TIME_ZONE:-Etc/UTC}
