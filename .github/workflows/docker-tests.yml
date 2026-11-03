@@ -2,48 +2,122 @@ name: Docker tests
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ['4testing multiarch-build']
+    types: [completed]
+    branches:
+      - 'release/*'
+      - 'hotfix/*'
   schedule:
     - cron: '0 3 * * 1'
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
+  prepare:
+    name: Images
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      ready: ${{ steps.build.outputs.ready }}
+      image_ce: ${{ steps.images.outputs.image_ce }}
+      image_ee: ${{ steps.images.outputs.image_ee }}
+      image_de: ${{ steps.images.outputs.image_de }}
+    steps:
+      - name: Checkout test definitions
+        uses: actions/checkout@v7
+
+      - name: Select a complete release build
+        id: build
+        env:
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          GITHUB_READ_TOKEN: ${{ github.token }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: python3 tests/ci/release.py --repository "$SOURCE_REPOSITORY" --target-branch "$TARGET_BRANCH" --output "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        if: steps.build.outputs.ready == 'true'
+        uses: docker/setup-buildx-action@v4
+
+      - name: Resolve published images to immutable digests
+        id: images
+        if: steps.build.outputs.ready == 'true'
+        shell: bash
+        env:
+          PACKAGE_VERSION: ${{ steps.build.outputs.package_version }}
+        run: |
+          set -euo pipefail
+          image_tag=${PACKAGE_VERSION/-/.}
+          for edition in ce ee de; do
+            suffix="-$edition"
+            [[ "$edition" == ce ]] && suffix=''
+            image="onlyoffice/4testing-documentserver${suffix}"
+            digest=$(docker buildx imagetools inspect "$image:$image_tag" --format '{{ .Manifest.Digest }}')
+            if [[ ! "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+              echo "::error::Cannot resolve $image:$image_tag to an image digest"
+              exit 1
+            fi
+            echo "image_$edition=$image@$digest" >> "$GITHUB_OUTPUT"
+          done
+
   docker-tests:
     name: ${{ matrix.name }}
+    needs: prepare
+    if: needs.prepare.outputs.ready == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: Community Edition
+            edition: ce
             working_directory: .
             script: tests/test.sh
             config: docker-compose.yml
-            variables: ""
+            variables: |
+              assert_restart=true
 
           - name: Enterprise Edition
+            edition: ee
             working_directory: .
             script: tests/test.sh
             config: docker-compose.enterprise.yml
-            variables: ""
+            variables: |
+              assert_restart=true
+              assert_cached_conversion=true
 
           - name: Developer Edition
+            edition: de
             working_directory: .
             script: tests/test.sh
             config: docker-compose.developer.yml
-            variables: ""
+            variables: |
+              assert_restart=true
+              assert_cached_conversion=true
 
           - name: Community Edition (Standalone)
+            edition: ce
             working_directory: tests
             script: ./test.sh
             config: standalone.yml
-            variables: ""
+            variables: |
+              assert_restart=true
 
           - name: Enterprise Edition (Standalone)
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: standalone-enterprise.yml
-            variables: ""
+            variables: |
+              assert_restart=true
+              assert_cached_conversion=true
 
           - name: Certificates with generated certificate
+            edition: ce
             working_directory: tests
             script: ./test.sh
             config: certs.yml
@@ -51,6 +125,7 @@ jobs:
               ssl=true
 
           - name: Certificates with onlyoffice certificate
+            edition: ce
             working_directory: tests
             script: ./test.sh
             config: certs.yml
@@ -61,6 +136,7 @@ jobs:
               certificate=onlyoffice.crt
 
           - name: Custom certificates
+            edition: ce
             working_directory: tests
             script: ./test.sh
             config: certs-customized.yml
@@ -73,6 +149,7 @@ jobs:
               SSL_KEY_PATH=/var/www/onlyoffice/Data/certs/mycert.key
 
           - name: PostgreSQL 16
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: postgres.yml
@@ -80,6 +157,7 @@ jobs:
               POSTGRES_VERSION=16
 
           - name: PostgreSQL 15
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: postgres.yml
@@ -87,6 +165,7 @@ jobs:
               POSTGRES_VERSION=15
 
           - name: PostgreSQL 14
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: postgres.yml
@@ -94,6 +173,7 @@ jobs:
               POSTGRES_VERSION=14
 
           - name: PostgreSQL 13
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: postgres.yml
@@ -101,12 +181,14 @@ jobs:
               POSTGRES_VERSION=13
 
           - name: PostgreSQL 12
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: postgres.yml
             variables: ""
 
           - name: PostgreSQL custom values
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: postgres.yml
@@ -118,6 +200,7 @@ jobs:
               POSTGRES_USER=myuser
 
           - name: PostgreSQL TLS only
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: postgres-tls.yml
@@ -126,12 +209,14 @@ jobs:
               assert_tls_isolation=true
 
           - name: PostgreSQL deprecated variables
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: postgres-old.yml
             variables: ""
 
           - name: MySQL 8
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: mysql.yml
@@ -139,6 +224,7 @@ jobs:
               MYSQL_VERSION=8
 
           - name: MySQL TLS
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: mysql-tls.yml
@@ -146,6 +232,7 @@ jobs:
               tls_services=mysql
 
           - name: MSSQL TLS
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: mssql-tls.yml
@@ -153,6 +240,7 @@ jobs:
               tls_services=mssql
 
           - name: MySQL 5
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: mysql.yml
@@ -160,12 +248,14 @@ jobs:
               MYSQL_VERSION=5
 
           - name: MySQL 5.7
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: mysql.yml
             variables: ""
 
           - name: MariaDB 10
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: mariadb.yml
@@ -173,12 +263,14 @@ jobs:
               MARIADB_VERSION=10
 
           - name: MariaDB 10.5
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: mariadb.yml
             variables: ""
 
           - name: ActiveMQ latest
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: activemq.yml
@@ -186,18 +278,21 @@ jobs:
               ACTIVEMQ_VERSION=latest
 
           - name: ActiveMQ 5.14.3
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: activemq.yml
             variables: ""
 
           - name: RabbitMQ latest
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: rabbitmq.yml
             variables: ""
 
           - name: RabbitMQ 3
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: rabbitmq.yml
@@ -205,6 +300,7 @@ jobs:
               RABBITMQ_VERSION=3
 
           - name: PostgreSQL, Redis and RabbitMQ TLS
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: rabbitmq-tls.yml
@@ -212,18 +308,21 @@ jobs:
               tls_services=postgresql rabbitmq redis
 
           - name: RabbitMQ deprecated variables
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: rabbitmq-old.yml
             variables: ""
 
           - name: Redis latest
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: redis.yml
             variables: ""
 
           - name: Redis TLS
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: redis-tls.yml
@@ -231,6 +330,7 @@ jobs:
               tls_services=postgresql redis
 
           - name: Redis TLS with local PostgreSQL
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: redis-tls-local-db.yml
@@ -238,6 +338,7 @@ jobs:
               tls_services=redis
 
           - name: Redis 6
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: redis.yml
@@ -245,6 +346,7 @@ jobs:
               REDIS_VERSION=6
 
           - name: Redis 5
+            edition: ee
             working_directory: tests
             script: ./test.sh
             config: redis.yml
@@ -252,42 +354,52 @@ jobs:
               REDIS_VERSION=5
 
           - name: Graphite
+            edition: ce
             working_directory: tests
             script: ./test.sh
             config: graphite.yml
-            variables: ""
+            variables: |
+              assert_graphite=true
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
+
+      - name: Install PDF text checker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends poppler-utils
 
       - name: Run compose test
         shell: bash
         env:
-          PACKAGE_BASEURL: ${{ secrets.REPO_BASEURL }}
+          DOCUMENTSERVER_IMAGE: ${{ needs.prepare.outputs[format('image_{0}', matrix.edition)] }}
           TEST_WORKING_DIRECTORY: ${{ matrix.working_directory }}
           TEST_SCRIPT: ${{ matrix.script }}
           TEST_CONFIG: ${{ matrix.config }}
           TEST_VARIABLES: ${{ matrix.variables }}
+          TEST_ARTIFACTS_DIR: ${{ runner.temp }}/docker-test-logs
         run: |
           set -euo pipefail
 
-          package_tag=$(git tag --merged HEAD \
-            --list 'v[0-9]*.[0-9]*.[0-9]*.[0-9]*' \
-            --sort=version:refname | grep -v '^v99\.99\.99\.' | tail -n1)
-          [[ -n "$package_tag" ]]
-          package_version=${package_tag#v}
-          export PACKAGE_VERSION="${package_version%.*}-${package_version##*.}"
+          echo "Document Server image: $DOCUMENTSERVER_IMAGE"
 
           cd "${TEST_WORKING_DIRECTORY}"
           export config="${TEST_CONFIG}"
 
           while IFS= read -r variable; do
             if [[ -n "${variable}" ]]; then
-              export "${variable}"
+              export "${variable?}"
             fi
           done <<< "${TEST_VARIABLES}"
 
           bash "${TEST_SCRIPT}"
+
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs-${{ matrix.name }}
+          path: ${{ runner.temp }}/docker-test-logs
+          if-no-files-found: ignore
+          retention-days: 7
