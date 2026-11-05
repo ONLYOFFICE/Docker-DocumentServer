@@ -810,7 +810,7 @@ for SVC in "${LOCAL_SERVICES[@]}"; do service "$SVC" start; done
 
 chown ds:ds "${DATA_DIR}"
 chown -R ds:ds "${DS_LOG_DIR}" "${DS_LOG_DIR}-example" "${LIB_DIR}"
-find "/etc/${COMPANY_NAME}" ! -path '*logrotate*' -exec chown ds:ds {} +
+find "/etc/${COMPANY_NAME}" -type f -name '*.json' -exec chown root:ds {} + -exec chmod 0640 {} +
 
 # Full startup: only runs in non-data-container mode.
 if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
