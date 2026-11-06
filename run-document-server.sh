@@ -313,22 +313,26 @@ waiting_for_db(){
 
 # Write StatsD metrics config to local.json and toggle supervisor autostart.
 update_statsd_settings(){
+  METRICS_ENABLED="${METRICS_ENABLED}" METRICS_HOST="${METRICS_HOST}" \
+  METRICS_PORT="${METRICS_PORT}" METRICS_PREFIX="${METRICS_PREFIX}" \
   ${JSON} -I -e "this.statsd = this.statsd || {}; \
-    this.statsd.useMetrics = '${METRICS_ENABLED}'; \
-    this.statsd.host = '${METRICS_HOST}'; \
-    this.statsd.port = '${METRICS_PORT}'; \
-    this.statsd.prefix = '${METRICS_PREFIX}'"
+    this.statsd.useMetrics = process.env.METRICS_ENABLED; \
+    this.statsd.host = process.env.METRICS_HOST; \
+    this.statsd.port = process.env.METRICS_PORT; \
+    this.statsd.prefix = process.env.METRICS_PREFIX"
   sed -i -E "s/(autostart|autorestart)=.*$/\1=${METRICS_ENABLED}/g" "${SUPERVISOR_CONF_DIR}"/ds-metrics.conf
 }
 
 # Write database connection parameters to local.json.
 update_db_settings(){
-  ${JSON} -I -e "this.services.CoAuthoring.sql.type = '${DB_TYPE}'; \
-    this.services.CoAuthoring.sql.dbHost = '${DB_HOST}'; \
-    this.services.CoAuthoring.sql.dbPort = '${DB_PORT}'; \
-    this.services.CoAuthoring.sql.dbName = '${DB_NAME}'; \
-    this.services.CoAuthoring.sql.dbUser = '${DB_USER}'; \
-    this.services.CoAuthoring.sql.dbPass = '${DB_PWD}'"
+  DB_TYPE="${DB_TYPE}" DB_HOST="${DB_HOST}" DB_PORT="${DB_PORT}" \
+  DB_NAME="${DB_NAME}" DB_USER="${DB_USER}" DB_PWD="${DB_PWD}" \
+  ${JSON} -I -e "this.services.CoAuthoring.sql.type = process.env.DB_TYPE; \
+    this.services.CoAuthoring.sql.dbHost = process.env.DB_HOST; \
+    this.services.CoAuthoring.sql.dbPort = process.env.DB_PORT; \
+    this.services.CoAuthoring.sql.dbName = process.env.DB_NAME; \
+    this.services.CoAuthoring.sql.dbUser = process.env.DB_USER; \
+    this.services.CoAuthoring.sql.dbPass = process.env.DB_PWD"
 
   if [ -n "${DB_TLS_MODE}" ]; then
     case "${DB_TYPE}" in
@@ -386,7 +390,7 @@ update_rabbitmq_setting(){
       fi
     fi
 
-    ${JSON} -I -e "this.rabbitmq.url = '${AMQP_URI}'"
+    AMQP_URI="${AMQP_URI}" ${JSON} -I -e "this.rabbitmq.url = process.env.AMQP_URI"
   fi
 
   if [ "${AMQP_TYPE}" == "activemq" ]; then
@@ -395,15 +399,17 @@ update_rabbitmq_setting(){
       transport_expr="this.activemq.connectOptions.transport = 'tls'"
 
     # Empty optional values resolve to a delete, non-empty values are assigned.
+    AMQP_SERVER_HOST="${AMQP_SERVER_HOST}" AMQP_SERVER_PORT="${AMQP_SERVER_PORT}" \
+    AMQP_SERVER_USER="${AMQP_SERVER_USER}" AMQP_SERVER_PASS="${AMQP_SERVER_PASS}" \
     ${JSON} -I -e "this.queue = this.queue || {}; \
       this.queue.type = 'activemq'; \
       this.activemq = this.activemq || {}; \
       this.activemq.connectOptions = this.activemq.connectOptions || {}; \
       var co = this.activemq.connectOptions; \
-      co.host = '${AMQP_SERVER_HOST}'; \
-      ('${AMQP_SERVER_PORT}') ? (co.port = '${AMQP_SERVER_PORT}') : (delete co.port); \
-      ('${AMQP_SERVER_USER}') ? (co.username = '${AMQP_SERVER_USER}') : (delete co.username); \
-      ('${AMQP_SERVER_PASS}') ? (co.password = '${AMQP_SERVER_PASS}') : (delete co.password); \
+      co.host = process.env.AMQP_SERVER_HOST; \
+      process.env.AMQP_SERVER_PORT ? (co.port = process.env.AMQP_SERVER_PORT) : (delete co.port); \
+      process.env.AMQP_SERVER_USER ? (co.username = process.env.AMQP_SERVER_USER) : (delete co.username); \
+      process.env.AMQP_SERVER_PASS ? (co.password = process.env.AMQP_SERVER_PASS) : (delete co.password); \
       ${transport_expr}"
 
     if [ -n "${AMQP_TLS_MODE}" ]; then
@@ -423,18 +429,16 @@ update_rabbitmq_setting(){
 
 # Write Redis host, port, and auth options to local.json.
 update_redis_settings(){
-  local REDIS_SERVER_USER_OPT="" REDIS_SERVER_PASS_OPT="" REDIS_SERVER_DB_OPT=""
-  [ -n "${REDIS_SERVER_USER}" ] && REDIS_SERVER_USER_OPT="username: '${REDIS_SERVER_USER}',"
-  [ -n "${REDIS_SERVER_PASS}" ] && REDIS_SERVER_PASS_OPT="password: '${REDIS_SERVER_PASS}',"
-  [ -n "${REDIS_SERVER_DB}" ]   && REDIS_SERVER_DB_OPT="database: '${REDIS_SERVER_DB}',"
+  REDIS_SERVER_HOST="${REDIS_SERVER_HOST}" REDIS_SERVER_PORT="${REDIS_SERVER_PORT}" \
+  REDIS_SERVER_USER="${REDIS_SERVER_USER}" REDIS_SERVER_PASS="${REDIS_SERVER_PASS}" \
+  REDIS_SERVER_DB="${REDIS_SERVER_DB}" \
   ${JSON} -I -e "this.services.CoAuthoring.redis = this.services.CoAuthoring.redis || {}; \
-    this.services.CoAuthoring.redis.host = '${REDIS_SERVER_HOST}'; \
-    this.services.CoAuthoring.redis.port = '${REDIS_SERVER_PORT}'; \
-    this.services.CoAuthoring.redis.options = {
-      ${REDIS_SERVER_USER_OPT}
-      ${REDIS_SERVER_PASS_OPT}
-      ${REDIS_SERVER_DB_OPT}
-    }"
+    this.services.CoAuthoring.redis.host = process.env.REDIS_SERVER_HOST; \
+    this.services.CoAuthoring.redis.port = process.env.REDIS_SERVER_PORT; \
+    var options = this.services.CoAuthoring.redis.options = {}; \
+    if (process.env.REDIS_SERVER_USER) options.username = process.env.REDIS_SERVER_USER; \
+    if (process.env.REDIS_SERVER_PASS) options.password = process.env.REDIS_SERVER_PASS; \
+    if (process.env.REDIS_SERVER_DB) options.database = process.env.REDIS_SERVER_DB"
 
   if [ -n "${REDIS_TLS_MODE}" ]; then
     if [ "${REDIS_SERVER_HOST}" = "localhost" ] || [ "${REDIS_TLS_MODE,,}" = "disable" ]; then
@@ -495,22 +499,25 @@ update_ipfilter_rules(){
 
 # Write JWT tokens, WOPI keys, and request-filtering-agent settings to local.json.
 update_ds_settings(){
-  ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = ${JWT_ENABLED}; \
-    this.services.CoAuthoring.token.enable.request.inbox = ${JWT_ENABLED}; \
-    this.services.CoAuthoring.token.enable.request.outbox = ${JWT_ENABLED}; \
-    this.services.CoAuthoring.secret.inbox.string = '${JWT_SECRET}'; \
-    this.services.CoAuthoring.secret.outbox.string = '${JWT_SECRET}'; \
-    this.services.CoAuthoring.secret.session.string = '${JWT_SECRET}'; \
-    this.services.CoAuthoring.secret.browser.string = '${JWT_SECRET}'; \
-    this.services.CoAuthoring.token.inbox.header = '${JWT_HEADER}'; \
-    this.services.CoAuthoring.token.outbox.header = '${JWT_HEADER}'; \
-    this.services.CoAuthoring.token.inbox.inBody = ${JWT_IN_BODY}; \
-    this.services.CoAuthoring.token.outbox.inBody = ${JWT_IN_BODY}"
+  JWT_ENABLED="${JWT_ENABLED}" JWT_SECRET="${JWT_SECRET}" \
+  JWT_HEADER="${JWT_HEADER}" JWT_IN_BODY="${JWT_IN_BODY}" \
+  ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = JSON.parse(process.env.JWT_ENABLED); \
+    this.services.CoAuthoring.token.enable.request.inbox = JSON.parse(process.env.JWT_ENABLED); \
+    this.services.CoAuthoring.token.enable.request.outbox = JSON.parse(process.env.JWT_ENABLED); \
+    this.services.CoAuthoring.secret.inbox.string = process.env.JWT_SECRET; \
+    this.services.CoAuthoring.secret.outbox.string = process.env.JWT_SECRET; \
+    this.services.CoAuthoring.secret.session.string = process.env.JWT_SECRET; \
+    this.services.CoAuthoring.secret.browser.string = process.env.JWT_SECRET; \
+    this.services.CoAuthoring.token.inbox.header = process.env.JWT_HEADER; \
+    this.services.CoAuthoring.token.outbox.header = process.env.JWT_HEADER; \
+    this.services.CoAuthoring.token.inbox.inBody = JSON.parse(process.env.JWT_IN_BODY); \
+    this.services.CoAuthoring.token.outbox.inBody = JSON.parse(process.env.JWT_IN_BODY)"
 
   if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ]; then
-    ${JSON_EXAMPLE} -I -e "this.server.token.enable = ${JWT_ENABLED}; \
-      this.server.token.secret = '${JWT_SECRET}'; \
-      this.server.token.authorizationHeader = '${JWT_HEADER}'"
+    JWT_ENABLED="${JWT_ENABLED}" JWT_SECRET="${JWT_SECRET}" JWT_HEADER="${JWT_HEADER}" \
+    ${JSON_EXAMPLE} -I -e "this.server.token.enable = JSON.parse(process.env.JWT_ENABLED); \
+      this.server.token.secret = process.env.JWT_SECRET; \
+      this.server.token.authorizationHeader = process.env.JWT_HEADER"
   fi
 
   if [ "${USE_UNAUTHORIZED_STORAGE}" == "true" ]; then
@@ -526,19 +533,22 @@ update_ds_settings(){
   WOPI_MODULUS=$(openssl rsa -pubin -inform "MS PUBLICKEYBLOB" -modulus -noout -in "${WOPI_PUBLIC_KEY}" | sed 's/Modulus=//' | xxd -r -p | openssl base64 -A)
   WOPI_EXPONENT=$(openssl rsa -pubin -inform "MS PUBLICKEYBLOB" -text -noout -in "${WOPI_PUBLIC_KEY}" | grep -oP '(?<=Exponent: )\d+')
   local wopi_private_key wopi_public_key
-  wopi_private_key=$(awk '{printf "%s\\n", $0}' "${WOPI_PRIVATE_KEY}")
+  # Preserve PEM line breaks verbatim; json handles string escaping.
+  IFS= read -r -d '' wopi_private_key < "${WOPI_PRIVATE_KEY}" || true
   wopi_public_key=$(openssl base64 -in "${WOPI_PUBLIC_KEY}" -A)
 
+  WOPI_ENABLED="${WOPI_ENABLED}" WOPI_PRIVATE_KEY_VALUE="${wopi_private_key}" \
+  WOPI_PUBLIC_KEY_VALUE="${wopi_public_key}" WOPI_MODULUS="${WOPI_MODULUS}" WOPI_EXPONENT="${WOPI_EXPONENT}" \
   ${JSON} -I -e "this.wopi = this.wopi || {}; \
-    this.wopi.enable = ${WOPI_ENABLED}; \
-    this.wopi.privateKey = '${wopi_private_key}'; \
-    this.wopi.privateKeyOld = '${wopi_private_key}'; \
-    this.wopi.publicKey = '${wopi_public_key}'; \
-    this.wopi.publicKeyOld = '${wopi_public_key}'; \
-    this.wopi.modulus = '${WOPI_MODULUS}'; \
-    this.wopi.modulusOld = '${WOPI_MODULUS}'; \
-    this.wopi.exponent = ${WOPI_EXPONENT}; \
-    this.wopi.exponentOld = ${WOPI_EXPONENT}"
+    this.wopi.enable = JSON.parse(process.env.WOPI_ENABLED); \
+    this.wopi.privateKey = process.env.WOPI_PRIVATE_KEY_VALUE; \
+    this.wopi.privateKeyOld = process.env.WOPI_PRIVATE_KEY_VALUE; \
+    this.wopi.publicKey = process.env.WOPI_PUBLIC_KEY_VALUE; \
+    this.wopi.publicKeyOld = process.env.WOPI_PUBLIC_KEY_VALUE; \
+    this.wopi.modulus = process.env.WOPI_MODULUS; \
+    this.wopi.modulusOld = process.env.WOPI_MODULUS; \
+    this.wopi.exponent = JSON.parse(process.env.WOPI_EXPONENT); \
+    this.wopi.exponentOld = JSON.parse(process.env.WOPI_EXPONENT)"
 
   if [ "${ALLOW_META_IP_ADDRESS}" = "true" ] || [ "${ALLOW_PRIVATE_IP_ADDRESS}" = "true" ]; then
     local rfa_expr="this.services.CoAuthoring['request-filtering-agent'] = this.services.CoAuthoring['request-filtering-agent'] || {};"
@@ -547,7 +557,8 @@ update_ds_settings(){
     ${JSON} -I -e "${rfa_expr}"
   fi
 
-  ${JSON_LOG} -I -e "this.categories.default.level = '${DS_LOG_LEVEL:-$(${JSON_LOG} categories.default.level)}'"
+  DS_LOG_LEVEL="${DS_LOG_LEVEL:-$(${JSON_LOG} categories.default.level)}" \
+  ${JSON_LOG} -I -e "this.categories.default.level = process.env.DS_LOG_LEVEL"
 }
 
 # Initialize a fresh PostgreSQL cluster, preserving original config backups.
@@ -593,7 +604,7 @@ postgresql_tbl() {
   if [ -n "${DB_SCHEMA}" ]; then
     export PGOPTIONS="-c search_path=${DB_SCHEMA}"
     $PSQL -c "CREATE SCHEMA IF NOT EXISTS ${DB_SCHEMA};" >/dev/null 2>&1
-    ${JSON} -I -e "this.services.CoAuthoring.sql.pgPoolExtraOptions ||= {}; this.services.CoAuthoring.sql.pgPoolExtraOptions.options = '${PGOPTIONS}'"
+    PGOPTIONS="${PGOPTIONS}" ${JSON} -I -e "this.services.CoAuthoring.sql.pgPoolExtraOptions ||= {}; this.services.CoAuthoring.sql.pgPoolExtraOptions.options = process.env.PGOPTIONS"
   fi
   [ "$operation" = "upgrade" ] && $PSQL -f "$APP_DIR/server/schema/postgresql/removetbl.sql"
   $PSQL -f "$APP_DIR/server/schema/postgresql/createdb.sql"
