@@ -8,9 +8,12 @@ services:
     image: onlyoffice/documentserver-de:${TAG:-latest}
     container_name: onlyoffice-documentserver
     depends_on:
-      - onlyoffice-postgresql
-      - onlyoffice-rabbitmq
-      - onlyoffice-redis
+      onlyoffice-postgresql:
+        condition: service_healthy
+      onlyoffice-rabbitmq:
+        condition: service_healthy
+      onlyoffice-redis:
+        condition: service_healthy
     environment:
       - DB_TYPE=postgres
       - DB_HOST=onlyoffice-postgresql
@@ -20,7 +23,8 @@ services:
       - DB_PWD=onlyoffice
       - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
       - REDIS_SERVER_HOST=onlyoffice-redis
-      # Uncomment strings below to enable the JSON Web Token validation.
+      # JWT validation is enabled by default with a new random secret on each start.
+      # Uncomment and set your own strong JWT_SECRET to keep integrations working after restarts:
       #- JWT_ENABLED=true
       #- JWT_SECRET=secret
       #- JWT_HEADER=Authorization

@@ -46,6 +46,10 @@ init_config(){
   JWT_ENABLED="$([[ "${JWT_ENABLED}" == "true" ]] && echo "true" || echo "false")"
   [[ "${JWT_ENABLED}" == "true" && -z "${JWT_SECRET}" ]] && JWT_MESSAGE='JWT is enabled by default. A random secret is generated automatically. Run the command "docker exec $(sudo docker ps -q) sudo documentserver-jwt-status" to get information about JWT.'
 
+  if [[ "${JWT_ENABLED}" == "true" && "${JWT_SECRET}" == "secret" ]]; then
+    echo 'WARNING: JWT_SECRET is set to the insecure example value "secret". Change JWT_SECRET to a strong, unique value.' >&2
+  fi
+
   JWT_SECRET=${JWT_SECRET:-$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)}
   JWT_HEADER=${JWT_HEADER:-Authorization}
   JWT_IN_BODY=${JWT_IN_BODY:-false}

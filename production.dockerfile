@@ -1,11 +1,11 @@
-### Arguments avavlivable only for FROM instruction ### 
+### Arguments available only for FROM instruction ###
 ARG PULL_TAG=latest
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_EDITION=
 
 ### Build nonexample ###
  
-FROM ${COMPANY_NAME}/documentserver${PRODUCT_EDITION}:${PULL_TAG} as documentserver-nonexample
+FROM ${COMPANY_NAME}/documentserver${PRODUCT_EDITION}:${PULL_TAG} AS documentserver-nonexample
 
 ARG COMPANY_NAME=onlyoffice
 ARG PRODUCT_NAME=documentserver

@@ -5,7 +5,8 @@ services:
       dockerfile: Dockerfile
     image: onlyoffice/documentserver:${TAG:-latest}
     container_name: onlyoffice-documentserver
-    # Uncomment to enable JWT validation:
+    # JWT validation is enabled by default with a new random secret on each start.
+    # Uncomment and set your own strong JWT_SECRET to keep integrations working after restarts:
     #environment:
     #  - JWT_ENABLED=true
     #  - JWT_SECRET=secret

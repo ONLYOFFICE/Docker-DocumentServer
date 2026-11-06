@@ -55,12 +55,16 @@ clean-docker:
 image: $(DOCKER_DUMMY)
 
 deploy: $(DOCKER_DUMMY)
-	for i in {1..3}; do \
-		docker push $(DOCKER_IMAGE):$(DOCKER_TAG) && break || sleep 1m; \
+	for i in 1 2 3; do \
+		docker push $(DOCKER_IMAGE):$(DOCKER_TAG) && break; \
+		[ "$$i" -lt 3 ] || exit 1; \
+		sleep 1m; \
 	done
 ifeq ($(BUILD_CHANNEL),nightly)
 	docker tag $(DOCKER_IMAGE):$(DOCKER_TAG) $(DOCKER_IMAGE):latest
-	for i in {1..3}; do \
-		docker push $(DOCKER_IMAGE):latest && break || sleep 1m; \
+	for i in 1 2 3; do \
+		docker push $(DOCKER_IMAGE):latest && break; \
+		[ "$$i" -lt 3 ] || exit 1; \
+		sleep 1m; \
 	done
 endif
