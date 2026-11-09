@@ -215,63 +215,6 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "20"
-
-      - name: Checkout tests
-        env:
-          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
-          TEST_TAG: ${{ matrix.test_tag }}
-        run: |
-          set -euo pipefail
-
-          git clone \
-            "https://${GITEA_TOKEN}@git.onlyoffice.com/ONLYOFFICE-QA/Dep.Tests.git" \
-            dep-tests
-
-          cd dep-tests
-
-          if git checkout "refs/tags/${TEST_TAG}" 2>/dev/null; then
-            echo "Checked out test tag ${TEST_TAG}"
-          else
-            echo "Test tag ${TEST_TAG} was not found" >&2
-            echo "Using fallback commit aa2d423f18" >&2
-            git checkout aa2d423f18
-          fi
-
-          df -h
-
-      - name: Initialize submodules
-        working-directory: dep-tests
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
-        run: |
-          set -euo pipefail
-
-          git config --global \
-            url."https://${GITHUB_TOKEN}@github.com/".insteadOf \
-            "https://github.com/"
-
-          git submodule update \
-            --init
-
-          git config --global --unset url."https://${GITHUB_TOKEN}@github.com/".insteadOf
-
-      - name: Install dependencies
-        working-directory: dep-tests/puppeteer/engine
-        run: |
-          df -h
-          npm install --silent --no-progress > /dev/null 2>&1 || {
-            echo "Dependency installation failed"
-            exit 1
-          }
-
-      - name: mv Dep.Tests under context
-        run: |
-          mv dep-tests ../
-          
       - name: Build secure-patched image
         id: build
         env:
@@ -341,10 +284,6 @@ jobs:
           subject-digest: ${{ steps.image.outputs.digest }}
           push-to-registry: true
 
-      - name: Return dep.tests
-        run: |
-          mv ../dep-tests ./
-          
       - name: Clean-up
         run: |
           set -euo pipefail
@@ -353,6 +292,21 @@ jobs:
           docker buildx prune -af 
           docker image prune -af
           docker builder prune -af
+
+      - name: Checkout smoke tests
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: smoke-ci
+          sparse-checkout: .github/scripts
+
+      - name: Install smoke test dependencies
+        run: |
+          set -euo pipefail
+
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends poppler-utils
+          pip install --quiet --break-system-packages "selenium==4.27.1"
 
       - name: Pull test image
         env:
@@ -380,183 +334,59 @@ jobs:
           IMAGE: ${{ steps.build.outputs.patched_image }}
         run: |
           set -euo pipefail
-          
+
+          SMOKE_JWT_SECRET="$(openssl rand -hex 32)"
+          echo "::add-mask::${SMOKE_JWT_SECRET}"
+          echo "SMOKE_JWT_SECRET=${SMOKE_JWT_SECRET}" >> "${GITHUB_ENV}"
+
+          # JWT_SECRET: known secret, so the tests can sign API requests
+          # ALLOW_PRIVATE_IP_ADDRESS + host-gateway: Docs downloads test files from the runner
+          # SECURE_LINK_SECRET: result links stay valid across the restart check
           docker run \
             --detach \
             --publish 80:80 \
             --name documentserver \
+            --add-host host.docker.internal:host-gateway \
+            --env JWT_SECRET="${SMOKE_JWT_SECRET}" \
+            --env ALLOW_PRIVATE_IP_ADDRESS=true \
+            --env SECURE_LINK_SECRET="$(openssl rand -hex 32)" \
             "${IMAGE}"
 
-      - name: Wait for healthcheck
+      - name: Run smoke tests
+        timeout-minutes: 30
+        env:
+          SOURCE_TAG: ${{ matrix.source_tag }}
+          EDITION: ${{ matrix.edition }}
         run: |
           set -euo pipefail
 
-          for attempt in $(seq 1 30); do
-            RESULT="$(
-              curl \
-                --fail \
-                --silent \
-                --show-error \
-                http://localhost/healthcheck \
-                2>/dev/null \
-                || true
-            )"
+          export SMOKE_TITLE="${SOURCE_TAG}${EDITION}"
+          export SMOKE_ARTIFACTS="${RUNNER_TEMP}/smoke-artifacts"
+          python3 smoke-ci/.github/scripts/smoke.py
 
-            echo "Healthcheck response: ${RESULT}"
-
-            if [ "${RESULT}" = "true" ]; then
-              echo "Healthcheck passed"
-              exit 0
-            fi
-
-            if [ "${attempt}" -eq 30 ]; then
-              echo "Healthcheck failed after 5 minutes" >&2
-              docker logs documentserver || true
-              exit 1
-            fi
-
-            sleep 10
-          done
-
-      - name: Start example service
-        run: |
-          set -euo pipefail
-
-          docker exec documentserver \
-            supervisorctl start ds:example
-
-          for attempt in $(seq 1 30); do
-            if curl \
-              --fail \
-              --silent \
-              --show-error \
-              http://localhost/example/ \
-              >/dev/null 2>&1; then
-              echo "Example service is ready"
-              exit 0
-            fi
-
-            if [ "${attempt}" -eq 30 ]; then
-              echo "Example service did not become ready" >&2
-              docker logs documentserver || true
-              exit 1
-            fi
-
-            sleep 5
-          done
-
-      - name: Start Xvfb
-        run: |
-          set -euo pipefail
-
-          Xvfb :99 \
-            -screen 0 1920x1080x24 \
-            >"${RUNNER_TEMP}/xvfb.log" \
-            2>&1 &
-          
-          sleep 60
-          echo "DISPLAY=:99" >> "${GITHUB_ENV}"
-
-      - name: Install Chrome
-        uses: browser-actions/setup-chrome@v2
-        with:
-          chrome-version: "120"
-
-      - name: Run tests with retryes
-        uses: nick-fields/retry@v4
-        with:
-          timeout_minutes: 20
-          max_attempts: 3
-          retry_wait_seconds: 120
-          command: |
-              set -uo pipefail
-              cd dep-tests/puppeteer/engine
-              OUTPUT_FILE="../test-output.log"
-              RESULT=0
-    
-              : > "${OUTPUT_FILE}"
-    
-              tests=(
-                "tests/desktop/word/smoke/open-close-file-tab.js"
-                "tests/desktop/word/smoke/check_search_while_drawing.js"
-                "tests/desktop/spreadsheets/smoke/check_replace_all.js"
-                "tests/desktop/spreadsheets/smoke/data_entry_use_tab_button.js"
-                "tests/desktop/pdf/smoke/check_find_for_a_specific_pdf.js"
-                "tests/desktop/pdf/smoke/check_undo_after_add_text_comment.js"
-              )
-    
-              for test in "${tests[@]}"; do
-                echo "Running ${test}" \
-                  | tee -a "${OUTPUT_FILE}"
-    
-                python3 run.py \
-                  --config config_chrome_linux.json \
-                  "${test}" \
-                  --config_params \
-                    "runOptions.disableAnimation=true" \
-                    "testOptions.url=http://localhost/example" \
-                    'puppeteerOptions.browserArgs.args=["--no-sandbox","--disable-setuid-sandbox"]' \
-                  2>&1 \
-                  | tee -a "${OUTPUT_FILE}"
-    
-                TEST_RESULT="${PIPESTATUS[0]}"
-    
-                if [ "${TEST_RESULT}" -ne 0 ]; then
-                  echo "Test failed with exit code ${TEST_RESULT}: ${test}" \
-                    | tee -a "${OUTPUT_FILE}"
-                  RESULT=1
-                fi
-              done
-    
-              exit "${RESULT}"
-
-      - name: Print test output
-        if: always()
-        run: |
-          if [ -f dep-tests/puppeteer/test-output.log ]; then
-            cat dep-tests/puppeteer/test-output.log
-          else
-            echo "Test output file was not created"
-          fi
-
-      - name: Print test reports
-        if: always()
-        run: |
-          if [ ! -d dep-tests/puppeteer/out ]; then
-            echo "Test report directory was not created"
-            exit 0
-          fi
-
-          find dep-tests/puppeteer/out \
-            -type f \
-            -name "report*.html" \
-            -print0 \
-            | sort -z \
-            | while IFS= read -r -d "" report; do
-                echo "=== ${report} ==="
-                cat "${report}"
-                echo
-              done
-
-      - name: Upload test artifacts
-        if: ${{ false }}
+      - name: Upload smoke screenshots
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-tests-${{ matrix.source_tag }}${{ matrix.edition }}
-          path: |
-            dep-tests/puppeteer/test-output.log
-            dep-tests/puppeteer/out/
-          if-no-files-found: warn
-          retention-days: 14
+          name: smoke-${{ matrix.source_tag }}${{ matrix.edition }}
+          path: ${{ runner.temp }}/smoke-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
 
-      - name: Remove test container
-        if: ${{ false }}
+      - name: Container logs
+        if: failure()
         run: |
-          docker rm \
-            --force \
-            documentserver \
-            2>/dev/null \
-            || true
+          docker ps --all --filter name=documentserver || true
+          docker exec documentserver supervisorctl status || true
+          docker exec documentserver sh -c '
+            for file in /var/log/onlyoffice/documentserver/docservice/out.log \
+                        /var/log/onlyoffice/documentserver/converter/out.log \
+                        /var/log/onlyoffice/documentserver-example/out.log \
+                        /var/log/onlyoffice/documentserver/nginx.error.log; do
+              [ -f "$file" ] && { printf "\n=== %s ===\n" "$file"; tail -n 200 "$file"; }
+            done' || true
+          docker logs --tail 300 documentserver || true
+
 
   retag:
     name: "Retag all releases"
