@@ -10,12 +10,11 @@ Docker, Docker BuildX, Bash, Nginx, Supervisor, PostgreSQL/MySQL/MariaDB/MSSQL/O
 
 ```
 Dockerfile              — Main image (Ubuntu 24.04 base)
-production.dockerfile   — Stable/release image builder
+production.dockerfile   — Optional image without documentserver-example
 docker-compose.yml          — Local dev CE (documentserver only, no bundled services)
 docker-compose.enterprise.yml — Local dev EE (with postgres, rabbitmq, redis)
 docker-compose.developer.yml  — Local dev DE (with postgres, rabbitmq, redis)
 docker-bake.hcl         — BuildX multi-platform config
-Makefile                — Build system (image, deploy, clean targets)
 run-document-server.sh       — Entrypoint: initialization sequence and startup
 config/supervisor/           — Supervisor service configs (ds-converter, ds-docservice, ds-example, ds-metrics, ds-adminpanel)
 config/supervisor/ds.conf.enterprise — Group config with adminpanel included (EE/DE only)
@@ -27,24 +26,29 @@ oracle/                 — Oracle SQLPlus wrapper
 ## Build & Run
 
 ```bash
-# Build with Makefile
-make image PRODUCT_VERSION=9.2.0 BUILD_NUMBER=1
-
-# Build with Docker
-docker build -t onlyoffice/documentserver .
+# Build Community, Enterprise or Developer Edition locally
+docker build -t onlyoffice/documentserver:local .
+docker build -f Dockerfile.enterprise -t onlyoffice/documentserver-ee:local .
+docker build -f Dockerfile.enterprise --build-arg PRODUCT_EDITION=-de -t onlyoffice/documentserver-de:local .
 
 # Run
-docker run -i -t -d -p 80:80 onlyoffice/documentserver
+docker run -i -t -d -p 80:80 onlyoffice/documentserver:local
 
 # Docker Compose Community Edition
-docker-compose up -d
+TAG=local docker compose up -d --build
 
 # Docker Compose Enterprise Edition
-docker compose -f docker-compose.enterprise.yml up -d
+TAG=local docker compose -f docker-compose.enterprise.yml up -d --build
 
 # Run tests
-cd tests && ./test.sh
+cd tests && config=standalone.yml bash ./test.sh
 ```
+
+Use `--platform linux/amd64` or `--platform linux/arm64` to select the image
+architecture. Use `--build-arg PACKAGE_VERSION=<version>` and
+`--build-arg PACKAGE_BASEURL=<url>` to select a specific package.
+CI uses `docker buildx bake -f docker-bake.hcl documentserver` with the variables
+set in `.github/workflows/4testing-build.yml`.
 
 ## Key Patterns
 

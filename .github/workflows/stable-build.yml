@@ -76,7 +76,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        images: ["documentserver-stable"]
         edition: ${{ fromJSON(needs.setup.outputs.editions) }}
     steps:
       - name: Checkout code 
