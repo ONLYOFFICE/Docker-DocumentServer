@@ -426,3 +426,135 @@ jobs:
           subject-name: docker.io/${{ steps.manifest.outputs.name }}
           subject-digest: ${{ steps.manifest.outputs.index_digest }}
           push-to-registry: true
+
+  smoke:
+    name: "Smoke ${{ matrix.edition }}"
+    runs-on: ubuntu-latest
+    needs: [prepare, make-images]
+    # Informational: the image is already published, a failure only marks the build as broken.
+    # Browser tests need Chrome, which has no Linux arm64 build: amd64 images only.
+    if: ${{ !cancelled() && contains(fromJSON(needs.prepare.outputs.platforms), 'amd64') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        edition: ${{ fromJSON(needs.prepare.outputs.editions) }}
+    steps:
+      # Tests from the same commit as this workflow (the branch being built)
+      - name: Checkout smoke tests
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: smoke-ci
+          sparse-checkout: .github/scripts
+
+      - name: Install smoke test dependencies
+        run: |
+          set -euo pipefail
+
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends poppler-utils
+          pip install --quiet --break-system-packages "selenium==4.27.1"
+
+      - name: Resolve test image
+        id: image
+        env:
+          EDITION: ${{ matrix.edition }}
+          BUILD_NUMBER: ${{ github.event.inputs.build }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          # Same tag as the "Make images documentserver" step
+          case "${EDITION}" in
+            community)  PRODUCT_EDITION="" ;;
+            enterprise) PRODUCT_EDITION="-ee" ;;
+            developer)  PRODUCT_EDITION="-de" ;;
+          esac
+
+          if [ "${BRANCH_NAME}" = develop ]; then
+            PRODUCT_VERSION=99.99.99
+          else
+            PRODUCT_VERSION="${BRANCH_NAME#*/v}"
+          fi
+
+          IMAGE="${COMPANY_NAME}/4testing-${PRODUCT_NAME}${PRODUCT_EDITION}:${PRODUCT_VERSION}.${BUILD_NUMBER}"
+          echo "Test image: ${IMAGE}"
+          echo "name=${IMAGE}" >> "${GITHUB_OUTPUT}"
+          echo "title=${PRODUCT_VERSION}.${BUILD_NUMBER}${PRODUCT_EDITION:--ce}" >> "${GITHUB_OUTPUT}"
+
+      - name: Pull test image
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}
+        run: |
+          set -euo pipefail
+
+          for attempt in $(seq 1 30); do
+            if docker pull --platform linux/amd64 "${IMAGE}"; then
+              echo "Image pulled successfully"
+              exit 0
+            fi
+
+            if [ "${attempt}" -eq 30 ]; then
+              echo "Image was not available after 5 minutes" >&2
+              exit 1
+            fi
+
+            echo "Image is not available yet, retrying in 10 seconds"
+            sleep 10
+          done
+
+      - name: Start test container
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}
+        run: |
+          set -euo pipefail
+
+          SMOKE_JWT_SECRET="$(openssl rand -hex 32)"
+          echo "::add-mask::${SMOKE_JWT_SECRET}"
+          echo "SMOKE_JWT_SECRET=${SMOKE_JWT_SECRET}" >> "${GITHUB_ENV}"
+
+          # JWT_SECRET: known secret, so the tests can sign API requests
+          # ALLOW_PRIVATE_IP_ADDRESS + host-gateway: Docs downloads test files from the runner
+          # SECURE_LINK_SECRET: result links stay valid across the restart check
+          docker run \
+            --detach \
+            --publish 80:80 \
+            --name documentserver \
+            --add-host host.docker.internal:host-gateway \
+            --env JWT_SECRET="${SMOKE_JWT_SECRET}" \
+            --env ALLOW_PRIVATE_IP_ADDRESS=true \
+            --env SECURE_LINK_SECRET="$(openssl rand -hex 32)" \
+            "${IMAGE}"
+
+      - name: Run smoke tests
+        timeout-minutes: 30
+        env:
+          SMOKE_TITLE: ${{ steps.image.outputs.title }}
+        run: |
+          set -euo pipefail
+
+          export SMOKE_ARTIFACTS="${RUNNER_TEMP}/smoke-artifacts"
+          python3 smoke-ci/.github/scripts/smoke.py
+
+      - name: Upload smoke screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-${{ steps.image.outputs.title }}
+          path: ${{ runner.temp }}/smoke-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Container logs
+        if: failure()
+        run: |
+          docker ps --all --filter name=documentserver || true
+          docker exec documentserver supervisorctl status || true
+          docker exec documentserver sh -c '
+            for file in /var/log/onlyoffice/documentserver/docservice/out.log \
+                        /var/log/onlyoffice/documentserver/converter/out.log \
+                        /var/log/onlyoffice/documentserver-example/out.log \
+                        /var/log/onlyoffice/documentserver/nginx.error.log; do
+              [ -f "$file" ] && { printf "\n=== %s ===\n" "$file"; tail -n 200 "$file"; }
+            done' || true
+          docker logs --tail 300 documentserver || true
