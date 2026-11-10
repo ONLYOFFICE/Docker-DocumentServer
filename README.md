@@ -66,6 +66,15 @@ ONLYOFFICE Docs offer support for plugins allowing you to add specific features 
 
 Use this command if you wish to install ONLYOFFICE Document Server separately. To install ONLYOFFICE Document Server integrated with Community and Mail Servers, refer to the corresponding instructions below.
 
+### Running on Easypanel
+
+[Easypanel](https://easypanel.io) is a self-hosted Docker deployment platform, and it has a one-click deployment template for ONLYOFFICE Document Server:
+
+[![Deploy on Easypanel][easypanel-btn]][easypanel-deploy]
+
+[easypanel-btn]: https://easypanel.io/img/deploy-on-easypanel-40.svg
+[easypanel-deploy]: https://easypanel.io/templates/onlyoffice
+
 ## Configuring Docker Image
 
 ### Storing Data
