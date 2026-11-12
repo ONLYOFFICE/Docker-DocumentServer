@@ -232,12 +232,12 @@ read_setting(){
     fi
     if [ "${DB_TYPE}" = "mariadb" ] || [ "${DB_TYPE}" = "mysql" ]; then
       declare -A _mysql_ssl_modes=([disable]=DISABLED [require]=REQUIRED [verify-ca]=VERIFY_CA [verify-full]=VERIFY_IDENTITY)
-      MYSQL_TLS_PARAMS=""
+      MYSQL_TLS_PARAMS=()
       if [ -n "${DB_TLS_MODE}" ]; then
-        MYSQL_TLS_PARAMS="${_mysql_ssl_modes[${DB_TLS_MODE,,}]:+--ssl-mode=${_mysql_ssl_modes[${DB_TLS_MODE,,}]}}"
-        [ -n "${TLS_CA_CERT}" ] && MYSQL_TLS_PARAMS="${MYSQL_TLS_PARAMS} --ssl-ca=${TLS_CA_CERT}"
-        [ -n "${TLS_CERT}" ] && MYSQL_TLS_PARAMS="${MYSQL_TLS_PARAMS} --ssl-cert=${TLS_CERT}"
-        [ -n "${TLS_KEY}" ] && MYSQL_TLS_PARAMS="${MYSQL_TLS_PARAMS} --ssl-key=${TLS_KEY}"
+        MYSQL_TLS_PARAMS=("--ssl-mode=${_mysql_ssl_modes[${DB_TLS_MODE,,}]}")
+        [ -n "${TLS_CA_CERT}" ] && MYSQL_TLS_PARAMS+=("--ssl-ca=${TLS_CA_CERT}")
+        [ -n "${TLS_CERT}" ] && MYSQL_TLS_PARAMS+=("--ssl-cert=${TLS_CERT}")
+        [ -n "${TLS_KEY}" ] && MYSQL_TLS_PARAMS+=("--ssl-key=${TLS_KEY}")
       fi
     fi
     if [ "${DB_TYPE}" = "mssql" ]; then
@@ -613,13 +613,13 @@ postgresql_tbl() {
 # Apply MySQL/MariaDB schema; creates database if operation is "create".
 mysql_tbl() {
   local operation=$1
-  MYSQL="mysql -q -h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PWD -w ${MYSQL_TLS_PARAMS}"
+  local MYSQL=(mysql -q -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -w "${MYSQL_TLS_PARAMS[@]}")
   if [ "$operation" = "create" ]; then
-    $MYSQL -e "CREATE DATABASE IF NOT EXISTS $DB_NAME DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null 2>&1
+    MYSQL_PWD="$DB_PWD" "${MYSQL[@]}" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null 2>&1
   else
-    $MYSQL "$DB_NAME" < "$APP_DIR/server/schema/mysql/removetbl.sql" >/dev/null 2>&1
+    MYSQL_PWD="$DB_PWD" "${MYSQL[@]}" "$DB_NAME" < "$APP_DIR/server/schema/mysql/removetbl.sql" >/dev/null 2>&1
   fi
-  $MYSQL "$DB_NAME" < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
+  MYSQL_PWD="$DB_PWD" "${MYSQL[@]}" "$DB_NAME" < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
 }
 
 # Apply MSSQL schema; creates database and schema if needed.
