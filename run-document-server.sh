@@ -2,8 +2,57 @@
 set -o pipefail
 umask 0022 # Ensure created files get 644 and dirs 755 regardless of container defaults.
 
+# Resolve <NAME>_FILE (Docker/Kubernetes secrets) into <NAME>; an explicit <NAME> wins.
+load_secret_files(){
+  local name file_var file_path secret_value
+  for name in DB_PWD JWT_SECRET SECURE_LINK_SECRET AMQP_URI REDIS_SERVER_PASS; do
+    file_var="${name}_FILE"; file_path="${!file_var}"
+    [ -n "${file_path}" ] || continue
+    if [ -n "${!name}" ]; then
+      echo "WARNING: ${name} is set, ${file_var} is ignored." >&2
+      continue
+    fi
+    [ -r "${file_path}" ] || { echo "ERROR: ${file_var} '${file_path}' is not readable" >&2; exit 1; }
+    secret_value=$(< "${file_path}")
+    [[ -n "${secret_value//[[:space:]]/}" ]] || { echo "ERROR: ${file_var} '${file_path}' is empty" >&2; exit 1; }
+    printf -v "${name}" '%s' "${secret_value}"
+  done
+}
+
+# Print a random alphanumeric string of the given length.
+random_secret(){ tr -dc 'A-Za-z0-9' < /dev/urandom | head -c "$1"; }
+
+# Print a secret that is generated once and kept in the private data directory; the first writer wins.
+persistent_secret(){
+  local secret_file="${PRIVATE_DATA_DIR}/$1" temp_file="" secret
+  if [ -s "${secret_file}" ]; then
+    cat "${secret_file}"
+    return
+  fi
+  secret=$(random_secret "$2")
+  [ ! -e "${secret_file}" ] || [ -s "${secret_file}" ] || rm -f "${secret_file}"
+  if mkdir -p "${PRIVATE_DATA_DIR}" 2>/dev/null && temp_file=$(mktemp "${PRIVATE_DATA_DIR}/.$1.XXXXXX" 2>/dev/null) &&
+     printf '%s' "${secret}" > "${temp_file}"; then
+    # Link atomically so a concurrent starter keeps the value that was published first.
+    ln "${temp_file}" "${secret_file}" 2>/dev/null || [ -e "${secret_file}" ] || mv -n "${temp_file}" "${secret_file}"
+    rm -f "${temp_file}"
+    [ -s "${secret_file}" ] && { cat "${secret_file}"; return; }
+  fi
+  [ -z "${temp_file}" ] || rm -f "${temp_file}"
+  echo "WARNING: cannot persist '$1' in ${PRIVATE_DATA_DIR}, it changes on the next start." >&2
+  printf '%s' "${secret}"
+}
+
+# Succeed when the release marker can be stored, otherwise an upgrade would repeat on every start.
+release_marker_writable(){
+  local probe_file
+  mkdir -p "${PRIVATE_DATA_DIR}" 2>/dev/null && probe_file=$(mktemp "${PRIVATE_DATA_DIR}/.marker.XXXXXX" 2>/dev/null) && rm -f "${probe_file}"
+}
+
 # Initialize all configuration variables from environment and computed defaults.
 init_config(){
+  load_secret_files
+
   # Directory structure: app, data, logs, config, services.
   APP_DIR="/var/www/${COMPANY_NAME}/documentserver"
   DATA_DIR="/var/www/${COMPANY_NAME}/Data"
@@ -16,7 +65,13 @@ init_config(){
   CONF_DIR="/etc/${COMPANY_NAME}/documentserver"
   SUPERVISOR_CONF_DIR="/etc/supervisor/conf.d"
   IS_UPGRADE="false"
+  IS_FIRST_START="false"
   PLUGINS_ENABLED=${PLUGINS_ENABLED:-true}
+
+  # Seconds to wait for each dependency before giving up; 0 waits forever.
+  WAIT_TIMEOUT=${WAIT_TIMEOUT:-600}
+  [[ "${WAIT_TIMEOUT}" =~ ^[0-9]+$ ]] || { echo "ERROR: WAIT_TIMEOUT must be a number of seconds" >&2; exit 1; }
+  WAIT_TIMEOUT=$((10#${WAIT_TIMEOUT}))
 
   # Docker/data container mode.
   ONLYOFFICE_DATA_CONTAINER=${ONLYOFFICE_DATA_CONTAINER:-false}
@@ -44,13 +99,19 @@ init_config(){
   # JWT and WOPI/security settings.
   JWT_ENABLED=${JWT_ENABLED:-true}
   JWT_ENABLED="$([[ "${JWT_ENABLED}" == "true" ]] && echo "true" || echo "false")"
-  [[ "${JWT_ENABLED}" == "true" && -z "${JWT_SECRET}" ]] && JWT_MESSAGE='JWT is enabled by default. A random secret is generated automatically. Run the command "docker exec $(sudo docker ps -q) sudo documentserver-jwt-status" to get information about JWT.'
+  [[ "${JWT_ENABLED}" == "true" && -z "${JWT_SECRET}" ]] && JWT_MESSAGE='JWT is enabled by default. A random secret is generated once and kept in the Data volume. Run the command "docker exec $(sudo docker ps -q) sudo documentserver-jwt-status" to get information about JWT.'
 
   if [[ "${JWT_ENABLED}" == "true" && "${JWT_SECRET}" == "secret" ]]; then
     echo 'WARNING: JWT_SECRET is set to the insecure example value "secret". Change JWT_SECRET to a strong, unique value.' >&2
   fi
 
-  JWT_SECRET=${JWT_SECRET:-$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)}
+  # A disabled JWT needs no persisted secret; keep a throwaway value for the config keys.
+  if [[ "${JWT_ENABLED}" == "true" ]]; then
+    JWT_SECRET=${JWT_SECRET:-$(persistent_secret jwt_secret 32)}
+  else
+    JWT_SECRET=${JWT_SECRET:-$(random_secret 32)}
+  fi
+  SECURE_LINK_SECRET=${SECURE_LINK_SECRET:-$(persistent_secret secure_link_secret 20)}
   JWT_HEADER=${JWT_HEADER:-Authorization}
   JWT_IN_BODY=${JWT_IN_BODY:-false}
 
@@ -78,6 +139,7 @@ init_config(){
   JSON_EXAMPLE="${JSON_BIN} -q -f ${ONLYOFFICE_EXAMPLE_CONFIG}"
 
   LOCAL_SERVICES=()
+  STARTED_SERVICES=()
 
   # Data paths for bundled services: PostgreSQL, RabbitMQ, Redis.
   PG_ROOT=/var/lib/postgresql
@@ -87,10 +149,21 @@ init_config(){
   RABBITMQ_DATA=/var/lib/rabbitmq
   REDIS_DATA=/var/lib/redis
 
-  # Detect if this is an upgrade: release date changed and not a data container.
+  # An upgrade needs a marker that differs; without a marker tables are dropped only when DS_DB_UPGRADE=true.
+  DS_DB_UPGRADE=${DS_DB_UPGRADE:-false}
   RELEASE_DATE="$(stat -c="%y" "${APP_DIR}"/server/DocService/docservice | sed -r 's/=([0-9]+)-([0-9]+)-([0-9]+) ([0-9:.+ ]+)/\1-\2-\3/')"
-  PREV_RELEASE_DATE="$([[ -f ${DS_RELEASE_DATE} ]] && head -n 1 "${DS_RELEASE_DATE}" || true)"
-  [[ -n "${PREV_RELEASE_DATE}" && "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" && "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]] && IS_UPGRADE="true"
+  if [[ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]]; then
+    if [[ -f ${DS_RELEASE_DATE} ]]; then
+      [[ "${RELEASE_DATE}" != "$(head -n 1 "${DS_RELEASE_DATE}")" ]] && IS_UPGRADE="true"
+    else
+      IS_FIRST_START="true"
+      [[ "${DS_DB_UPGRADE}" == "true" ]] && IS_UPGRADE="true"
+    fi
+    if [[ "${IS_UPGRADE}" == "true" ]] && ! release_marker_writable; then
+      echo "WARNING: the release marker cannot be written to ${PRIVATE_DATA_DIR}, so the database tables are not recreated; fix the permissions of the Data volume." >&2
+      IS_UPGRADE="false"
+    fi
+  fi
 }
 
 # Resolve SSL/TLS paths: user-supplied > company-specific > Let's Encrypt > default.
@@ -141,7 +214,8 @@ init_folders(){
   mkdir -p "${DS_LOG_DIR}-example" && touch "${DS_LOG_DIR}-example"/out.log
   mkdir -p "${DS_LIB_DIR}/App_Data/cache/files" "${DS_LIB_DIR}/App_Data/docbuilder" "${DS_LIB_DIR}-example/files"
 
-  chmod -R 755 "${DS_LOG_DIR}" "${DS_LOG_DIR}-example" "${LIB_DIR}"
+  # Normalize only directories whose mode is not 755 yet (setgid kept); files keep their modes.
+  find "${DS_LOG_DIR}" "${DS_LOG_DIR}-example" "${LIB_DIR}" -type d ! -perm 755 ! -perm 2755 -exec chmod 755 {} +
 
   # Bug 75324: runtime.json may be owned by root after volume mount
   local ai_config="${DATA_DIR}/runtime.json"
@@ -154,13 +228,35 @@ start_process() {
   CHILD=$!; wait "$CHILD"; CHILD="";
 }
 
+# A container restart keeps /var/run, and a stale pid of a reused number makes the init scripts skip starting the service.
+remove_stale_pid_files() {
+  rm -f /var/run/supervisord.pid /var/run/crond.pid /var/run/nginx.pid
+}
+
 # Graceful shutdown: terminate tracked child, run prepare4shutdown if needed.
 clean_exit() {
+  GRACEFUL_EXIT=true
   [[ -z "$CHILD" ]] || kill -s SIGTERM "$CHILD" 2>/dev/null
   if [ "${ONLYOFFICE_DATA_CONTAINER}" == "false" ] && [ "${ONLYOFFICE_DATA_CONTAINER_HOST}" == "localhost" ]; then
     /usr/bin/documentserver-prepare4shutdown
   fi
   exit
+}
+
+# Stop the background jobs and the local services that this script has already started.
+stop_started_services(){
+  local index
+  local -a started=("${LOCAL_SERVICES[@]}" "${STARTED_SERVICES[@]}")
+  [[ -z "$CHILD" ]] || kill -s SIGTERM "$CHILD" 2>/dev/null
+  jobs -p | xargs -r kill 2>/dev/null
+  for (( index=${#started[@]}-1; index>=0; index-- )); do service "${started[index]}" stop; done
+}
+
+# On an abnormal exit stop what is already running; the graceful signal path and the exit status stay unchanged.
+cleanup_on_exit(){
+  local status=$?
+  trap - EXIT
+  [ "${status}" -eq 0 ] || [ "${GRACEFUL_EXIT}" = "true" ] || stop_started_services
 }
 
 # Parse an AMQP URL of the form: scheme://[user[:pass]@]host[:port][/vhost]
@@ -188,7 +284,7 @@ read_setting(){
   METRICS_HOST="${METRICS_HOST:-localhost}"
   METRICS_PORT="${METRICS_PORT:-8125}"
   METRICS_PREFIX="${METRICS_PREFIX:-ds.}"
-  MSSQL_TLS_PARAMS="-C"
+  MSSQL_TLS_ARGS=(-C)
   case "${DB_TLS_MODE,,}" in
     ""|"disable"|"require")    DB_TLS_REJECT_UNAUTHORIZED=false ;;
     "verify-ca"|"verify-full") DB_TLS_REJECT_UNAUTHORIZED=true ;;
@@ -232,18 +328,18 @@ read_setting(){
     fi
     if [ "${DB_TYPE}" = "mariadb" ] || [ "${DB_TYPE}" = "mysql" ]; then
       declare -A _mysql_ssl_modes=([disable]=DISABLED [require]=REQUIRED [verify-ca]=VERIFY_CA [verify-full]=VERIFY_IDENTITY)
-      MYSQL_TLS_PARAMS=()
+      MYSQL_TLS_ARGS=()
       if [ -n "${DB_TLS_MODE}" ]; then
-        MYSQL_TLS_PARAMS=("--ssl-mode=${_mysql_ssl_modes[${DB_TLS_MODE,,}]}")
-        [ -n "${TLS_CA_CERT}" ] && MYSQL_TLS_PARAMS+=("--ssl-ca=${TLS_CA_CERT}")
-        [ -n "${TLS_CERT}" ] && MYSQL_TLS_PARAMS+=("--ssl-cert=${TLS_CERT}")
-        [ -n "${TLS_KEY}" ] && MYSQL_TLS_PARAMS+=("--ssl-key=${TLS_KEY}")
+        [ -n "${_mysql_ssl_modes[${DB_TLS_MODE,,}]}" ] && MYSQL_TLS_ARGS+=("--ssl-mode=${_mysql_ssl_modes[${DB_TLS_MODE,,}]}")
+        [ -n "${TLS_CA_CERT}" ] && MYSQL_TLS_ARGS+=("--ssl-ca=${TLS_CA_CERT}")
+        [ -n "${TLS_CERT}" ] && MYSQL_TLS_ARGS+=("--ssl-cert=${TLS_CERT}")
+        [ -n "${TLS_KEY}" ] && MYSQL_TLS_ARGS+=("--ssl-key=${TLS_KEY}")
       fi
     fi
     if [ "${DB_TYPE}" = "mssql" ]; then
       case "${DB_TLS_MODE,,}" in
         "verify-ca"|"verify-full")
-          MSSQL_TLS_PARAMS=""
+          MSSQL_TLS_ARGS=()
           ;;
       esac
     fi
@@ -291,21 +387,66 @@ set_json_tls_options(){
 }
 
 
-# Block until a TCP connection to host:port succeeds, retrying every second.
+# Block until a TCP connection to host:port succeeds; exit with an error after WAIT_TIMEOUT seconds.
 waiting_for_connection(){
-  until nc -z -w 3 "$1" "$2"; do >&2 echo "Waiting for $1:$2..."; sleep 1; done
+  local deadline=$(( SECONDS + 10#${WAIT_TIMEOUT} ))
+  until nc -z -w 3 "$1" "$2"; do
+    if (( 10#${WAIT_TIMEOUT} > 0 && SECONDS >= deadline )); then
+      >&2 echo "ERROR: $1:$2 is not reachable after ${WAIT_TIMEOUT} seconds"
+      exit 1
+    fi
+    >&2 echo "Waiting for $1:$2..."; sleep 1
+  done
+}
+
+# Run sqlcmd against the MSSQL server with the connection settings of the script.
+mssql_sqlcmd(){
+  [ -n "${DB_PWD}" ] && local -x SQLCMDPASSWORD="${DB_PWD}"
+  /opt/mssql-tools18/bin/sqlcmd -S "${DB_HOST},${DB_PORT}" -U "${DB_USER}" "${MSSQL_TLS_ARGS[@]}" "$@"
+}
+
+# Run a command every second until it succeeds; at the deadline (0 waits forever) print its last output to stderr and return 1.
+retry_until(){
+  local deadline=$1 progress=$2 last_output
+  shift 2
+  until last_output=$("$@" 2>&1); do
+    if (( deadline > 0 && SECONDS >= deadline )); then
+      [ -z "${last_output}" ] || >&2 echo "${last_output}"
+      return 1
+    fi
+    [ -z "${progress}" ] || >&2 echo "${progress}"
+    sleep 1
+  done
+}
+
+# Block until an MSSQL login works, because the port opens before the server accepts logins; exit after WAIT_TIMEOUT seconds.
+waiting_for_mssql_login(){
+  local deadline=0
+  (( 10#${WAIT_TIMEOUT} > 0 )) && deadline=$(( SECONDS + 10#${WAIT_TIMEOUT} ))
+  retry_until "${deadline}" "Waiting for a login to ${DB_HOST}:${DB_PORT}..." mssql_sqlcmd -b -Q "SELECT 1" && return
+  >&2 echo "ERROR: cannot log in to ${DB_HOST}:${DB_PORT} as ${DB_USER} after ${WAIT_TIMEOUT} seconds"
+  exit 1
+}
+
+# Retry a command every second for a fixed 120 seconds, independent of WAIT_TIMEOUT, and print its last output when it gives up.
+retry_for_two_minutes(){ retry_until $(( SECONDS + 120 )) "" "$@"; }
+
+# Run sqlplus with the connect line first on stdin, so that the credentials stay out of the process list and may hold any character.
+oracle_sqlplus(){
+  { printf 'CONNECT %s/"%s"@//%s:%s/%s\n' "${DB_USER}" "${DB_PWD//\"/\"\"}" "${DB_HOST}" "${DB_PORT}" "${DB_NAME}"; cat; } | sqlplus -s /nolog
 }
 
 # Wait for the database TCP port, then run Oracle-specific readiness probe if needed.
 waiting_for_db(){
   waiting_for_connection "$DB_HOST" "$DB_PORT"
 
-  # Only Oracle needs an extra readiness probe beyond the TCP connection check.
+  # MSSQL and Oracle need a readiness probe beyond the TCP connection check.
+  [[ "$DB_TYPE" == "mssql" ]] && waiting_for_mssql_login
   [[ "$DB_TYPE" != "oracle" ]] && return
-  local i out
-  for (( i=1; i<=10; i++ )); do
-    out=$(echo "SELECT version FROM V\$INSTANCE;" | sqlplus "$DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/${DB_NAME}" 2>/dev/null)
-    [[ "$out" == *Connected* ]] && { echo "Database is ready"; return; }
+  local attempt out
+  for (( attempt=1; attempt<=10; attempt++ )); do
+    out=$(printf '%s\n' "SET HEADING OFF FEEDBACK OFF PAGESIZE 0" "SELECT 1 FROM dual;" "exit" | oracle_sqlplus 2>/dev/null | tr -d '[:space:]')
+    [[ "$out" == "1" ]] && { echo "Database is ready"; return; }
     sleep 5
   done
   >&2 echo "WARNING: Oracle did not become ready after 50s"
@@ -573,12 +714,38 @@ create_postgresql_cluster(){
   pg_createcluster "${PG_VERSION}" "${PG_NAME}"
 }
 
+# Quote a value as a MySQL identifier by doubling backticks.
+quote_mysql_identifier(){ local value=${1//\`/\`\`}; printf '`%s`' "${value}"; }
+
+# Quote a value as an MSSQL identifier by doubling closing brackets.
+quote_mssql_identifier(){ local value=${1//]/]]}; printf '[%s]' "${value}"; }
+
+# Escape a value for use inside a single-quoted SQL string literal.
+escape_sql_literal(){ printf '%s' "${1//\'/\'\'}"; }
+
+# Escape a value for a single-quoted MySQL string literal, where backslash is an escape character.
+escape_mysql_literal(){ local value=${1//\\/\\\\}; printf '%s' "${value//\'/\'\'}"; }
+
+# Reject DB_SCHEMA values that would break the SQL statement or the PGOPTIONS value.
+validate_db_schema(){
+  local name=${DB_SCHEMA}
+  [[ "${name}" == \"*\" ]] && name=${name:1:-1}
+  case "${name}" in
+    ""|*[[:space:]\"\'\;\\]*) echo "ERROR: invalid DB_SCHEMA '${DB_SCHEMA}': whitespace, quotes, semicolons and backslashes are not allowed" >&2; exit 1 ;;
+  esac
+}
+
+# Resolve DB_SCHEMA from the environment or from the search_path option kept in local.json.
+resolve_db_schema(){
+  DB_SCHEMA=${DB_SCHEMA:-$(${JSON} services.CoAuthoring.sql.pgPoolExtraOptions.options 2>/dev/null | sed -n 's/.*search_path=\([^, ]*\).*/\1/p')}
+}
+
 # Create the application PostgreSQL user and database.
 create_postgresql_db(){
-  # Pass the password as a psql variable so special characters are quoted safely.
-  # The statement goes via stdin because psql does not interpolate :'var' in -c strings.
-  sudo -u postgres psql -v pwd="$DB_PWD" <<< "CREATE USER $DB_USER WITH password :'pwd';"
-  sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;"
+  # Names and the password are psql variables quoted by psql; the statements use stdin because -c does not interpolate them.
+  local -a psql_variables=(-v "dbuser=${DB_USER}" -v "dbname=${DB_NAME}" -v "pwd=${DB_PWD}")
+  sudo -u postgres psql "${psql_variables[@]}" <<< "CREATE USER :\"dbuser\" WITH password :'pwd';"
+  sudo -u postgres psql "${psql_variables[@]}" <<< 'CREATE DATABASE :"dbname" OWNER :"dbuser";'
 }
 
 # Dispatch schema create/upgrade to the correct per-backend function.
@@ -590,50 +757,62 @@ run_db_tbl() {
 
 # Execute an Oracle SQL script file via sqlplus.
 run_oracle_sql_file() {
-  local sql_file="$1"
-  local conn="$DB_USER/$DB_PWD@//$DB_HOST:$DB_PORT/$DB_NAME"
-  printf '@"%s"\nexit\n' "$sql_file" | sqlplus -s -L "$conn" >/dev/null 2>&1
+  printf '%s\n' "@\"$1\"" "exit" | oracle_sqlplus >/dev/null 2>&1
 }
 
 # Apply PostgreSQL schema; creates schema namespace if DB_SCHEMA is set.
 postgresql_tbl() {
   local operation=$1
-  [ -n "$DB_PWD" ] && export PGPASSWORD="$DB_PWD"
-  PSQL="psql -q -h$DB_HOST -p$DB_PORT -d$DB_NAME -U$DB_USER -w"
-  DB_SCHEMA=${DB_SCHEMA:-$(${JSON} services.CoAuthoring.sql.pgPoolExtraOptions.options 2>/dev/null | sed -n 's/.*search_path=\([^, ]*\).*/\1/p')}
+  [ -n "$DB_PWD" ] && local -x PGPASSWORD="$DB_PWD"
+  local -a psql_command=(psql -q -h "$DB_HOST" -p "$DB_PORT" -d "$DB_NAME" -U "$DB_USER" -w)
+  resolve_db_schema
   if [ -n "${DB_SCHEMA}" ]; then
+    validate_db_schema
     export PGOPTIONS="-c search_path=${DB_SCHEMA}"
-    $PSQL -c "CREATE SCHEMA IF NOT EXISTS ${DB_SCHEMA};" >/dev/null 2>&1
+    "${psql_command[@]}" -c "CREATE SCHEMA IF NOT EXISTS ${DB_SCHEMA};" >/dev/null 2>&1
     PGOPTIONS="${PGOPTIONS}" ${JSON} -I -e "this.services.CoAuthoring.sql.pgPoolExtraOptions ||= {}; this.services.CoAuthoring.sql.pgPoolExtraOptions.options = process.env.PGOPTIONS"
   fi
-  [ "$operation" = "upgrade" ] && $PSQL -f "$APP_DIR/server/schema/postgresql/removetbl.sql"
-  $PSQL -f "$APP_DIR/server/schema/postgresql/createdb.sql"
+  [ "$operation" = "upgrade" ] && "${psql_command[@]}" -f "$APP_DIR/server/schema/postgresql/removetbl.sql"
+  "${psql_command[@]}" -f "$APP_DIR/server/schema/postgresql/createdb.sql"
 }
 
 # Apply MySQL/MariaDB schema; creates database if operation is "create".
 mysql_tbl() {
   local operation=$1
-  local MYSQL=(mysql -q -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -w "${MYSQL_TLS_PARAMS[@]}")
+  [ -n "$DB_PWD" ] && local -x MYSQL_PWD="$DB_PWD"
+  local -a mysql_command=(mysql -q -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -w "${MYSQL_TLS_ARGS[@]}")
   if [ "$operation" = "create" ]; then
-    MYSQL_PWD="$DB_PWD" "${MYSQL[@]}" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null 2>&1
+    "${mysql_command[@]}" -e "CREATE DATABASE IF NOT EXISTS $(quote_mysql_identifier "$DB_NAME") DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null 2>&1
   else
-    MYSQL_PWD="$DB_PWD" "${MYSQL[@]}" "$DB_NAME" < "$APP_DIR/server/schema/mysql/removetbl.sql" >/dev/null 2>&1
+    "${mysql_command[@]}" "$DB_NAME" < "$APP_DIR/server/schema/mysql/removetbl.sql" >/dev/null 2>&1
   fi
-  MYSQL_PWD="$DB_PWD" "${MYSQL[@]}" "$DB_NAME" < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
+  "${mysql_command[@]}" "$DB_NAME" < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
 }
 
 # Apply MSSQL schema; creates database and schema if needed.
 mssql_tbl() {
   local operation=$1
-  [ -n "$DB_PWD" ] && export SQLCMDPASSWORD="$DB_PWD"
-  MSSQL="/opt/mssql-tools18/bin/sqlcmd -S $DB_HOST,$DB_PORT -d $DB_NAME -U $DB_USER ${MSSQL_TLS_PARAMS}"
-  [ "$operation" = "create" ] && ${MSSQL/ -d $DB_NAME/} -b -Q "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '$DB_NAME') BEGIN CREATE DATABASE [$DB_NAME]; END"
-  if [ -n "${DB_SCHEMA}" ]; then
-    ${MSSQL} -b -Q "DECLARE @s sysname=N'${DB_SCHEMA}'; IF SCHEMA_ID(@s) IS NULL BEGIN DECLARE @sql nvarchar(max); SET @sql=N'CREATE SCHEMA '+QUOTENAME(@s)+N' AUTHORIZATION '+QUOTENAME(N'${DB_USER}'); EXEC(@sql); END"
-    ${MSSQL} -b -Q "DECLARE @s sysname=N'${DB_SCHEMA}'; DECLARE @u sysname=N'${DB_USER}'; IF USER_ID(@u) IS NOT NULL BEGIN DECLARE @sql nvarchar(max); SET @sql=N'ALTER USER '+QUOTENAME(@u)+N' WITH DEFAULT_SCHEMA = '+QUOTENAME(@s); EXEC(@sql); END"
+  local db_name_literal db_user_literal db_schema_literal
+  db_name_literal=$(escape_sql_literal "$DB_NAME")
+  db_user_literal=$(escape_sql_literal "$DB_USER")
+  db_schema_literal=$(escape_sql_literal "$DB_SCHEMA")
+  if [ "$operation" = "create" ]; then
+    retry_for_two_minutes mssql_sqlcmd -b -Q "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = N'${db_name_literal}') BEGIN CREATE DATABASE $(quote_mssql_identifier "$DB_NAME"); END" ||
+      echo "WARNING: cannot create database '${DB_NAME}' on ${DB_HOST}:${DB_PORT}, check the connection and the database user rights." >&2
   fi
-  [ "$operation" = "upgrade" ] && $MSSQL < "$APP_DIR/server/schema/mssql/removetbl.sql" >/dev/null 2>&1
-  $MSSQL < "$APP_DIR/server/schema/mssql/createdb.sql" >/dev/null 2>&1
+  if [ -n "${DB_SCHEMA}" ]; then
+    mssql_sqlcmd -d "$DB_NAME" -b -Q "DECLARE @s sysname=N'${db_schema_literal}'; IF SCHEMA_ID(@s) IS NULL BEGIN DECLARE @sql nvarchar(max); SET @sql=N'CREATE SCHEMA '+QUOTENAME(@s)+N' AUTHORIZATION '+QUOTENAME(N'${db_user_literal}'); EXEC(@sql); END"
+    mssql_sqlcmd -d "$DB_NAME" -b -Q "DECLARE @s sysname=N'${db_schema_literal}'; DECLARE @u sysname=N'${db_user_literal}'; IF USER_ID(@u) IS NOT NULL BEGIN DECLARE @sql nvarchar(max); SET @sql=N'ALTER USER '+QUOTENAME(@u)+N' WITH DEFAULT_SCHEMA = '+QUOTENAME(@s); EXEC(@sql); END"
+  fi
+  [ "$operation" = "upgrade" ] && mssql_sqlcmd -d "$DB_NAME" < "$APP_DIR/server/schema/mssql/removetbl.sql" >/dev/null 2>&1
+  # The schema script is not idempotent and hides its errors, so repeat it until the tables exist.
+  retry_for_two_minutes mssql_apply_schema
+}
+
+# Apply the MSSQL schema script and succeed when the schema exists afterwards.
+mssql_apply_schema(){
+  mssql_sqlcmd -d "$DB_NAME" < "$APP_DIR/server/schema/mssql/createdb.sql"
+  db_tables_exist
 }
 
 # Apply Oracle schema via sqlplus.
@@ -718,13 +897,52 @@ update_nginx_settings(){
   [ ! -f /proc/net/if_inet6 ] && sed -i '/listen\s\+\[::[0-9]*\].\+/d' "${NGINX_ONLYOFFICE_CONF}"
 
   start_process documentserver-update-securelink \
-    -s "${SECURE_LINK_SECRET:-$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 20)}" -r false
+    -s "${SECURE_LINK_SECRET}" -r false
+}
+
+# Succeed when the doc_changes table exists in the external database; unsupported types and connection errors count as missing.
+db_tables_exist(){
+  local existing=""
+  case "${DB_TYPE}" in
+    postgres)
+      [ -n "${DB_PWD}" ] && local -x PGPASSWORD="${DB_PWD}"
+      resolve_db_schema
+      if [ -n "${DB_SCHEMA}" ]; then validate_db_schema; local -x PGOPTIONS="-c search_path=${DB_SCHEMA}"; fi
+      existing=$(psql -h "${DB_HOST}" -p "${DB_PORT}" -d "${DB_NAME}" -U "${DB_USER}" -w -tA -c "SELECT to_regclass('doc_changes') IS NOT NULL" 2>/dev/null)
+      [ "${existing}" = "t" ]
+      ;;
+    mysql|mariadb)
+      [ -n "${DB_PWD}" ] && local -x MYSQL_PWD="${DB_PWD}"
+      existing=$(mysql -N -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -w "${MYSQL_TLS_ARGS[@]}" -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$(escape_mysql_literal "${DB_NAME}")' AND table_name = 'doc_changes'" 2>/dev/null)
+      [ "${existing}" = "1" ]
+      ;;
+    mssql)
+      local mssql_table="doc_changes"
+      [ -n "${DB_SCHEMA}" ] && mssql_table="$(quote_mssql_identifier "${DB_SCHEMA}").[doc_changes]"
+      existing=$(mssql_sqlcmd -d "${DB_NAME}" -h -1 -W -Q "SET NOCOUNT ON; SELECT CASE WHEN OBJECT_ID(N'$(escape_sql_literal "${mssql_table}")', N'U') IS NOT NULL THEN 1 ELSE 0 END" 2>/dev/null | tr -d '[:space:]')
+      [ "${existing}" = "1" ]
+      ;;
+    oracle)
+      existing=$(printf '%s\n' "SET HEADING OFF FEEDBACK OFF PAGESIZE 0" "SELECT COUNT(*) FROM user_tables WHERE table_name = 'DOC_CHANGES';" "exit" | oracle_sqlplus 2>/dev/null | tr -d '[:space:]')
+      [ "${existing}" = "1" ]
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+# Tell on a first start without a release marker that existing tables of the external database are kept.
+warn_kept_tables(){
+  db_tables_exist && echo "WARNING: no release marker in ${PRIVATE_DATA_DIR}, existing tables of the external database are kept; set DS_DB_UPGRADE=true to recreate them after an image upgrade." >&2
 }
 
 # Set up database: configure remote or initialize local PostgreSQL.
 setup_db(){
   if [ "$DB_HOST" != "localhost" ]; then
-    update_db_settings; waiting_for_db; run_db_tbl create
+    update_db_settings; waiting_for_db
+    [ "${IS_FIRST_START}" = "true" ] && [ "${IS_UPGRADE}" != "true" ] && warn_kept_tables
+    run_db_tbl create
+    # The MSSQL and Oracle schema scripts hide their errors, so verify that the schema exists afterwards.
+    [[ "${DB_TYPE}" == "mssql" || "${DB_TYPE}" == "oracle" ]] && ! db_tables_exist && echo "WARNING: the doc_changes table was not created in the external database, check the connection and the database user rights." >&2
   else
     chown -R postgres:postgres "${PG_ROOT}"; chmod -R 700 ${PG_ROOT}
     if [ ! -d "${PGDATA}" ]; then create_postgresql_cluster; PG_NEW_CLUSTER=true; fi
@@ -752,7 +970,7 @@ setup_redis(){
   else
     local redis_pass_file="${REDIS_DATA}/.redis_pass"
     REDIS_SERVER_PASS=${REDIS_SERVER_PASS:-$(cat "${redis_pass_file}" 2>/dev/null)}
-    REDIS_SERVER_PASS=${REDIS_SERVER_PASS:-$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16)}
+    REDIS_SERVER_PASS=${REDIS_SERVER_PASS:-$(random_secret 16)}
     printf '%s' "${REDIS_SERVER_PASS}" > "${redis_pass_file}"
     sed -i '/^[[:space:]]*#\?[[:space:]]*requirepass\b/d; /^[[:space:]]*#\?[[:space:]]*protected-mode\b/d' /etc/redis/redis.conf
     printf 'requirepass %s\nprotected-mode yes\n' "${REDIS_SERVER_PASS}" >> /etc/redis/redis.conf
@@ -765,8 +983,21 @@ setup_redis(){
 # Create PostgreSQL database and schema if cluster is new or database is missing.
 init_postgresql_db(){
   [ "${DB_TYPE}" = "postgres" ] || return
-  local pg_db_exists
-  pg_db_exists=$(PGPASSWORD="$DB_PWD" psql -h "${DB_HOST}" -p"${DB_PORT}" -U "${DB_USER}" -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}';" 2>/dev/null)
+  local pg_db_exists="" probe_database probe_error_file probe_connected=false
+  [ -n "${DB_PWD}" ] && local -x PGPASSWORD="${DB_PWD}"
+  # A new local cluster has neither the role nor the database yet, so there is nothing to probe.
+  [ "${PG_NEW_CLUSTER}" = "true" ] && probe_connected=true
+  probe_error_file=$(mktemp)
+  # Probe through a maintenance database so that DB_USER may differ from DB_NAME.
+  for probe_database in postgres template1 "${DB_NAME}"; do
+    [ "${probe_connected}" = "true" ] && break
+    if pg_db_exists=$(psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${probe_database}" -w -v "dbname=${DB_NAME}" -tA <<< "SELECT 1 FROM pg_database WHERE datname = :'dbname';" 2>"${probe_error_file}"); then
+      probe_connected=true
+      break
+    fi
+  done
+  [ "${probe_connected}" = "true" ] || echo "WARNING: cannot check whether database '${DB_NAME}' exists on ${DB_HOST}:${DB_PORT}: $(head -n 1 "${probe_error_file}")" >&2
+  rm -f "${probe_error_file}"
   if [ "${PG_NEW_CLUSTER}" = "true" ] || [ "${pg_db_exists}" != "1" ]; then
     create_postgresql_db
     run_db_tbl create
@@ -780,7 +1011,7 @@ update_logrotate_settings(){
 
 # Persist the current release date so the next start can detect upgrades.
 update_release_date(){
-  mkdir -p "${PRIVATE_DATA_DIR}" && echo "${RELEASE_DATE}" > "${DS_RELEASE_DATE}"
+  mkdir -p "${PRIVATE_DATA_DIR}" && echo "${RELEASE_DATE}" > "${DS_RELEASE_DATE}" || echo "WARNING: cannot write the release marker ${DS_RELEASE_DATE}." >&2
 }
 
 # Enable optional supervisor services based on environment flags.
@@ -795,6 +1026,7 @@ configure_autostart(){
 # --------------------------- End of function definitions; execution starts below. ---------------------------
 
 trap clean_exit SIGTERM SIGQUIT SIGABRT SIGINT # Graceful shutdown on any termination signal.
+trap cleanup_on_exit EXIT # Stop started services when the script fails.
 
 # Initialize variables, SSL certificates, and filesystem layout.
 init_config
@@ -824,10 +1056,12 @@ for SVC in "${LOCAL_SERVICES[@]}"; do service "$SVC" start; done
 [ "${DB_AVAILABLE}" = "true" ] && init_postgresql_db
 
 chown ds:ds "${DATA_DIR}"
-chown -R ds:ds "${DS_LOG_DIR}" "${DS_LOG_DIR}-example" "${LIB_DIR}"
+# Change only entries that are not owned by ds yet instead of rewriting the whole document cache.
+find "${DS_LOG_DIR}" "${DS_LOG_DIR}-example" "${LIB_DIR}" \( ! -user ds -o ! -group ds \) -exec chown -h ds:ds {} +
 find "/etc/${COMPANY_NAME}" -type f -name '*.json' -exec chown root:ds {} + -exec chmod 0640 {} +
 
 # Full startup: only runs in non-data-container mode.
+remove_stale_pid_files
 if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
   # Start plugin manager in background before waiting for services.
   [ "${PLUGINS_ENABLED}" = "true" ] && { documentserver-pluginsmanager -r false --update="${APP_DIR}/sdkjs-plugins/plugin-list-default.json" >/dev/null & PLUGINSMANAGER_PID=$!; }
@@ -836,7 +1070,7 @@ if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
   [ "${DB_AVAILABLE}" = "true" ]       && { waiting_for_db; [ "${IS_UPGRADE}" = "true" ] && run_db_tbl upgrade; }
   [ "${RABBITMQ_AVAILABLE}" = "true" ] && waiting_for_connection "${AMQP_SERVER_HOST}" "${AMQP_SERVER_PORT}"
   [ "${REDIS_AVAILABLE}" = "true" ]    && waiting_for_connection "${REDIS_SERVER_HOST}" "${REDIS_SERVER_PORT}"
-  [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ] && update_release_date
+  [ "${IS_UPGRADE}" = "true" ] || [ "${IS_FIRST_START}" = "true" ] && update_release_date
 
   # Apply nginx configuration (SSL, workers, access log, securelink).
   update_nginx_settings
@@ -844,14 +1078,14 @@ if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
   # Enable optional supervisor services and start supervisor and cron.
   configure_autostart
   ${ADMINPANEL_AVAILABLE} && tail -n 0 -F "$DS_LOG_DIR/adminpanel/out.log" &
-  service supervisor start
+  service supervisor start; STARTED_SERVICES+=("supervisor")
   update_logrotate_settings
-  service cron start
+  service cron start; STARTED_SERVICES+=("cron")
 fi
 
 # nginx runs in all modes: as a proxy and as a data-container health endpoint.
 start_process documentserver-flush-cache -r false
-service nginx start
+service nginx start; STARTED_SERVICES+=("nginx")
 
 # Obtain or renew Let's Encrypt certificate if domain is configured.
 if [[ -n "${LETS_ENCRYPT_DOMAIN}" && -n "${LETS_ENCRYPT_MAIL}" ]]; then

@@ -23,8 +23,7 @@ services:
       - DB_PWD=onlyoffice
       - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
       - REDIS_SERVER_HOST=onlyoffice-redis
-      # JWT validation is enabled by default with a new random secret on each start.
-      # Uncomment and set your own strong JWT_SECRET to keep integrations working after restarts:
+      # JWT is enabled by default with a random secret kept in the Data volume; uncomment to set your own strong JWT_SECRET (or JWT_SECRET_FILE):
       #- JWT_ENABLED=true
       #- JWT_SECRET=secret
       #- JWT_HEADER=Authorization
@@ -36,10 +35,10 @@ services:
     restart: always
     stop_grace_period: 60s
     volumes:
-       - /var/www/onlyoffice/Data
-       - /var/log/onlyoffice
-       - /var/lib/onlyoffice/documentserver/App_Data/cache/files
-       - /var/www/onlyoffice/documentserver-example/public/files
+       - onlyoffice_data:/var/www/onlyoffice/Data
+       - onlyoffice_logs:/var/log/onlyoffice
+       - onlyoffice_cache:/var/lib/onlyoffice/documentserver/App_Data/cache/files
+       - onlyoffice_example_files:/var/www/onlyoffice/documentserver-example/public/files
        - /usr/share/fonts
 
   onlyoffice-rabbitmq:
@@ -88,4 +87,8 @@ services:
       timeout: 10s
 
 volumes:
+  onlyoffice_data:
+  onlyoffice_logs:
+  onlyoffice_cache:
+  onlyoffice_example_files:
   postgresql_data:

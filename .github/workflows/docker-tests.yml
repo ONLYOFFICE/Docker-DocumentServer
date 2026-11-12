@@ -68,7 +68,7 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.ready == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: ${{ matrix.timeout_minutes || 20 }}
     strategy:
       fail-fast: false
       matrix:
@@ -185,7 +185,8 @@ jobs:
             working_directory: tests
             script: ./test.sh
             config: postgres.yml
-            variables: ""
+            variables: |
+              POSTGRES_VERSION=12
 
           - name: PostgreSQL custom values
             edition: ee
@@ -360,6 +361,23 @@ jobs:
             config: graphite.yml
             variables: |
               assert_graphite=true
+
+          - name: Lifecycle Community Edition
+            edition: ce
+            working_directory: tests
+            script: ./lifecycle.sh
+            config: none
+            variables: |
+              scenario=secrets wait-timeout
+
+          - name: Lifecycle Enterprise Edition
+            edition: ee
+            timeout_minutes: 40
+            working_directory: tests
+            script: ./lifecycle.sh
+            config: none
+            variables: |
+              scenario=secrets db-upgrade mssql-upgrade wait-timeout
 
     steps:
       - name: Checkout

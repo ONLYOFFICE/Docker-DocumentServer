@@ -15,7 +15,10 @@ ARG PRODUCT_NAME=documentserver
 ARG PRODUCT_EDITION=
 ARG PACKAGE_VERSION=
 ARG TARGETARCH
-ARG PACKAGE_BASEURL="https://download.onlyoffice.com/install/documentserver/linux"
+ARG DEFAULT_PACKAGE_BASEURL="https://download.onlyoffice.com/install/documentserver/linux"
+ARG PACKAGE_BASEURL=$DEFAULT_PACKAGE_BASEURL
+# Optional sha256 of the package; for the default PACKAGE_BASEURL it is taken from the signed apt repository.
+ARG PACKAGE_SHA256=
 ENV COMPANY_NAME=$COMPANY_NAME PRODUCT_NAME=$PRODUCT_NAME PRODUCT_EDITION=$PRODUCT_EDITION \
     DS_PLUGIN_INSTALLATION=false DS_DOCKER_INSTALLATION=true
 
@@ -31,7 +34,17 @@ RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VER
     curl -fsSL https://download.onlyoffice.com/GPG-KEY-ONLYOFFICE | gpg --batch --yes --dearmor -o /usr/share/keyrings/onlyoffice.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/onlyoffice.gpg] https://download.onlyoffice.com/repo/debian squeeze main" > /etc/apt/sources.list.d/onlyoffice.list && \
     echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections && \
-    apt-get -y update && apt-get -yq install --no-install-recommends /tmp/$PACKAGE_FILE && \
+    apt-get -y update && \
+    if [ -z "$PACKAGE_SHA256" ] && [ "$PACKAGE_BASEURL" = "$DEFAULT_PACKAGE_BASEURL" ]; then \
+        PACKAGE_SHA256=$(apt-cache show "$(dpkg-deb -f /tmp/$PACKAGE_FILE Package)=$(dpkg-deb -f /tmp/$PACKAGE_FILE Version)" 2>/dev/null | sed -n 's/^SHA256: //p' | head -n 1); \
+        test -n "$PACKAGE_SHA256" || echo "WARNING: $PACKAGE_FILE is not listed in the signed ONLYOFFICE repository, set PACKAGE_SHA256 to verify it"; \
+    fi && \
+    if [ -n "$PACKAGE_SHA256" ]; then \
+        echo "$PACKAGE_SHA256  /tmp/$PACKAGE_FILE" | sha256sum --check --strict - || { echo "ERROR: $PACKAGE_FILE does not match the expected sha256"; exit 1; }; \
+    else \
+        echo "WARNING: $PACKAGE_FILE is not verified, set PACKAGE_SHA256 (custom PACKAGE_BASEURL or a version missing from the signed repository)"; \
+    fi && \
+    apt-get -yq install --no-install-recommends /tmp/$PACKAGE_FILE && \
     rm -f /etc/nginx/sites-enabled/default && \
     sed -i "s/COMPANY_NAME/${COMPANY_NAME}/g" /etc/supervisor/conf.d/*.conf && \
     [ "$(find /usr/share/fonts/truetype/msttcorefonts -maxdepth 1 -type f -iname '*.ttf' | wc -l)" -ge 30 ] || \

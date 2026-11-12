@@ -78,6 +78,8 @@ All the data are stored in the specially-designated directories, **data volumes*
 * **/var/lib/rabbitmq** for message broker
 * **/var/lib/redis** for cache
 
+The `/var/www/onlyoffice/Data` volume also keeps the generated JWT and secure link secrets and the release marker that tells an upgrade from a first start; do not lose it, or mount it as a named volume or a directory.
+
 To get access to your data from outside the container, you need to mount the volumes. It can be done by specifying the '-v' option in the docker run command.
 
 **Community Edition:**
@@ -107,6 +109,10 @@ Normally, you do not need to store container data because the container's operat
 * For easy access to container data, such as logs
 * To remove the limit on the size of the data inside the container
 * When using services launched outside the container such as PostgreSQL, Redis, RabbitMQ
+
+### Verifying the Document Server package
+
+The image build checks the downloaded `.deb` package against the SHA256 listed in the signed ONLYOFFICE apt repository and stops when the checksum differs. A package version that is not listed there yet, and a custom `--build-arg PACKAGE_BASEURL=<url>`, build with a warning instead. Pass `--build-arg PACKAGE_SHA256=<sha256>` to verify such a package; a wrong value always stops the build. For a multi-platform build do not set `PACKAGE_SHA256`, because the SHA256 differs per architecture.
 
 ### Running ONLYOFFICE Document Server on Different Port
 
@@ -207,9 +213,9 @@ Below is the complete list of parameters that can be set using environment varia
 - **NGINX_WORKER_PROCESSES**: Defines the number of nginx worker processes.
 - **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process. Defaults to the soft limit from `ulimit -n`.
 - **NGINX_ACCESS_LOG**: Defines whether filtered JSON access logging is enabled. Defaults to `true`.
-- **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](https://nginx.org/en/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to `random string`.
+- **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](https://nginx.org/en/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to a random string that is generated once and kept in `/var/www/onlyoffice/Data/.private`, so it survives restarts when the `Data` volume is kept.
 - **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `true`.
-- **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to random value.
+- **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to a random value that is generated once and kept in `/var/www/onlyoffice/Data/.private`, so it survives restarts when the `Data` volume is kept. Set it explicitly when the integration is configured by hand.
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
 - **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
 - **WOPI_ENABLED**: Specifies the enabling the wopi handlers. Defaults to `false`.
@@ -227,6 +233,12 @@ Below is the complete list of parameters that can be set using environment varia
 - **LETS_ENCRYPT_DOMAIN**: Defines the domain for Let's Encrypt certificate.
 - **LETS_ENCRYPT_MAIL**: Defines the domain administrator mail address for Let's Encrypt certificate.
 - **PLUGINS_ENABLED**: Defines whether to enable default plugins. Defaults to `true`.
+- **WAIT_TIMEOUT**: The number of seconds to wait for each dependency (database, message broker, Redis) before the container stops the services it has started and exits with an error. `0` waits forever. Defaults to `600`.
+- **DS_DB_UPGRADE**: Enterprise and Developer editions. The database tables (external or bundled PostgreSQL) are recreated (the schema is upgraded, unsaved document changes stored in them are lost) when the image is upgraded, which is detected by the release marker in `/var/www/onlyoffice/Data/.private`. If the `Data` volume is not kept, there is no marker and the tables are left untouched; set `DS_DB_UPGRADE=true` to recreate them on such a start. The variable has no effect while the marker exists, so a restart of the same container never drops tables. Defaults to `false`. For PostgreSQL, MySQL and MariaDB the schema script is idempotent; for MSSQL, Oracle and Dameng it is a plain `CREATE TABLE` whose errors on existing tables are ignored, so an existing schema is never altered without the upgrade. The MSSQL schema changed in 9.0 (decimal columns became integers, the primary key became `NONCLUSTERED`, tables use page data compression), so an MSSQL database created by an older version needs `DS_DB_UPGRADE=true` after the image upgrade. Without a marker a notice is printed when the tables already exist (PostgreSQL, MySQL, MariaDB, MSSQL and Oracle; Dameng is not checked).
+
+#### Passing secrets through files
+
+The `DB_PWD`, `JWT_SECRET`, `SECURE_LINK_SECRET`, `AMQP_URI` and `REDIS_SERVER_PASS` parameters can also be read from a file by setting the same name with the `_FILE` suffix, for example `JWT_SECRET_FILE=/run/secrets/jwt_secret`. The values are then not visible in `docker inspect` or in the image metadata; they still live in the process environment of the entrypoint and of its short-lived child processes. Trailing newlines are removed, and a value set directly in the environment takes precedence over the file.
 
 #### Enterprise and Developer Edition Parameters
 
@@ -292,6 +304,18 @@ docker compose -f docker-compose.enterprise.yml up -d
 ```bash
 docker compose -f docker-compose.developer.yml up -d
 ```
+
+**Switching the edition.** All three Compose files use the same named volumes (`onlyoffice_data`, `onlyoffice_logs`, `onlyoffice_cache` and `onlyoffice_example_files`, prefixed with the Compose project name), so running another edition file from the same directory (for example `docker-compose.enterprise.yml` after `docker-compose.yml`) keeps the certificates, the JWT and secure link secrets and the documents cache. The bundled PostgreSQL of the Enterprise and Developer editions keeps its data in `postgresql_data`. A different edition has a different `docservice` build, so the next start is handled as an upgrade (see `DS_DB_UPGRADE` for a start without the `Data` volume). Use another directory or project name to run two editions side by side.
+
+**Upgrading from the previous Compose files.** The Compose files now use named volumes (`onlyoffice_*`, prefixed with the Compose project name) instead of anonymous ones, and the old anonymous volumes are not reused. To keep the data, find the old volumes before recreating the container and copy them into the new ones:
+
+```bash
+docker inspect onlyoffice-documentserver --format '{{range .Mounts}}{{.Name}} {{.Destination}}{{println}}{{end}}'
+docker volume create <project>_onlyoffice_data
+docker run --rm -v <old_volume_name>:/from -v <project>_onlyoffice_data:/to alpine cp -a /from/. /to/
+```
+
+Repeat the copy for each destination (`/var/www/onlyoffice/Data`, `/var/log/onlyoffice`, the document cache, the example files and the anonymous `/usr/share/fonts` volume, which holds your custom fonts) with the matching new volume (the fonts volume stays anonymous in the new files, so mount the copied fonts with `-v` or keep the old volume), then run `docker compose up -d` again. The release marker lives in the `Data` volume, so a lost or not migrated `Data` volume means that the next start is treated as a first start and the database tables are not recreated. If the database schema must be upgraded together with the image, set `DS_DB_UPGRADE=true` for that start. The same applies to the bundled local PostgreSQL of the Enterprise and Developer editions when its data volume (`/var/lib/postgresql`) is kept but the `Data` volume is not.
 
 ## Installing ONLYOFFICE Document Server as a part of ONLYOFFICE Workspace
 
