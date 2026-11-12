@@ -89,8 +89,8 @@ init_config(){
 
   # Detect if this is an upgrade: release date changed and not a data container.
   RELEASE_DATE="$(stat -c="%y" "${APP_DIR}"/server/DocService/docservice | sed -r 's/=([0-9]+)-([0-9]+)-([0-9]+) ([0-9:.+ ]+)/\1-\2-\3/')"
-  PREV_RELEASE_DATE="$([[ -f ${DS_RELEASE_DATE} ]] && head -n 1 "${DS_RELEASE_DATE}" || echo "0")"
-  [[ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" && "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]] && IS_UPGRADE="true"
+  PREV_RELEASE_DATE="$([[ -f ${DS_RELEASE_DATE} ]] && head -n 1 "${DS_RELEASE_DATE}" || true)"
+  [[ -n "${PREV_RELEASE_DATE}" && "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" && "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]] && IS_UPGRADE="true"
 }
 
 # Resolve SSL/TLS paths: user-supplied > company-specific > Let's Encrypt > default.
@@ -836,7 +836,7 @@ if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
   [ "${DB_AVAILABLE}" = "true" ]       && { waiting_for_db; [ "${IS_UPGRADE}" = "true" ] && run_db_tbl upgrade; }
   [ "${RABBITMQ_AVAILABLE}" = "true" ] && waiting_for_connection "${AMQP_SERVER_HOST}" "${AMQP_SERVER_PORT}"
   [ "${REDIS_AVAILABLE}" = "true" ]    && waiting_for_connection "${REDIS_SERVER_HOST}" "${REDIS_SERVER_PORT}"
-  [ "${IS_UPGRADE}" = "true" ]       && update_release_date
+  [ "${RELEASE_DATE}" != "${PREV_RELEASE_DATE}" ] && update_release_date
 
   # Apply nginx configuration (SSL, workers, access log, securelink).
   update_nginx_settings
