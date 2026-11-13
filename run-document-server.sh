@@ -419,11 +419,11 @@ retry_until(){
   done
 }
 
-# Block until an MSSQL login works, because the port opens before the server accepts logins; exit after WAIT_TIMEOUT seconds.
-waiting_for_mssql_login(){
+# Block until the given login probe succeeds, because MSSQL and Oracle open the port before they accept logins; exit after WAIT_TIMEOUT seconds.
+waiting_for_db_login(){
   local deadline=0
   (( 10#${WAIT_TIMEOUT} > 0 )) && deadline=$(( SECONDS + 10#${WAIT_TIMEOUT} ))
-  retry_until "${deadline}" "Waiting for a login to ${DB_HOST}:${DB_PORT}..." mssql_sqlcmd -b -Q "SELECT 1" && return
+  retry_until "${deadline}" "Waiting for a login to ${DB_HOST}:${DB_PORT}..." "$@" && return
   >&2 echo "ERROR: cannot log in to ${DB_HOST}:${DB_PORT} as ${DB_USER} after ${WAIT_TIMEOUT} seconds"
   exit 1
 }
@@ -431,25 +431,25 @@ waiting_for_mssql_login(){
 # Retry a command every second for a fixed 120 seconds, independent of WAIT_TIMEOUT, and print its last output when it gives up.
 retry_for_two_minutes(){ retry_until $(( SECONDS + 120 )) "" "$@"; }
 
-# Run sqlplus with the connect line first on stdin, so that the credentials stay out of the process list and may hold any character.
+# Pass the credentials to sqlplus on stdin to keep them out of the process list; SET DEFINE OFF keeps an & in the password literal.
 oracle_sqlplus(){
-  { printf 'CONNECT %s/"%s"@//%s:%s/%s\n' "${DB_USER}" "${DB_PWD//\"/\"\"}" "${DB_HOST}" "${DB_PORT}" "${DB_NAME}"; cat; } | sqlplus -s /nolog
+  { echo "SET DEFINE OFF"; printf 'CONNECT %s/"%s"@//%s:%s/%s\n' "${DB_USER}" "${DB_PWD//\"/\"\"}" "${DB_HOST}" "${DB_PORT}" "${DB_NAME}"; cat; } | sqlplus -s /nolog
 }
 
-# Wait for the database TCP port, then run Oracle-specific readiness probe if needed.
+# Succeed when Oracle answers a query; print the sqlplus output otherwise.
+oracle_ready(){
+  local output
+  output=$(printf '%s\n' "SET HEADING OFF FEEDBACK OFF PAGESIZE 0" "SELECT 1 FROM dual;" "exit" | oracle_sqlplus 2>&1)
+  [[ "$(tr -d '[:space:]' <<< "${output}")" == "1" ]] || { echo "${output}"; return 1; }
+}
+
+# Wait for the database TCP port, then for a working login on MSSQL and Oracle.
 waiting_for_db(){
   waiting_for_connection "$DB_HOST" "$DB_PORT"
-
-  # MSSQL and Oracle need a readiness probe beyond the TCP connection check.
-  [[ "$DB_TYPE" == "mssql" ]] && waiting_for_mssql_login
-  [[ "$DB_TYPE" != "oracle" ]] && return
-  local attempt out
-  for (( attempt=1; attempt<=10; attempt++ )); do
-    out=$(printf '%s\n' "SET HEADING OFF FEEDBACK OFF PAGESIZE 0" "SELECT 1 FROM dual;" "exit" | oracle_sqlplus 2>/dev/null | tr -d '[:space:]')
-    [[ "$out" == "1" ]] && { echo "Database is ready"; return; }
-    sleep 5
-  done
-  >&2 echo "WARNING: Oracle did not become ready after 50s"
+  case "$DB_TYPE" in
+    mssql) waiting_for_db_login mssql_sqlcmd -b -Q "SELECT 1" ;;
+    oracle) waiting_for_db_login oracle_ready ;;
+  esac
 }
 
 # Write StatsD metrics config to local.json and toggle supervisor autostart.
@@ -781,12 +781,13 @@ mysql_tbl() {
   local operation=$1
   [ -n "$DB_PWD" ] && local -x MYSQL_PWD="$DB_PWD"
   local -a mysql_command=(mysql -q -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -w "${MYSQL_TLS_ARGS[@]}")
+  # Errors stay on stderr like the psql ones; the schema scripts are idempotent, so a normal run prints nothing.
   if [ "$operation" = "create" ]; then
-    "${mysql_command[@]}" -e "CREATE DATABASE IF NOT EXISTS $(quote_mysql_identifier "$DB_NAME") DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null 2>&1
+    "${mysql_command[@]}" -e "CREATE DATABASE IF NOT EXISTS $(quote_mysql_identifier "$DB_NAME") DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;" >/dev/null
   else
-    "${mysql_command[@]}" "$DB_NAME" < "$APP_DIR/server/schema/mysql/removetbl.sql" >/dev/null 2>&1
+    "${mysql_command[@]}" "$DB_NAME" < "$APP_DIR/server/schema/mysql/removetbl.sql" >/dev/null
   fi
-  "${mysql_command[@]}" "$DB_NAME" < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null 2>&1
+  "${mysql_command[@]}" "$DB_NAME" < "$APP_DIR/server/schema/mysql/createdb.sql" >/dev/null
 }
 
 # Apply MSSQL schema; creates database and schema if needed.
@@ -941,8 +942,8 @@ setup_db(){
     update_db_settings; waiting_for_db
     [ "${IS_FIRST_START}" = "true" ] && [ "${IS_UPGRADE}" != "true" ] && warn_kept_tables
     run_db_tbl create
-    # The MSSQL and Oracle schema scripts hide their errors, so verify that the schema exists afterwards.
-    [[ "${DB_TYPE}" == "mssql" || "${DB_TYPE}" == "oracle" ]] && ! db_tables_exist && echo "WARNING: the doc_changes table was not created in the external database, check the connection and the database user rights." >&2
+    # The MSSQL and Oracle schema scripts hide their errors and MySQL may lack rights, so verify that the schema exists afterwards.
+    [[ "${DB_TYPE}" =~ ^(mssql|oracle|mysql|mariadb)$ ]] && ! db_tables_exist && echo "WARNING: the doc_changes table was not created in the external database, check the connection and the database user rights." >&2
   else
     chown -R postgres:postgres "${PG_ROOT}"; chmod -R 700 ${PG_ROOT}
     if [ ! -d "${PGDATA}" ]; then create_postgresql_cluster; PG_NEW_CLUSTER=true; fi
