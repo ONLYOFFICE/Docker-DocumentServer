@@ -1,0 +1,13 @@
+# The Dockerfiles copy only fonts/, config/supervisor/, oracle/ and run-document-server.sh.
+.git
+.gitattributes
+.gitea
+.github
+.dockerignore
+CLAUDE.md
+LICENSE
+README.md
+renovate.json
+docker-bake.hcl
+docker-compose*.yml
+tests

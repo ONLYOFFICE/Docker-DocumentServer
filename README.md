@@ -142,9 +142,12 @@ When using CA certified certificates (e.g. [Let's Encrypt](https://letsencrypt.o
 #### Using the automatically generated Let's Encrypt SSL Certificates
 
         sudo docker run -i -t -d -p 80:80 -p 443:443 \
+        -v /app/onlyoffice/DocumentServer/letsencrypt:/etc/letsencrypt \
         -e LETS_ENCRYPT_DOMAIN=your_domain -e LETS_ENCRYPT_MAIL=your_mail  onlyoffice/documentserver
 
 If you want to get and extend Let's Encrypt SSL Certificates automatically just set LETS_ENCRYPT_DOMAIN and LETS_ENCRYPT_MAIL variables.
+
+Keep `/etc/letsencrypt` on a volume as shown above: it holds the issued certificate and the Certbot account, so a recreated container reuses them instead of requesting a new certificate and hitting the Let's Encrypt rate limits.
 
 #### Generation of Self Signed Certificates
 
@@ -305,7 +308,7 @@ docker compose -f docker-compose.enterprise.yml up -d
 docker compose -f docker-compose.developer.yml up -d
 ```
 
-**Switching the edition.** All three Compose files use the same named volumes (`onlyoffice_data`, `onlyoffice_logs`, `onlyoffice_cache` and `onlyoffice_example_files`, prefixed with the Compose project name), so running another edition file from the same directory (for example `docker-compose.enterprise.yml` after `docker-compose.yml`) keeps the certificates, the JWT and secure link secrets and the documents cache. The bundled PostgreSQL of the Enterprise and Developer editions keeps its data in `postgresql_data`. A different edition has a different `docservice` build, so the next start is handled as an upgrade (see `DS_DB_UPGRADE` for a start without the `Data` volume). Use another directory or project name to run two editions side by side.
+**Switching the edition.** All three Compose files use the same named volumes (`onlyoffice_data`, `onlyoffice_logs`, `onlyoffice_cache`, `onlyoffice_example_files` and `onlyoffice_letsencrypt`, prefixed with the Compose project name), so running another edition file from the same directory (for example `docker-compose.enterprise.yml` after `docker-compose.yml`) keeps the certificates (including the Let's Encrypt ones), the JWT and secure link secrets and the documents cache. The bundled PostgreSQL of the Enterprise and Developer editions keeps its data in `postgresql_data`; its password is taken from `DB_PWD` (default `onlyoffice`) and is applied only when this volume is created. A different edition has a different `docservice` build, so the next start is handled as an upgrade (see `DS_DB_UPGRADE` for a start without the `Data` volume). Use another directory or project name to run two editions side by side.
 
 **Upgrading from the previous Compose files.** The Compose files now use named volumes (`onlyoffice_*`, prefixed with the Compose project name) instead of anonymous ones, and the old anonymous volumes are not reused. To keep the data, find the old volumes before recreating the container and copy them into the new ones:
 

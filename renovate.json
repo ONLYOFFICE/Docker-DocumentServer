@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "enabledManagers": [
+    "github-actions"
+  ],
+  "pinDigests": true,
+  "semanticCommits": "disabled",
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "workflow actions"
+    },
+    {
+      "description": "Runner images are chosen deliberately, only actions are tracked",
+      "matchDatasources": [
+        "github-runners"
+      ],
+      "enabled": false
+    }
+  ]
+}

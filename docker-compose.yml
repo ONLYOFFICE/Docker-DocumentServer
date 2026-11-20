@@ -22,6 +22,7 @@ services:
        - onlyoffice_logs:/var/log/onlyoffice
        - onlyoffice_cache:/var/lib/onlyoffice/documentserver/App_Data/cache/files
        - onlyoffice_example_files:/var/www/onlyoffice/documentserver-example/public/files
+       - onlyoffice_letsencrypt:/etc/letsencrypt
        - /usr/share/fonts
 
 volumes:
@@ -29,3 +30,4 @@ volumes:
   onlyoffice_logs:
   onlyoffice_cache:
   onlyoffice_example_files:
+  onlyoffice_letsencrypt:

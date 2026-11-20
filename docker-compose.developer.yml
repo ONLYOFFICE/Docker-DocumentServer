@@ -20,7 +20,7 @@ services:
       - DB_PORT=5432
       - DB_NAME=onlyoffice
       - DB_USER=onlyoffice
-      - DB_PWD=onlyoffice
+      - DB_PWD=${DB_PWD:-onlyoffice}
       - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
       - REDIS_SERVER_HOST=onlyoffice-redis
       # JWT is enabled by default with a random secret kept in the Data volume; uncomment to set your own strong JWT_SECRET (or JWT_SECRET_FILE):
@@ -39,6 +39,7 @@ services:
        - onlyoffice_logs:/var/log/onlyoffice
        - onlyoffice_cache:/var/lib/onlyoffice/documentserver/App_Data/cache/files
        - onlyoffice_example_files:/var/www/onlyoffice/documentserver-example/public/files
+       - onlyoffice_letsencrypt:/etc/letsencrypt
        - /usr/share/fonts
 
   onlyoffice-rabbitmq:
@@ -73,7 +74,7 @@ services:
     environment:
       - POSTGRES_DB=onlyoffice
       - POSTGRES_USER=onlyoffice
-      - POSTGRES_PASSWORD=onlyoffice
+      - POSTGRES_PASSWORD=${DB_PWD:-onlyoffice}
     restart: always
     expose:
       - '5432'
@@ -91,4 +92,5 @@ volumes:
   onlyoffice_logs:
   onlyoffice_cache:
   onlyoffice_example_files:
+  onlyoffice_letsencrypt:
   postgresql_data:

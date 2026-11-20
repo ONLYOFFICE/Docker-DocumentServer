@@ -31,8 +31,9 @@ persistent_secret(){
   fi
   secret=$(random_secret "$2")
   [ ! -e "${secret_file}" ] || [ -s "${secret_file}" ] || rm -f "${secret_file}"
+  # Only the root entrypoint reads the secret, so keep it private before writing the value.
   if mkdir -p "${PRIVATE_DATA_DIR}" 2>/dev/null && temp_file=$(mktemp "${PRIVATE_DATA_DIR}/.$1.XXXXXX" 2>/dev/null) &&
-     printf '%s' "${secret}" > "${temp_file}"; then
+     chmod 600 "${temp_file}" && printf '%s' "${secret}" > "${temp_file}"; then
     # Link atomically so a concurrent starter keeps the value that was published first.
     ln "${temp_file}" "${secret_file}" 2>/dev/null || [ -e "${secret_file}" ] || mv -n "${temp_file}" "${secret_file}"
     rm -f "${temp_file}"
@@ -169,11 +170,11 @@ init_config(){
 # Resolve SSL/TLS paths: user-supplied > company-specific > Let's Encrypt > default.
 # If self-signed (subject == issuer), inject into Node.js as extra CA certificate.
 init_ssl(){
-  SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"; mkdir -p ${SSL_CERTIFICATES_DIR}
-  find "${DATA_DIR}/certs" -type f \( -iname '*.crt' -o -iname '*.pem' -o -iname '*.key' \) -exec cp -f {} "${SSL_CERTIFICATES_DIR}"/ \; 2>/dev/null
+  SSL_CERTIFICATES_DIR="/usr/share/ca-certificates/ds"; mkdir -p "${SSL_CERTIFICATES_DIR}"
+  find "${DATA_DIR}/certs" -type f \( -iname '*.crt' -o -iname '*.pem' -o -iname '*.key' \) -exec cp -f -t "${SSL_CERTIFICATES_DIR}"/ {} + 2>/dev/null
   if find "${SSL_CERTIFICATES_DIR}" -maxdepth 1 -type f | read _; then
-    find "${SSL_CERTIFICATES_DIR}" -type f \( -iname '*.crt' -o -iname '*.pem' \) -exec chmod 644 {} \;
-    find "${SSL_CERTIFICATES_DIR}" -type f -iname '*.key' -exec chmod 400 {} \;
+    find "${SSL_CERTIFICATES_DIR}" -type f \( -iname '*.crt' -o -iname '*.pem' \) -exec chmod 644 {} +
+    find "${SSL_CERTIFICATES_DIR}" -type f -iname '*.key' -exec chmod 400 {} +
   fi
 
   CA_CERTIFICATES_PATH=${CA_CERTIFICATES_PATH:-${SSL_CERTIFICATES_DIR}/ca-certificates.pem}
@@ -196,6 +197,8 @@ init_ssl(){
     issuer=$(openssl x509 -issuer -noout -in "${SSL_CERTIFICATE_PATH}" | sed 's/issuer=//')
     [[ "$subj" == "$issuer" ]] && NODE_EXTRA_ENVIRONMENT="${SSL_CERTIFICATE_PATH}"
   fi
+  # Drop the entry added by a previous start so the line does not grow on every restart.
+  sed -i "/^environment=/s|,NODE_EXTRA_CA_CERTS=[^,]*||g" "${SUPERVISOR_CONF_DIR}"/*.conf
   [[ -n "$NODE_EXTRA_ENVIRONMENT" ]] && sed -i "s|^environment=.*$|&,NODE_EXTRA_CA_CERTS=${NODE_EXTRA_ENVIRONMENT}|" "${SUPERVISOR_CONF_DIR}"/*.conf
 
   if [[ -n "${LETS_ENCRYPT_DOMAIN}" && -n "${LETS_ENCRYPT_MAIL}" ]]; then
@@ -846,7 +849,7 @@ update_welcome_page() {
     (( ${#DOCKER_CONTAINER_ID} < 12 )) && DOCKER_CONTAINER_ID=$(hostname)
     if (( ${#DOCKER_CONTAINER_ID} >= 12 )); then
       if [[ -x $(command -v docker) ]]; then
-        DOCKER_CONTAINER_NAME=$(docker inspect --format="{{.Name}}" $DOCKER_CONTAINER_ID)
+        DOCKER_CONTAINER_NAME=$(docker inspect --format="{{.Name}}" "$DOCKER_CONTAINER_ID")
         sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_NAME#/}"'/' -i ${TARGET_PAGES}
         JWT_MESSAGE=$(echo "$JWT_MESSAGE" | sed 's/$(sudo docker ps -q)/'"${DOCKER_CONTAINER_NAME#/}"'/')
       else
@@ -945,7 +948,7 @@ setup_db(){
     # The MSSQL and Oracle schema scripts hide their errors and MySQL may lack rights, so verify that the schema exists afterwards.
     [[ "${DB_TYPE}" =~ ^(mssql|oracle|mysql|mariadb)$ ]] && ! db_tables_exist && echo "WARNING: the doc_changes table was not created in the external database, check the connection and the database user rights." >&2
   else
-    chown -R postgres:postgres "${PG_ROOT}"; chmod -R 700 ${PG_ROOT}
+    find "${PG_ROOT}" \( ! -user postgres -o ! -group postgres \) -exec chown -h postgres:postgres {} +; find "${PG_ROOT}" ! -type l ! -perm 700 -exec chmod 700 {} +
     if [ ! -d "${PGDATA}" ]; then create_postgresql_cluster; PG_NEW_CLUSTER=true; fi
     LOCAL_SERVICES+=("postgresql")
   fi
@@ -956,7 +959,7 @@ setup_rabbitmq(){
   if [ "${AMQP_SERVER_HOST}" != "localhost" ]; then
     update_rabbitmq_setting
   else
-    chown -R rabbitmq:rabbitmq "${RABBITMQ_DATA}"; chmod -R go=rX,u=rwX "${RABBITMQ_DATA}"
+    find "${RABBITMQ_DATA}" \( ! -user rabbitmq -o ! -group rabbitmq \) -exec chown -h rabbitmq:rabbitmq {} +; find "${RABBITMQ_DATA}" ! -type l ! \( -type d -perm 755 \) ! \( -type f \( -perm 644 -o -perm 755 \) \) -exec chmod go=rX,u=rwX {} +
     [ -f "${RABBITMQ_DATA}"/.erlang.cookie ] && chmod 400 "${RABBITMQ_DATA}"/.erlang.cookie
     sed -i '/^[[:space:]]*ulimit[[:space:]]\+-n[[:space:]]\+/d' /etc/default/rabbitmq-server
     printf 'ulimit -n %s\n' "${RABBIT_CONNECTIONS}" >> /etc/default/rabbitmq-server
@@ -976,7 +979,7 @@ setup_redis(){
     sed -i '/^[[:space:]]*#\?[[:space:]]*requirepass\b/d; /^[[:space:]]*#\?[[:space:]]*protected-mode\b/d' /etc/redis/redis.conf
     printf 'requirepass %s\nprotected-mode yes\n' "${REDIS_SERVER_PASS}" >> /etc/redis/redis.conf
     update_redis_settings
-    chown -R redis:redis "${REDIS_DATA}"; chmod -R 750 "${REDIS_DATA}"; chmod 600 "${redis_pass_file}"
+    find "${REDIS_DATA}" \( ! -user redis -o ! -group redis \) -exec chown -h redis:redis {} +; find "${REDIS_DATA}" ! -type l ! -perm 750 -exec chmod 750 {} +; chmod 600 "${redis_pass_file}"
     LOCAL_SERVICES+=("redis-server")
   fi
 }
