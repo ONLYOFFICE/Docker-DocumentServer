@@ -33,7 +33,7 @@ jobs:
 
       - name: Scan image vulnerabilities
         # Check CVEs.
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: onlyoffice/4testing-documentserver${{ env.EDITION_SUFFIX }}:${{ env.TAG }}
           format: table
@@ -43,7 +43,7 @@ jobs:
 
       - name: Scan image secrets
         # Check keys, tokens, and passwords.
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: onlyoffice/4testing-documentserver${{ env.EDITION_SUFFIX }}:${{ env.TAG }}
           format: table
@@ -53,7 +53,7 @@ jobs:
 
       - name: Upload Trivy scan results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: trivy-results-${{ github.event.inputs.edition }}-${{ env.TAG }}
           path: trivy-results
