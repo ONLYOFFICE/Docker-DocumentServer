@@ -987,20 +987,26 @@ setup_redis(){
 # Create PostgreSQL database and schema if cluster is new or database is missing.
 init_postgresql_db(){
   [ "${DB_TYPE}" = "postgres" ] || return
-  local pg_db_exists="" probe_database probe_error_file probe_connected=false
+  local pg_db_exists="" probe_result probe_database probe_error_file probe_connected=false
+  local -a probe_args=(-v "dbname=${DB_NAME}" -tA)
+  local probe_sql="SELECT 1 FROM pg_database WHERE datname = :'dbname';"
   [ -n "${DB_PWD}" ] && local -x PGPASSWORD="${DB_PWD}"
   # A new local cluster has neither the role nor the database yet, so there is nothing to probe.
   [ "${PG_NEW_CLUSTER}" = "true" ] && probe_connected=true
+  # The bundled cluster ships without the application role, so the local superuser checks the database; DB_USER is checked only when it exists.
+  if [ "${DB_HOST}" = "localhost" ] && [ "${probe_connected}" != "true" ]; then
+    pg_db_exists=$(sudo -u postgres psql "${probe_args[@]}" <<< "${probe_sql}" 2>/dev/null) && [ "${pg_db_exists}" != "1" ] && probe_connected=true
+  fi
   probe_error_file=$(mktemp)
-  # Probe through a maintenance database so that DB_USER may differ from DB_NAME.
+  # Log in as DB_USER through a maintenance database so that DB_USER may differ from DB_NAME; this also checks DB_PWD.
   for probe_database in postgres template1 "${DB_NAME}"; do
     [ "${probe_connected}" = "true" ] && break
-    if pg_db_exists=$(psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${probe_database}" -w -v "dbname=${DB_NAME}" -tA <<< "SELECT 1 FROM pg_database WHERE datname = :'dbname';" 2>"${probe_error_file}"); then
+    if probe_result=$(psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${probe_database}" -w "${probe_args[@]}" <<< "${probe_sql}" 2>"${probe_error_file}"); then
+      pg_db_exists=${probe_result}
       probe_connected=true
-      break
     fi
   done
-  [ "${probe_connected}" = "true" ] || echo "WARNING: cannot check whether database '${DB_NAME}' exists on ${DB_HOST}:${DB_PORT}: $(head -n 1 "${probe_error_file}")" >&2
+  [ "${probe_connected}" = "true" ] || echo "WARNING: cannot log in to ${DB_HOST}:${DB_PORT} as '${DB_USER}' to check database '${DB_NAME}': $(head -n 1 "${probe_error_file}")" >&2
   rm -f "${probe_error_file}"
   if [ "${PG_NEW_CLUSTER}" = "true" ] || [ "${pg_db_exists}" != "1" ]; then
     create_postgresql_db
