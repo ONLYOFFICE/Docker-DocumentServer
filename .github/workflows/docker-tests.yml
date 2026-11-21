@@ -28,7 +28,7 @@ jobs:
       image_de: ${{ steps.images.outputs.image_de }}
     steps:
       - name: Checkout test definitions
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Select a complete release build
         id: build
@@ -40,7 +40,7 @@ jobs:
 
       - name: Set up Docker Buildx
         if: steps.build.outputs.ready == 'true'
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
       - name: Resolve published images to immutable digests
         id: images
@@ -381,7 +381,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Install PDF text checker
         run: |
@@ -415,7 +415,7 @@ jobs:
 
       - name: Upload failure logs
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: logs-${{ matrix.name }}
           path: ${{ runner.temp }}/docker-test-logs
