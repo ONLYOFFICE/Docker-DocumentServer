@@ -8,6 +8,7 @@
   "schedule": [
     "before 6am on monday"
   ],
+  "minimumReleaseAge": "7 days",
   "packageRules": [
     {
       "matchManagers": [
@@ -16,9 +17,17 @@
       "groupName": "workflow actions"
     },
     {
-      "description": "Runner images are chosen deliberately, only actions are tracked",
+      "description": "Runner images and Node versions are chosen deliberately, only actions are tracked",
       "matchDatasources": [
-        "github-runners"
+        "github-runners",
+        "node-version"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Tool versions passed to setup actions (with: version) are chosen deliberately, only actions are tracked",
+      "matchDepTypes": [
+        "uses-with"
       ],
       "enabled": false
     }
