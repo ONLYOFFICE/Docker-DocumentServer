@@ -212,6 +212,51 @@
             "latest": false
           }
         }
+      },
+      {
+        "source_tag": "9.0.3.29",
+        "release_tag": "9.0.3.1",
+        "short_tags": [
+          "9.0.3"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      },
+      {
+        "source_tag": "9.0.2.9",
+        "release_tag": "9.0.2.1",
+        "short_tags": [
+          "9.0.2"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
+      },
+      {
+        "source_tag": "9.0.0.168",
+        "release_tag": "9.0.0.1",
+        "short_tags": [
+          "9.0.0"
+        ],
+        "editions": {
+          "-ee": {
+            "latest": false
+          },
+          "-de": {
+            "latest": false
+          }
+        }
       }
     ]
   }
