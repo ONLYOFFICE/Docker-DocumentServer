@@ -51,7 +51,9 @@ cd tests && DOCUMENTSERVER_IMAGE=onlyoffice/documentserver-ee:local bash ./lifec
 
 Use `--platform linux/amd64` or `--platform linux/arm64` to select the image
 architecture. Use `--build-arg PACKAGE_VERSION=<version>` and
-`--build-arg PACKAGE_BASEURL=<url>` to select a specific package.
+`--build-arg PACKAGE_BASEURL=<url>` to select a specific package; a non-public URL goes in as the
+`package_baseurl` build secret (`--secret id=package_baseurl,env=PACKAGE_BASEURL`), which bake sets from
+the `PACKAGE_BASEURL` environment variable, because build arguments are recorded in the provenance.
 The `.deb` sha256 is taken from the signed apt repository for the default
 `PACKAGE_BASEURL`; pass `--build-arg PACKAGE_SHA256=<sha256>` to verify a custom one.
 CI uses `docker buildx bake -f docker-bake.hcl documentserver` with the variables

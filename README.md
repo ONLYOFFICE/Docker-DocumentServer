@@ -112,7 +112,7 @@ Normally, you do not need to store container data because the container's operat
 
 ### Verifying the Document Server package
 
-The image build checks the downloaded `.deb` package against the SHA256 listed in the signed ONLYOFFICE apt repository and stops when the checksum differs. A package version that is not listed there yet, and a custom `--build-arg PACKAGE_BASEURL=<url>`, build with a warning instead. Pass `--build-arg PACKAGE_SHA256=<sha256>` to verify such a package; a wrong value always stops the build. For a multi-platform build do not set `PACKAGE_SHA256`, because the SHA256 differs per architecture.
+The image build checks the downloaded `.deb` package against the SHA256 listed in the signed ONLYOFFICE apt repository and stops when the checksum differs. A package version that is not listed there yet, and a custom `--build-arg PACKAGE_BASEURL=<url>`, build with a warning instead. Pass `--build-arg PACKAGE_SHA256=<sha256>` to verify such a package; a wrong value always stops the build. For a multi-platform build do not set `PACKAGE_SHA256`, because the SHA256 differs per architecture. A build argument is recorded in the image metadata, so pass a non-public base URL as a build secret instead: `PACKAGE_BASEURL=<url> docker build --secret id=package_baseurl,env=PACKAGE_BASEURL .` (`docker buildx bake` reads it from the `PACKAGE_BASEURL` environment variable).
 
 ### Running ONLYOFFICE Document Server on Different Port
 

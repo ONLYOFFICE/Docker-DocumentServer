@@ -28,7 +28,10 @@ COPY --exclude=ds-adminpanel.conf --exclude=ds.conf.enterprise config/supervisor
 COPY run-document-server.sh /app/ds/run-document-server.sh
 
 # Download and install the document server package, drop its build-time JWT secret, verify msttcorefonts.
-RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
+# A non-public base URL comes as the package_baseurl build secret, which stays out of the image history and provenance.
+RUN --mount=type=secret,id=package_baseurl,env=PACKAGE_BASEURL_SECRET \
+    PACKAGE_BASEURL="${PACKAGE_BASEURL_SECRET:-$PACKAGE_BASEURL}" && \
+    PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
     test -z "$PRODUCT_EDITION" || { echo "ERROR: PRODUCT_EDITION is set - community package requires an empty edition suffix"; exit 1; } && \
     curl -fsSLo /tmp/$PACKAGE_FILE "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
     curl -fsSL https://download.onlyoffice.com/GPG-KEY-ONLYOFFICE | gpg --batch --yes --dearmor -o /usr/share/keyrings/onlyoffice.gpg && \

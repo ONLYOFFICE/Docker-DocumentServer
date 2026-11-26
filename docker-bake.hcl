@@ -30,22 +30,19 @@ variable "PLATFORM" {
     default = ""
 }
 
-variable "PACKAGE_BASEURL" {
-    default = ""
-}
-
 target "documentserver" {
     dockerfile = PRODUCT_EDITION == "" ? "Dockerfile" : "Dockerfile.enterprise"
     tags = [
            "docker.io/${COMPANY_NAME}/${PREFIX_NAME}${PRODUCT_NAME}${PRODUCT_EDITION}:${TAG}"
            ]
     platforms = ["${PLATFORM}"]
+    # The package base URL is a secret read from the PACKAGE_BASEURL environment variable, so it is not recorded in the provenance.
+    secret = ["id=package_baseurl,env=PACKAGE_BASEURL"]
     args = {
         "COMPANY_NAME": "${COMPANY_NAME}"
         "PRODUCT_NAME": "${PRODUCT_NAME}"
         "PRODUCT_EDITION": "${PRODUCT_EDITION}"
         "PACKAGE_VERSION": "${PACKAGE_VERSION}"
-        "PACKAGE_BASEURL": "${PACKAGE_BASEURL}"
     }
 }
 
