@@ -940,8 +940,8 @@ update_nginx_settings(){
 
   [ ! -f /proc/net/if_inet6 ] && sed -i '/listen\s\+\[::[0-9]*\].\+/d' "${NGINX_ONLYOFFICE_CONF}"
 
-  start_process documentserver-update-securelink \
-    -s "${SECURE_LINK_SECRET}" -r false
+  # The script reads the secret from the environment, which keeps it out of the process list.
+  SECURE_LINK_SECRET="${SECURE_LINK_SECRET}" start_process documentserver-update-securelink -r false
 }
 
 # Succeed when the doc_changes table exists in the external database; unsupported types and connection errors count as missing.
