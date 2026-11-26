@@ -1036,6 +1036,8 @@ setup_db(){
     # The MSSQL and Oracle schema scripts hide their errors and MySQL may lack rights, so verify that the schema exists afterwards.
     [[ "${DB_TYPE}" =~ ^(mssql|oracle|mysql|mariadb)$ ]] && ! db_tables_exist && echo "WARNING: the doc_changes table was not created in the external database, check the connection and the database user rights." >&2
   else
+    # The bundled role gets DB_PWD when it is created, so local.json must carry the same password on every start
+    update_db_settings
     find "${PG_ROOT}" \( ! -user postgres -o ! -group postgres \) -exec chown -h postgres:postgres {} +; find "${PG_ROOT}" ! -type l ! -perm 700 -exec chmod 700 {} +
     if [ ! -d "${PGDATA}" ]; then create_postgresql_cluster; PG_NEW_CLUSTER=true; fi
     LOCAL_SERVICES+=("postgresql")
