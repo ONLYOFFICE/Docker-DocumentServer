@@ -19,6 +19,17 @@ load_secret_files(){
   done
 }
 
+# Exit when a path that root reads or writes in a directory owned by another user is a symbolic link.
+refuse_symlinks(){
+  local path
+  for path in "$@"; do
+    [ ! -L "${path}" ] || { echo "ERROR: ${path} is a symbolic link; remove it, the entrypoint does not follow links there" >&2; exit 1; }
+  done
+}
+
+# Create an empty out.log unless the directory or the file is a link that root would follow.
+touch_log(){ [ -L "$1" ] || [ -L "$1/out.log" ] || touch "$1/out.log"; }
+
 # Print a random alphanumeric string of the given length.
 random_secret(){ tr -dc 'A-Za-z0-9' < /dev/urandom | head -c "$1"; }
 
@@ -59,6 +70,8 @@ init_config(){
   DATA_DIR="/var/www/${COMPANY_NAME}/Data"
   PRIVATE_DATA_DIR="${DATA_DIR}/.private"
   DS_RELEASE_DATE="${PRIVATE_DATA_DIR}/ds_release_date"
+  # ds owns the Data directory, so it could plant links that the root-only secrets and release marker would follow.
+  refuse_symlinks "${PRIVATE_DATA_DIR}" "${PRIVATE_DATA_DIR}/jwt_secret" "${PRIVATE_DATA_DIR}/secure_link_secret" "${DS_RELEASE_DATE}"
   LOG_DIR="/var/log/${COMPANY_NAME}"
   DS_LOG_DIR="${LOG_DIR}/documentserver"
   LIB_DIR="/var/lib/${COMPANY_NAME}"
@@ -212,17 +225,17 @@ init_ssl(){
 init_folders(){
   for f in "${SUPERVISOR_CONF_DIR}"/ds-*.conf; do
     local d="${DS_LOG_DIR}/${f##*/ds-}"; d="${d%.conf}"
-    mkdir -p "$d" && touch "$d"/out.log
+    mkdir -p "$d" && touch_log "$d"
   done
-  mkdir -p "${DS_LOG_DIR}-example" && touch "${DS_LOG_DIR}-example"/out.log
+  mkdir -p "${DS_LOG_DIR}-example" && touch_log "${DS_LOG_DIR}-example"
   mkdir -p "${DS_LIB_DIR}/App_Data/cache/files" "${DS_LIB_DIR}/App_Data/docbuilder" "${DS_LIB_DIR}-example/files"
 
   # Normalize only directories whose mode is not 755 yet (setgid kept); files keep their modes.
   find "${DS_LOG_DIR}" "${DS_LOG_DIR}-example" "${LIB_DIR}" -type d ! -perm 755 ! -perm 2755 -exec chmod 755 {} +
 
-  # Bug 75324: runtime.json may be owned by root after volume mount
+  # Bug 75324: runtime.json may be owned by root after volume mount; find skips links and hard links that ds could plant.
   local ai_config="${DATA_DIR}/runtime.json"
-  [ -f "${ai_config}" ] && { chown ds:ds "${ai_config}" && chmod 644 "${ai_config}"; }
+  [ -e "${ai_config}" ] && find "${ai_config}" -maxdepth 0 -type f -links 1 -exec chown ds:ds {} + -exec chmod 644 {} +
 }
 
 # Run a process in the background, tracking its PID for clean_exit.
@@ -671,6 +684,7 @@ update_ds_settings(){
 
   WOPI_PRIVATE_KEY="${DATA_DIR}/wopi_private.key"
   WOPI_PUBLIC_KEY="${DATA_DIR}/wopi_public.key"
+  refuse_symlinks "${WOPI_PRIVATE_KEY}" "${WOPI_PUBLIC_KEY}"
 
   [ ! -f "${WOPI_PRIVATE_KEY}" ] && echo -n "Generating WOPI private key..." && openssl genpkey -algorithm RSA -outform PEM -out "${WOPI_PRIVATE_KEY}" >/dev/null 2>&1 && echo "Done"
   [ ! -f "${WOPI_PUBLIC_KEY}" ] && echo -n "Generating WOPI public key..." && openssl rsa -RSAPublicKey_out -in "${WOPI_PRIVATE_KEY}" -outform "MS PUBLICKEYBLOB" -out "${WOPI_PUBLIC_KEY}" >/dev/null 2>&1 && echo "Done"
@@ -960,7 +974,7 @@ setup_rabbitmq(){
     update_rabbitmq_setting
   else
     find "${RABBITMQ_DATA}" \( ! -user rabbitmq -o ! -group rabbitmq \) -exec chown -h rabbitmq:rabbitmq {} +; find "${RABBITMQ_DATA}" ! -type l ! \( -type d -perm 755 \) ! \( -type f \( -perm 644 -o -perm 755 \) \) -exec chmod go=rX,u=rwX {} +
-    [ -f "${RABBITMQ_DATA}"/.erlang.cookie ] && chmod 400 "${RABBITMQ_DATA}"/.erlang.cookie
+    [ -f "${RABBITMQ_DATA}"/.erlang.cookie ] && [ ! -L "${RABBITMQ_DATA}"/.erlang.cookie ] && chmod 400 "${RABBITMQ_DATA}"/.erlang.cookie
     sed -i '/^[[:space:]]*ulimit[[:space:]]\+-n[[:space:]]\+/d' /etc/default/rabbitmq-server
     printf 'ulimit -n %s\n' "${RABBIT_CONNECTIONS}" >> /etc/default/rabbitmq-server
     LOCAL_SERVICES+=("rabbitmq-server"); rm -rf /var/run/rabbitmq
@@ -973,6 +987,7 @@ setup_redis(){
     update_redis_settings
   else
     local redis_pass_file="${REDIS_DATA}/.redis_pass"
+    refuse_symlinks "${redis_pass_file}"
     REDIS_SERVER_PASS=${REDIS_SERVER_PASS:-$(cat "${redis_pass_file}" 2>/dev/null)}
     REDIS_SERVER_PASS=${REDIS_SERVER_PASS:-$(random_secret 16)}
     printf '%s' "${REDIS_SERVER_PASS}" > "${redis_pass_file}"
