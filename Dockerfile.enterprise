@@ -20,7 +20,8 @@ RUN curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --batch -
         $(: mysql client)       mysql-client \
         $(: mssql client)       mssql-tools18 unixodbc \
         $(: oracle client deps) unzip $(apt-cache pkgnames libaio1 | sort -r | head -1) && \
-    echo 'SERVER_ADDITIONAL_ERL_ARGS="+S 1:1"' >> /etc/rabbitmq/rabbitmq-env.conf && \
+    printf '%s\n' 'NODENAME=rabbit@localhost' 'NODE_IP_ADDRESS=127.0.0.1' 'export ERL_EPMD_ADDRESS=127.0.0.1' \
+        'SERVER_ADDITIONAL_ERL_ARGS="+S 1:1 -kernel inet_dist_use_interface {127,0,0,1}"' >> /etc/rabbitmq/rabbitmq-env.conf && \
     sed -i 's/^\(bind\) .*/\1 127.0.0.1/' /etc/redis/redis.conf && \
     pg_conftool $PG_VERSION main set listen_addresses 'localhost' && \
     ORACLE_URL="https://download.oracle.com/otn_software/linux/instantclient/2370000" && \
