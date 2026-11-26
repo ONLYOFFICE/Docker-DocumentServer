@@ -37,9 +37,6 @@ quote_redis_value(){
   printf '"%s"' "${value}"
 }
 
-# Create an empty out.log unless the directory or the file is a link that root would follow.
-touch_log(){ [ -L "$1" ] || [ -L "$1/out.log" ] || touch "$1/out.log"; }
-
 # Print true or false for a boolean setting, ignoring case and surrounding spaces; exit on any other value.
 parse_bool(){
   local value=${2,,}
@@ -255,11 +252,20 @@ init_ssl(){
 
 # Create log/lib directories, set ownership and permissions for runtime files.
 init_folders(){
+  # Root owns the log root, where nginx (root) opens its logs; ds owns only the service directories, as the package sets them.
+  mkdir -p "${DS_LOG_DIR}" "${DS_LOG_DIR}-example"
+  chown root:root "${DS_LOG_DIR}"
+  find "${DS_LOG_DIR}" -mindepth 1 -maxdepth 1 -type l -delete
+  find "${DS_LOG_DIR}" -mindepth 1 -maxdepth 1 -name 'nginx.*' -type f -exec chown root:root {} +
+  local -a service_logs=("${DS_LOG_DIR}-example/out.log")
   for f in "${SUPERVISOR_CONF_DIR}"/ds-*.conf; do
     local d="${DS_LOG_DIR}/${f##*/ds-}"; d="${d%.conf}"
-    mkdir -p "$d" && touch_log "$d"
+    mkdir -p "$d" && service_logs+=("$d/out.log")
   done
-  mkdir -p "${DS_LOG_DIR}-example" && touch_log "${DS_LOG_DIR}-example"
+  # Change only entries that are not owned by ds yet; find does not follow the links it meets.
+  find "${DS_LOG_DIR}" -mindepth 1 ! -path "${DS_LOG_DIR}/nginx.*" \( ! -user ds -o ! -group ds \) -exec chown -h ds:ds {} +
+  find "${DS_LOG_DIR}-example" \( ! -user ds -o ! -group ds \) -exec chown -h ds:ds {} +
+  runuser -u ds -- touch "${service_logs[@]}"
   mkdir -p "${DS_LIB_DIR}/App_Data/cache/files" "${DS_LIB_DIR}/App_Data/docbuilder" "${DS_LIB_DIR}-example/files"
 
   # Normalize only directories whose mode is not 755 yet (setgid kept); files keep their modes.
@@ -1132,7 +1138,7 @@ for SVC in "${LOCAL_SERVICES[@]}"; do service "$SVC" start; done
 
 chown ds:ds "${DATA_DIR}"
 # Change only entries that are not owned by ds yet instead of rewriting the whole document cache.
-find "${DS_LOG_DIR}" "${DS_LOG_DIR}-example" "${LIB_DIR}" \( ! -user ds -o ! -group ds \) -exec chown -h ds:ds {} +
+find "${LIB_DIR}" \( ! -user ds -o ! -group ds \) -exec chown -h ds:ds {} +
 find "/etc/${COMPANY_NAME}" -type f -name '*.json' -exec chown root:ds {} + -exec chmod 0640 {} +
 
 # Full startup: only runs in non-data-container mode.
