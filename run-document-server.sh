@@ -1112,7 +1112,7 @@ update_logrotate_settings(){
   # Older packages rotate the service logs and delete the error dumps as root, which follows links that ds plants there.
   sed -i -e '\#\*\*/\*\.log#,/^}/{/^[[:space:]]*su[[:space:]]/d;s/^}/        su ds ds\n}/}' \
     -e '\#/errors/#,/^}/{/^[[:space:]]*su[[:space:]]/d;s/^}/        su ds ds\n}/}' \
-    -e 's#^\([[:space:]]*\)find /var/lib/#\1runuser -u ds -- find /var/lib/#' "${ds_rotate}"
+    -e 's#^\([[:space:]]*\)find /var/lib/#\1cd / \&\& runuser -u ds -- find /var/lib/#' "${ds_rotate}"
 }
 
 # Persist the current release date so the next start can detect upgrades.
