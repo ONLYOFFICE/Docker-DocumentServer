@@ -770,6 +770,21 @@ update_ds_settings(){
   ${JSON_LOG} -I -e "this.categories.default.level = process.env.DS_LOG_LEVEL"
 }
 
+# In a standalone container nginx is the only client of docservice and the admin panel, so they listen on loopback only.
+bind_services_to_loopback(){
+  local upstreams="${NGINX_ONLYOFFICE_PATH}/includes/http-common.conf"
+  # Older packages point the upstreams at localhost, which can also resolve to ::1.
+  [ -f "${upstreams}" ] && sed -i -E 's/^([[:space:]]*server[[:space:]]+)localhost:/\1127.0.0.1:/' "${upstreams}"
+  if ! grep -Eq '^[[:space:]]*server[[:space:]]+127\.0\.0\.1:8000[[:space:];]' "${upstreams}" 2>/dev/null; then
+    echo "WARNING: the docservice upstream in ${upstreams} is not 127.0.0.1:8000, so docservice keeps listening on all interfaces." >&2
+    return 0
+  fi
+  ${JSON} -I -e "this.services ||= {}; this.services.CoAuthoring ||= {}; this.services.CoAuthoring.server ||= {}; this.services.CoAuthoring.server.host = '127.0.0.1'" || exit 1
+  if ${ADMINPANEL_AVAILABLE}; then
+    ${JSON} -I -e "this.adminPanel ||= {}; this.adminPanel.host = '127.0.0.1'" || exit 1
+  fi
+}
+
 # The image ships no JWT secret, so a container that only uses the configuration of the data container needs its /etc volume.
 check_shared_jwt_secret(){
   [ "$(${JSON} services.CoAuthoring.token.enable.request.inbox)" != "false" ] || return 0
@@ -1130,6 +1145,8 @@ if [ "${ONLYOFFICE_DATA_CONTAINER_HOST}" = "localhost" ]; then
   update_welcome_page
   update_ipfilter_rules
   update_ds_settings
+  # The data container shares its configuration with app containers, which may reach docservice over the network.
+  [ "${ONLYOFFICE_DATA_CONTAINER}" = "true" ] || bind_services_to_loopback
   [ "${DB_AVAILABLE}" = "true" ]       && setup_db
   [ "${RABBITMQ_AVAILABLE}" = "true" ] && setup_rabbitmq
   [ "${REDIS_AVAILABLE}" = "true" ]    && setup_redis
