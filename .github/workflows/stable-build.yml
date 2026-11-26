@@ -35,6 +35,10 @@ env:
   RELEASE_NUMBER: ${{ inputs.release_number }}
   LATEST: ${{ inputs.latest }}
 
+# Jobs that need more grant it in their own permissions block.
+permissions:
+  contents: read
+
 jobs:
   setup:
     name: "Prepare editions matrix"

@@ -8,6 +8,10 @@ on:
 env:
   MAX_BYTES: "25000"
 
+# Jobs that need more grant it in their own permissions block.
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest

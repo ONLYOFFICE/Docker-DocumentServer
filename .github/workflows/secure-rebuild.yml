@@ -25,6 +25,10 @@ env:
   PRODUCT_NAME: "documentserver"
   REBUILD_CONFIG: ".github/secure-rebuild.json"
 
+# Jobs that need more grant it in their own permissions block.
+permissions:
+  contents: read
+
 jobs:
   prepare:
     name: Prepare rebuild matrices

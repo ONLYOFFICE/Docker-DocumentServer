@@ -23,6 +23,10 @@ env:
   TAG: ${{ github.event.inputs.version }}
   EDITION_SUFFIX: ${{ github.event.inputs.edition == 'developer' && '-de' || '' }}
 
+# Jobs that need more grant it in their own permissions block.
+permissions:
+  contents: read
+
 jobs:
   trivy:
     name: Scan DocumentServer image

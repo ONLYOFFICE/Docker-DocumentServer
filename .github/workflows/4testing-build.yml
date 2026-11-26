@@ -42,6 +42,10 @@ env:
   COMPANY_NAME: "onlyoffice"
   PRODUCT_NAME: "documentserver"
       
+# Jobs that need more grant it in their own permissions block.
+permissions:
+  contents: read
+
 jobs:
   prepare:
     runs-on: ubuntu-latest
