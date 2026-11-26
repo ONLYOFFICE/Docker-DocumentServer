@@ -30,6 +30,17 @@ refuse_symlinks(){
 # Create an empty out.log unless the directory or the file is a link that root would follow.
 touch_log(){ [ -L "$1" ] || [ -L "$1/out.log" ] || touch "$1/out.log"; }
 
+# Print true or false for a boolean setting, ignoring case and surrounding spaces; exit on any other value.
+parse_bool(){
+  local value=${2,,}
+  value=${value#"${value%%[![:space:]]*}"}; value=${value%"${value##*[![:space:]]}"}
+  case "${value}" in
+    true|1|yes|on) echo true ;;
+    false|0|no|off) echo false ;;
+    *) echo "ERROR: $1 must be true or false, got '$2'" >&2; return 1 ;;
+  esac
+}
+
 # Print a random alphanumeric string of the given length.
 random_secret(){ tr -dc 'A-Za-z0-9' < /dev/urandom | head -c "$1"; }
 
@@ -111,8 +122,8 @@ init_config(){
   RABBIT_CONNECTIONS=${RABBIT_CONNECTIONS:-$limit}
 
   # JWT and WOPI/security settings.
-  JWT_ENABLED=${JWT_ENABLED:-true}
-  JWT_ENABLED="$([[ "${JWT_ENABLED}" == "true" ]] && echo "true" || echo "false")"
+  JWT_ENABLED=$(parse_bool JWT_ENABLED "${JWT_ENABLED:-true}") || exit 1
+  [ "${JWT_ENABLED}" = "true" ] || echo 'WARNING: JWT is disabled (JWT_ENABLED=false), so anyone who can reach Document Server can open and convert documents; enable JWT and set JWT_SECRET for production use.' >&2
   [[ "${JWT_ENABLED}" == "true" && -z "${JWT_SECRET}" ]] && JWT_MESSAGE='JWT is enabled by default. A random secret is generated once and kept in the Data volume. Run the command "docker exec $(sudo docker ps -q) sudo documentserver-jwt-status" to get information about JWT.'
 
   if [[ "${JWT_ENABLED}" == "true" && "${JWT_SECRET}" == "secret" ]]; then

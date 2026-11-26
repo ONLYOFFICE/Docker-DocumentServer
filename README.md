@@ -217,7 +217,7 @@ Below is the complete list of parameters that can be set using environment varia
 - **NGINX_WORKER_CONNECTIONS**: Sets the maximum number of simultaneous connections that can be opened by a nginx worker process. Defaults to the soft limit from `ulimit -n`.
 - **NGINX_ACCESS_LOG**: Defines whether filtered JSON access logging is enabled. Defaults to `true`.
 - **SECURE_LINK_SECRET**: Defines secret for the nginx config directive [secure_link_md5](https://nginx.org/en/docs/http/ngx_http_secure_link_module.html#secure_link_md5). Defaults to a random string that is generated once and kept in `/var/www/onlyoffice/Data/.private`, so it survives restarts when the `Data` volume is kept.
-- **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Defaults to `true`.
+- **JWT_ENABLED**: Specifies the enabling the JSON Web Token validation by the ONLYOFFICE Document Server. Accepts `true`/`false` (or `1`/`0`, `yes`/`no`, `on`/`off`, in any case); any other value stops the container. Defaults to `true`.
 - **JWT_SECRET**: Defines the secret key to validate the JSON Web Token in the request to the ONLYOFFICE Document Server. Defaults to a random value that is generated once and kept in `/var/www/onlyoffice/Data/.private`, so it survives restarts when the `Data` volume is kept. Set it explicitly when the integration is configured by hand.
 - **JWT_HEADER**: Defines the http header that will be used to send the JSON Web Token. Defaults to `Authorization`.
 - **JWT_IN_BODY**: Specifies the enabling the token validation in the request body to the ONLYOFFICE Document Server. Defaults to `false`.
