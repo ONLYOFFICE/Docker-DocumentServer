@@ -266,7 +266,12 @@ init_folders(){
   find "${DS_LOG_DIR}" -mindepth 1 ! -path "${DS_LOG_DIR}/nginx.*" \( ! -user ds -o ! -group ds \) -exec chown -h ds:ds {} +
   find "${DS_LOG_DIR}-example" \( ! -user ds -o ! -group ds \) -exec chown -h ds:ds {} +
   runuser -u ds -- touch "${service_logs[@]}"
-  mkdir -p "${DS_LIB_DIR}/App_Data/cache/files" "${DS_LIB_DIR}/App_Data/docbuilder" "${DS_LIB_DIR}-example/files"
+  # Root owns the lib root as on a package install, so ds cannot swap the directories below it for links that root would follow.
+  mkdir -p "${DS_LIB_DIR}" "${DS_LIB_DIR}-example"
+  chown root:root "${LIB_DIR}"
+  # Change only entries that are not owned by ds yet instead of rewriting the whole document cache.
+  find "${LIB_DIR}" -mindepth 1 \( ! -user ds -o ! -group ds \) -exec chown -h ds:ds {} +
+  runuser -u ds -- mkdir -p "${DS_LIB_DIR}/App_Data/cache/files" "${DS_LIB_DIR}/App_Data/docbuilder" "${DS_LIB_DIR}-example/files"
 
   # Normalize only directories whose mode is not 755 yet (setgid kept); files keep their modes.
   find "${DS_LOG_DIR}" "${DS_LOG_DIR}-example" "${LIB_DIR}" -type d ! -perm 755 ! -perm 2755 -exec chmod 755 {} +
@@ -1143,8 +1148,6 @@ for SVC in "${LOCAL_SERVICES[@]}"; do service "$SVC" start; done
 [ "${DB_AVAILABLE}" = "true" ] && init_postgresql_db
 
 chown ds:ds "${DATA_DIR}"
-# Change only entries that are not owned by ds yet instead of rewriting the whole document cache.
-find "${LIB_DIR}" \( ! -user ds -o ! -group ds \) -exec chown -h ds:ds {} +
 find "/etc/${COMPANY_NAME}" -type f -name '*.json' -exec chown root:ds {} + -exec chmod 0640 {} +
 
 # Full startup: only runs in non-data-container mode.
