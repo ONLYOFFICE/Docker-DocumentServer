@@ -27,6 +27,16 @@ refuse_symlinks(){
   done
 }
 
+# Exit unless the named variable matches the pattern, because its value goes into a configuration file as is.
+require_match(){ [[ "${!1}" =~ $2 ]] || { echo "ERROR: invalid $1 '${!1}'" >&2; exit 1; }; }
+
+# Quote a value for redis.conf, which reads double-quoted strings with backslash escapes.
+quote_redis_value(){
+  local value=${1//\\/\\\\}
+  value=${value//\"/\\\"}; value=${value//$'\n'/\\n}; value=${value//$'\r'/\\r}
+  printf '"%s"' "${value}"
+}
+
 # Create an empty out.log unless the directory or the file is a link that root would follow.
 touch_log(){ [ -L "$1" ] || [ -L "$1/out.log" ] || touch "$1/out.log"; }
 
@@ -120,6 +130,11 @@ init_config(){
   limit=$(ulimit -n); [ "$limit" = "unlimited" ] || [ "$limit" -gt 1048576 ] && limit=1048576
   NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-$limit}
   RABBIT_CONNECTIONS=${RABBIT_CONNECTIONS:-$limit}
+  require_match NGINX_WORKER_PROCESSES '^([1-9][0-9]*|auto)$'
+  require_match NGINX_WORKER_CONNECTIONS '^[1-9][0-9]*$'
+  require_match RABBIT_CONNECTIONS '^[1-9][0-9]*$'
+  require_match ONLYOFFICE_HTTPS_HSTS_MAXAGE '^[0-9]+$'
+  require_match SSL_VERIFY_CLIENT '^(on|off|optional|optional_no_ca)$'
 
   # JWT and WOPI/security settings.
   JWT_ENABLED=$(parse_bool JWT_ENABLED "${JWT_ENABLED:-true}") || exit 1
@@ -213,6 +228,11 @@ init_ssl(){
   SSL_KEY_PATH="${SSL_KEY_PATH:-${SSL_CERTIFICATES_DIR}/tls.key}"
 
   NODE_EXTRA_CA_CERTS=${NODE_EXTRA_CA_CERTS:-${SSL_CERTIFICATES_DIR}/extra-ca-certs.pem}
+  # The paths go into the nginx and supervisor configs, where spaces, separators and quotes would change the syntax.
+  local path_var
+  for path_var in SSL_CERTIFICATE_PATH SSL_KEY_PATH SSL_DHPARAM_PATH CA_CERTIFICATES_PATH NODE_EXTRA_CA_CERTS; do
+    require_match "${path_var}" '^[A-Za-z0-9._/@+:~-]+$'
+  done
   if [[ -f ${NODE_EXTRA_CA_CERTS} ]]; then
     NODE_EXTRA_ENVIRONMENT="${NODE_EXTRA_CA_CERTS}"
   elif [[ -f ${SSL_CERTIFICATE_PATH} ]]; then
@@ -227,6 +247,7 @@ init_ssl(){
 
   if [[ -n "${LETS_ENCRYPT_DOMAIN}" && -n "${LETS_ENCRYPT_MAIL}" ]]; then
     local letsencrypt_root="/etc/letsencrypt/live"
+    require_match LETS_ENCRYPT_DOMAIN '^[A-Za-z0-9.-]+$'
     SSL_CERTIFICATE_PATH=${letsencrypt_root}/${LETS_ENCRYPT_DOMAIN}/fullchain.pem
     SSL_KEY_PATH=${letsencrypt_root}/${LETS_ENCRYPT_DOMAIN}/privkey.pem
   fi
@@ -1019,7 +1040,7 @@ setup_redis(){
     REDIS_SERVER_PASS=${REDIS_SERVER_PASS:-$(random_secret 16)}
     printf '%s' "${REDIS_SERVER_PASS}" > "${redis_pass_file}"
     sed -i '/^[[:space:]]*#\?[[:space:]]*requirepass\b/d; /^[[:space:]]*#\?[[:space:]]*protected-mode\b/d' /etc/redis/redis.conf
-    printf 'requirepass %s\nprotected-mode yes\n' "${REDIS_SERVER_PASS}" >> /etc/redis/redis.conf
+    printf 'requirepass %s\nprotected-mode yes\n' "$(quote_redis_value "${REDIS_SERVER_PASS}")" >> /etc/redis/redis.conf
     update_redis_settings
     find "${REDIS_DATA}" \( ! -user redis -o ! -group redis \) -exec chown -h redis:redis {} +; find "${REDIS_DATA}" ! -type l ! -perm 750 -exec chmod 750 {} +; chmod 600 "${redis_pass_file}"
     LOCAL_SERVICES+=("redis-server")
