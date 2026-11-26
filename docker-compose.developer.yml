@@ -20,9 +20,10 @@ services:
       - DB_PORT=5432
       - DB_NAME=onlyoffice
       - DB_USER=onlyoffice
-      - DB_PWD=${DB_PWD:-onlyoffice}
-      - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
+      - DB_PWD=${DB_PWD:?Set DB_PWD to the database password, onlyoffice for a postgresql_data volume of the previous Compose file}
+      - AMQP_URI=amqp://onlyoffice:${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD to a URL-safe RabbitMQ password}@onlyoffice-rabbitmq
       - REDIS_SERVER_HOST=onlyoffice-redis
+      - REDIS_SERVER_PASS=${REDIS_SERVER_PASS:?Set REDIS_SERVER_PASS to the Redis password}
       # JWT is enabled by default with a random secret kept in the Data volume; uncomment to set your own strong JWT_SECRET (or JWT_SECRET_FILE):
       #- JWT_ENABLED=true
       #- JWT_SECRET=secret
@@ -45,6 +46,9 @@ services:
   onlyoffice-rabbitmq:
     container_name: onlyoffice-rabbitmq
     image: rabbitmq:3
+    environment:
+      - RABBITMQ_DEFAULT_USER=onlyoffice
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD to a URL-safe RabbitMQ password}
     restart: always
     expose:
       - '5672'
@@ -58,11 +62,15 @@ services:
   onlyoffice-redis:
     container_name: onlyoffice-redis
     image: redis:7
+    command: ["redis-server", "--requirepass", "${REDIS_SERVER_PASS:?Set REDIS_SERVER_PASS to the Redis password}"]
+    environment:
+      # redis-cli of the healthcheck reads the password from REDISCLI_AUTH.
+      - REDISCLI_AUTH=${REDIS_SERVER_PASS:?Set REDIS_SERVER_PASS to the Redis password}
     restart: always
     expose:
       - '6379'
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
       interval: 10s
       retries: 3
       start_period: 10s
@@ -74,7 +82,7 @@ services:
     environment:
       - POSTGRES_DB=onlyoffice
       - POSTGRES_USER=onlyoffice
-      - POSTGRES_PASSWORD=${DB_PWD:-onlyoffice}
+      - POSTGRES_PASSWORD=${DB_PWD:?Set DB_PWD to the database password, onlyoffice for a postgresql_data volume of the previous Compose file}
     restart: always
     expose:
       - '5432'

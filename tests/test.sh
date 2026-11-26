@@ -3,6 +3,11 @@
 set -eo pipefail
 
 : "${config:?Set config to a compose file}"
+# The edition Compose files require service passwords; DB_PWD matches a postgresql_data volume left by an older run.
+case "${config##*/}" in
+  docker-compose.enterprise.yml|docker-compose.developer.yml)
+    export DB_PWD=${DB_PWD:-onlyoffice} RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-onlyoffice-test} REDIS_SERVER_PASS=${REDIS_SERVER_PASS:-onlyoffice-test} ;;
+esac
 ssl=${ssl:-false}
 tls_services=${tls_services:-}
 private_key=${private_key:-tls.key}
