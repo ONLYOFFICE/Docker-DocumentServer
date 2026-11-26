@@ -1084,9 +1084,15 @@ init_postgresql_db(){
   fi
 }
 
-# Allow logrotate to run as root when invoked via cron.
+# Allow logrotate to run as root when invoked via cron; the blocks for ds-owned directories run as ds.
 update_logrotate_settings(){
   sed 's|\(^su\b\).*|\1 root root|' -i /etc/logrotate.conf
+  local ds_rotate="${CONF_DIR}/logrotate/ds.conf"
+  [ -f "${ds_rotate}" ] || return 0
+  # Older packages rotate the service logs and delete the error dumps as root, which follows links that ds plants there.
+  sed -i -e '\#\*\*/\*\.log#,/^}/{/^[[:space:]]*su[[:space:]]/d;s/^}/        su ds ds\n}/}' \
+    -e '\#/errors/#,/^}/{/^[[:space:]]*su[[:space:]]/d;s/^}/        su ds ds\n}/}' \
+    -e 's#^\([[:space:]]*\)find /var/lib/#\1runuser -u ds -- find /var/lib/#' "${ds_rotate}"
 }
 
 # Persist the current release date so the next start can detect upgrades.
