@@ -785,9 +785,9 @@ resolve_db_schema(){
 
 # Create the application PostgreSQL user and database.
 create_postgresql_db(){
-  # Names and the password are psql variables quoted by psql; the statements use stdin because -c does not interpolate them.
-  local -a psql_variables=(-v "dbuser=${DB_USER}" -v "dbname=${DB_NAME}" -v "pwd=${DB_PWD}")
-  sudo -u postgres psql "${psql_variables[@]}" <<< "CREATE USER :\"dbuser\" WITH password :'pwd';"
+  # Names are psql variables quoted by psql; the password is an escaped literal on stdin, so it stays out of the process list.
+  local -a psql_variables=(-v "dbuser=${DB_USER}" -v "dbname=${DB_NAME}")
+  printf "CREATE USER :\"dbuser\" WITH password '%s';\n" "$(escape_sql_literal "${DB_PWD}")" | sudo -u postgres psql "${psql_variables[@]}"
   sudo -u postgres psql "${psql_variables[@]}" <<< 'CREATE DATABASE :"dbname" OWNER :"dbuser";'
 }
 
@@ -1050,7 +1050,8 @@ init_postgresql_db(){
   [ "${probe_connected}" = "true" ] || echo "WARNING: cannot log in to ${DB_HOST}:${DB_PORT} as '${DB_USER}' to check database '${DB_NAME}': $(head -n 1 "${probe_error_file}")" >&2
   rm -f "${probe_error_file}"
   if [ "${PG_NEW_CLUSTER}" = "true" ] || [ "${pg_db_exists}" != "1" ]; then
-    create_postgresql_db
+    # Only the bundled cluster gets the role and the database; the local superuser cannot reach an external server.
+    [ "${DB_HOST}" = "localhost" ] && create_postgresql_db
     run_db_tbl create
   fi
 }
