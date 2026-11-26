@@ -1131,7 +1131,7 @@ if [ "${ONLYOFFICE_DATA_CONTAINER}" != "true" ]; then
 
   # Enable optional supervisor services and start supervisor and cron.
   configure_autostart
-  ${ADMINPANEL_AVAILABLE} && tail -n 0 -F "$DS_LOG_DIR/adminpanel/out.log" &
+  ${ADMINPANEL_AVAILABLE} && runuser -u ds -- tail -n 0 -F "$DS_LOG_DIR/adminpanel/out.log" &
   service supervisor start; STARTED_SERVICES+=("supervisor")
   update_logrotate_settings
   service cron start; STARTED_SERVICES+=("cron")
@@ -1158,4 +1158,5 @@ echo "${JWT_MESSAGE}"
 
 [ -n "${PLUGINSMANAGER_PID}" ] && { wait "${PLUGINSMANAGER_PID}"; echo "[pluginsmanager] Plugins initialization finished"; }
 
-start_process bash -c "find '$DS_LOG_DIR' '$DS_LOG_DIR-example' -type f -name '*.log' ! -path '$DS_LOG_DIR/adminpanel/out.log' | xargs tail -F"
+# ds owns the log directories, so tail runs as ds and file names are NUL-separated; root would follow planted links.
+start_process runuser -u ds -- bash -c 'find "$1" "$2" -type f -name "*.log" ! -path "$1/adminpanel/out.log" -print0 | xargs -0 tail -F' tail-logs "$DS_LOG_DIR" "$DS_LOG_DIR-example"
