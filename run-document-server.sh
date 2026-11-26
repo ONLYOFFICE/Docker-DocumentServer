@@ -292,8 +292,9 @@ parse_rabbitmq_url(){
   local amqp=$1
   # Groups: 1=proto  3=user  5=pass  6=host  8=port
   local re='^([a-z+]+)://(([^:@]+)(:([^@]*))?@)?([^/:]+)(:([0-9]+))?'
-  [[ -z "$amqp" ]] && { echo "ERROR: empty AMQP URL"; return 1; }
-  [[ $amqp =~ $re ]] || { echo "ERROR: invalid AMQP URL: $amqp"; return 1; }
+  [[ -z "$amqp" ]] && { echo "ERROR: empty AMQP URL" >&2; return 1; }
+  # The URL may hold a password, so the error shows only the expected form.
+  [[ $amqp =~ $re ]] || { echo "ERROR: invalid AMQP_URI, expected scheme://[user[:password]@]host[:port][/vhost]" >&2; return 1; }
 
   AMQP_SERVER_PROTO="${BASH_REMATCH[1]}"
   AMQP_SERVER_USER="${BASH_REMATCH[3]}"
@@ -379,7 +380,7 @@ read_setting(){
     RABBITMQ_SERVER_URL=${RABBITMQ_SERVER_URL:-$(${JSON} rabbitmq.url)}
     AMQP_URI=${AMQP_URI:-${AMQP_SERVER_URL:-${RABBITMQ_SERVER_URL}}}
     AMQP_TYPE=${AMQP_TYPE:-${AMQP_SERVER_TYPE:-rabbitmq}}
-    parse_rabbitmq_url "${AMQP_URI}"
+    parse_rabbitmq_url "${AMQP_URI}" || exit 1
   fi
 
   if [ "${REDIS_AVAILABLE}" = "true" ]; then
