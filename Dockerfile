@@ -27,7 +27,7 @@ COPY fonts/ /usr/share/fonts/truetype/
 COPY --exclude=ds-adminpanel.conf --exclude=ds.conf.enterprise config/supervisor/ /etc/supervisor/conf.d/
 COPY run-document-server.sh /app/ds/run-document-server.sh
 
-# Download and install the document server package, verify msttcorefonts.
+# Download and install the document server package, drop its build-time JWT secret, verify msttcorefonts.
 RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
     test -z "$PRODUCT_EDITION" || { echo "ERROR: PRODUCT_EDITION is set - community package requires an empty edition suffix"; exit 1; } && \
     curl -fsSLo /tmp/$PACKAGE_FILE "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
@@ -45,6 +45,8 @@ RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VER
         echo "WARNING: $PACKAGE_FILE is not verified, set PACKAGE_SHA256 (custom PACKAGE_BASEURL or a version missing from the signed repository)"; \
     fi && \
     apt-get -yq install --no-install-recommends /tmp/$PACKAGE_FILE && \
+    /var/www/$COMPANY_NAME/documentserver/npm/json -q -I -f /etc/$COMPANY_NAME/documentserver/local.json -e "this.services ||= {}; this.services.CoAuthoring ||= {}; this.services.CoAuthoring.secret ||= {}; ['inbox', 'outbox', 'session', 'browser'].forEach(name => { this.services.CoAuthoring.secret[name] ||= {}; this.services.CoAuthoring.secret[name].string = ''; })" && \
+    { [ ! -f /etc/$COMPANY_NAME/documentserver-example/local.json ] || /var/www/$COMPANY_NAME/documentserver/npm/json -q -I -f /etc/$COMPANY_NAME/documentserver-example/local.json -e "this.server ||= {}; this.server.token ||= {}; this.server.token.secret = ''"; } && \
     rm -f /etc/nginx/sites-enabled/default && \
     sed -i "s/COMPANY_NAME/${COMPANY_NAME}/g" /etc/supervisor/conf.d/*.conf && \
     [ "$(find /usr/share/fonts/truetype/msttcorefonts -maxdepth 1 -type f -iname '*.ttf' | wc -l)" -ge 30 ] || \

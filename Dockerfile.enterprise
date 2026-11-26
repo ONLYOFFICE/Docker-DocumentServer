@@ -67,7 +67,7 @@ COPY config/supervisor/ds.conf.enterprise /etc/supervisor/conf.d/ds.conf
 COPY oracle/sqlplus /usr/bin/sqlplus
 COPY run-document-server.sh /app/ds/run-document-server.sh
 
-# Install the enterprise package; init and tear down a temporary PG cluster for schema migration.
+# Install the enterprise package; init and tear down a temporary PG cluster for schema migration; drop the build-time JWT secret.
 RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VERSION:+_$PACKAGE_VERSION}_${TARGETARCH:-$(dpkg --print-architecture)}.deb" && \
     test -n "$PRODUCT_EDITION" || { echo "ERROR: PRODUCT_EDITION is empty - enterprise package requires a non-CE edition suffix"; exit 1; } && \
     curl -fsSLo /tmp/$PACKAGE_FILE "$PACKAGE_BASEURL/$PACKAGE_FILE" && \
@@ -89,6 +89,8 @@ RUN PACKAGE_FILE="${COMPANY_NAME}-${PRODUCT_NAME}${PRODUCT_EDITION}${PACKAGE_VER
         -c "CREATE USER $ONLYOFFICE_VALUE WITH password '$ONLYOFFICE_VALUE';" \
         -c "CREATE DATABASE $ONLYOFFICE_VALUE OWNER $ONLYOFFICE_VALUE;" && \
     apt-get -yq install --no-install-recommends /tmp/$PACKAGE_FILE && \
+    /var/www/$COMPANY_NAME/documentserver/npm/json -q -I -f /etc/$COMPANY_NAME/documentserver/local.json -e "this.services ||= {}; this.services.CoAuthoring ||= {}; this.services.CoAuthoring.secret ||= {}; ['inbox', 'outbox', 'session', 'browser'].forEach(name => { this.services.CoAuthoring.secret[name] ||= {}; this.services.CoAuthoring.secret[name].string = ''; })" && \
+    { [ ! -f /etc/$COMPANY_NAME/documentserver-example/local.json ] || /var/www/$COMPANY_NAME/documentserver/npm/json -q -I -f /etc/$COMPANY_NAME/documentserver-example/local.json -e "this.server ||= {}; this.server.token ||= {}; this.server.token.secret = ''"; } && \
     rm -f /etc/nginx/sites-enabled/default && \
     sudo -u postgres psql \
         -c "DROP DATABASE $ONLYOFFICE_VALUE;" \

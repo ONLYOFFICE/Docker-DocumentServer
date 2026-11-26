@@ -138,7 +138,7 @@ init_config(){
   fi
   SECURE_LINK_SECRET=${SECURE_LINK_SECRET:-$(persistent_secret secure_link_secret 20)}
   JWT_HEADER=${JWT_HEADER:-Authorization}
-  JWT_IN_BODY=${JWT_IN_BODY:-false}
+  JWT_IN_BODY=$(parse_bool JWT_IN_BODY "${JWT_IN_BODY:-false}") || exit 1
 
   WOPI_ENABLED=${WOPI_ENABLED:-false}
   IP_FILTER_RULES=${IP_FILTER_RULES:-}
@@ -669,7 +669,11 @@ update_ipfilter_rules(){
 update_ds_settings(){
   JWT_ENABLED="${JWT_ENABLED}" JWT_SECRET="${JWT_SECRET}" \
   JWT_HEADER="${JWT_HEADER}" JWT_IN_BODY="${JWT_IN_BODY}" \
-  ${JSON} -I -e "this.services.CoAuthoring.token.enable.browser = JSON.parse(process.env.JWT_ENABLED); \
+  ${JSON} -I -e "this.services ||= {}; this.services.CoAuthoring ||= {}; \
+    this.services.CoAuthoring.token ||= {}; this.services.CoAuthoring.token.enable ||= {}; this.services.CoAuthoring.token.enable.request ||= {}; \
+    this.services.CoAuthoring.token.inbox ||= {}; this.services.CoAuthoring.token.outbox ||= {}; this.services.CoAuthoring.secret ||= {}; \
+    ['inbox', 'outbox', 'session', 'browser'].forEach(name => { this.services.CoAuthoring.secret[name] ||= {}; }); \
+    this.services.CoAuthoring.token.enable.browser = JSON.parse(process.env.JWT_ENABLED); \
     this.services.CoAuthoring.token.enable.request.inbox = JSON.parse(process.env.JWT_ENABLED); \
     this.services.CoAuthoring.token.enable.request.outbox = JSON.parse(process.env.JWT_ENABLED); \
     this.services.CoAuthoring.secret.inbox.string = process.env.JWT_SECRET; \
@@ -679,13 +683,16 @@ update_ds_settings(){
     this.services.CoAuthoring.token.inbox.header = process.env.JWT_HEADER; \
     this.services.CoAuthoring.token.outbox.header = process.env.JWT_HEADER; \
     this.services.CoAuthoring.token.inbox.inBody = JSON.parse(process.env.JWT_IN_BODY); \
-    this.services.CoAuthoring.token.outbox.inBody = JSON.parse(process.env.JWT_IN_BODY)"
+    this.services.CoAuthoring.token.outbox.inBody = JSON.parse(process.env.JWT_IN_BODY)" ||
+    { echo "ERROR: cannot write the JWT settings to ${ONLYOFFICE_DEFAULT_CONFIG}" >&2; exit 1; }
 
   if [ -f "${ONLYOFFICE_EXAMPLE_CONFIG}" ]; then
     JWT_ENABLED="${JWT_ENABLED}" JWT_SECRET="${JWT_SECRET}" JWT_HEADER="${JWT_HEADER}" \
-    ${JSON_EXAMPLE} -I -e "this.server.token.enable = JSON.parse(process.env.JWT_ENABLED); \
+    ${JSON_EXAMPLE} -I -e "this.server ||= {}; this.server.token ||= {}; \
+      this.server.token.enable = JSON.parse(process.env.JWT_ENABLED); \
       this.server.token.secret = process.env.JWT_SECRET; \
-      this.server.token.authorizationHeader = process.env.JWT_HEADER"
+      this.server.token.authorizationHeader = process.env.JWT_HEADER" ||
+      { echo "ERROR: cannot write the JWT settings to ${ONLYOFFICE_EXAMPLE_CONFIG}" >&2; exit 1; }
   fi
 
   if [ "${USE_UNAUTHORIZED_STORAGE}" == "true" ]; then
@@ -728,6 +735,14 @@ update_ds_settings(){
 
   DS_LOG_LEVEL="${DS_LOG_LEVEL:-$(${JSON_LOG} categories.default.level)}" \
   ${JSON_LOG} -I -e "this.categories.default.level = process.env.DS_LOG_LEVEL"
+}
+
+# The image ships no JWT secret, so a container that only uses the configuration of the data container needs its /etc volume.
+check_shared_jwt_secret(){
+  [ "$(${JSON} services.CoAuthoring.token.enable.request.inbox)" != "false" ] || return 0
+  [ -n "$(${JSON} services.CoAuthoring.secret.inbox.string)" ] && return 0
+  echo "ERROR: JWT is enabled, but ${ONLYOFFICE_DEFAULT_CONFIG} has no JWT secret; mount /etc/${COMPANY_NAME} of the data container (volumes_from) into this container." >&2
+  exit 1
 }
 
 # Initialize a fresh PostgreSQL cluster, preserving original config backups.
@@ -1083,6 +1098,7 @@ else
   waiting_for_connection "${ONLYOFFICE_DATA_CONTAINER_HOST}" "${ONLYOFFICE_DATA_CONTAINER_PORT}"
   read_setting
   update_welcome_page
+  check_shared_jwt_secret
 fi
 
 # Start bundled local services (postgresql, rabbitmq, redis if running in-container).
