@@ -276,9 +276,9 @@ init_folders(){
   # Normalize only directories whose mode is not 755 yet (setgid kept); files keep their modes.
   find "${DS_LOG_DIR}" "${DS_LOG_DIR}-example" "${LIB_DIR}" -type d ! -perm 755 ! -perm 2755 -exec chmod 755 {} +
 
-  # Bug 75324: runtime.json may be owned by root after volume mount; find skips links and hard links that ds could plant.
+  # Bug 75324: runtime.json may be owned by root after volume mount; find skips planted links, and only ds reads the admin password hash in it.
   local ai_config="${DATA_DIR}/runtime.json"
-  [ -e "${ai_config}" ] && find "${ai_config}" -maxdepth 0 -type f -links 1 -exec chown ds:ds {} + -exec chmod 644 {} +
+  [ -e "${ai_config}" ] && find "${ai_config}" -maxdepth 0 -type f -links 1 -exec chown ds:ds {} + -exec chmod 600 {} +
 }
 
 # Run a process in the background, tracking its PID for clean_exit.
