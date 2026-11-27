@@ -169,32 +169,6 @@ jobs:
                              --metadata-file metadata.json \
                              -f docker-bake.hcl "${IMAGE}" --push
           echo "DONE: Build success"
-
-          ### Set output for Zap scanner
-          ### NOTE: Output will be used only in release/hotfix branches
-          
-          echo "version=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "branch=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
-        shell: bash
-
-      # Run scanner only when edition is community 
-      # and branch hit release/ or hotfix/
-      - name: Trigger zap manualy
-        if: >-
-             matrix.edition == 'community' &&
-             matrix.platform == 'amd64' &&
-             (startsWith(steps.build-ds.outputs.branch, 'release/') ||
-              startsWith(steps.build-ds.outputs.branch, 'hotfix/'))
-        env:
-          VERSION: ${{ steps.build-ds.outputs.version }}
-          BRANCH: ${{ steps.build-ds.outputs.branch }}
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
-          REPO: ${{ github.repository }}
-        run: |
-            gh workflow run zap-ds.yaml \
-                 --repo "${REPO}" \
-                 -f branch="${BRANCH}" \
-                 -f version="${VERSION}"
         shell: bash
 
       - name: Extract digest and image name
@@ -213,27 +187,6 @@ jobs:
           subject-name: ${{ steps.image.outputs.name }}
           subject-digest: ${{ steps.image.outputs.digest }}
           push-to-registry: true
-
-      # Run Trivy scans for community and developer images from release/hotfix branches.
-      - name: Trigger Trivy scan
-        if: >-
-             (matrix.edition == 'community' || matrix.edition == 'developer') &&
-             matrix.platform == 'amd64' &&
-             (startsWith(steps.build-ds.outputs.branch, 'release/') ||
-              startsWith(steps.build-ds.outputs.branch, 'hotfix/'))
-        env:
-          VERSION: ${{ steps.build-ds.outputs.version }}
-          EDITION: ${{ matrix.edition }}
-          BRANCH: ${{ steps.build-ds.outputs.branch }}
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
-          REPO: ${{ github.repository }}
-        run: |
-            gh workflow run trivy-ds.yml \
-                 --repo "${REPO}" \
-                 --ref "${BRANCH}" \
-                 -f edition="${EDITION}" \
-                 -f version="${VERSION}"
-        shell: bash
 
       - name: Save build result to file
         if: always()
@@ -376,6 +329,8 @@ jobs:
            echo "name=$REPO" >> "$GITHUB_OUTPUT"
            echo "index_digest=$INDEX_DIGEST" >> "$GITHUB_OUTPUT"
            echo "from_tags=${FROM_TAGS[*]}" >> "$GITHUB_OUTPUT"
+           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+           echo "amd64_status=${AMD64_STATUS}" >> "$GITHUB_OUTPUT"
 
       - name: Cleanup platform-specific tags
         if: always() && steps.manifest.outputs.index_digest != ''
@@ -426,6 +381,52 @@ jobs:
           subject-name: docker.io/${{ steps.manifest.outputs.name }}
           subject-digest: ${{ steps.manifest.outputs.index_digest }}
           push-to-registry: true
+
+      # Scanners get the multi-arch tag: the platform-specific tags are deleted above,
+      # and the scan workflows run asynchronously, so they could not pull them in time.
+      # The scan runners are amd64 and pull the amd64 image from the index.
+
+      # Run ZAP only for community images from release/hotfix branches.
+      - name: Trigger ZAP scan
+        if: >-
+             matrix.edition == 'community' &&
+             steps.manifest.outputs.index_digest != '' &&
+             steps.manifest.outputs.amd64_status == 'success' &&
+             (startsWith(github.ref_name, 'release/') ||
+              startsWith(github.ref_name, 'hotfix/'))
+        env:
+          VERSION: ${{ steps.manifest.outputs.tag }}
+          BRANCH: ${{ github.ref_name }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+            gh workflow run zap-ds.yaml \
+                 --repo "${REPO}" \
+                 -f branch="${BRANCH}" \
+                 -f version="${VERSION}"
+        shell: bash
+
+      # Run Trivy scans for community and developer images from release/hotfix branches.
+      - name: Trigger Trivy scan
+        if: >-
+             (matrix.edition == 'community' || matrix.edition == 'developer') &&
+             steps.manifest.outputs.index_digest != '' &&
+             steps.manifest.outputs.amd64_status == 'success' &&
+             (startsWith(github.ref_name, 'release/') ||
+              startsWith(github.ref_name, 'hotfix/'))
+        env:
+          VERSION: ${{ steps.manifest.outputs.tag }}
+          EDITION: ${{ matrix.edition }}
+          BRANCH: ${{ github.ref_name }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+            gh workflow run trivy-ds.yml \
+                 --repo "${REPO}" \
+                 --ref "${BRANCH}" \
+                 -f edition="${EDITION}" \
+                 -f version="${VERSION}"
+        shell: bash
 
   smoke:
     name: "Smoke ${{ matrix.edition }}"
