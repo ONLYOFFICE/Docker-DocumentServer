@@ -385,10 +385,13 @@ jobs:
       # Scanners get the multi-arch tag: the platform-specific tags are deleted above,
       # and the scan workflows run asynchronously, so they could not pull them in time.
       # The scan runners are amd64 and pull the amd64 image from the index.
+      # !cancelled(): a failed tag cleanup or attestation must not skip the scans,
+      # index_digest already guarantees the multi-arch image is published.
 
       # Run ZAP only for community images from release/hotfix branches.
       - name: Trigger ZAP scan
         if: >-
+             !cancelled() &&
              matrix.edition == 'community' &&
              steps.manifest.outputs.index_digest != '' &&
              steps.manifest.outputs.amd64_status == 'success' &&
@@ -409,6 +412,7 @@ jobs:
       # Run Trivy scans for community and developer images from release/hotfix branches.
       - name: Trigger Trivy scan
         if: >-
+             !cancelled() &&
              (matrix.edition == 'community' || matrix.edition == 'developer') &&
              steps.manifest.outputs.index_digest != '' &&
              steps.manifest.outputs.amd64_status == 'success' &&
